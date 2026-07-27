@@ -6,13 +6,15 @@ __pycache__/
 .mypy_cache/
 .coverage
 htmlcov/
-backend/.venv/
-backend/.pytest_cache/
+apps/platform-api/.venv/
+apps/platform-api/.pytest_cache/
 
 # Node
 node_modules/
-frontend/dist/
-frontend/.vite/
+apps/ops-console/dist/
+apps/ops-console/.vite/
+apps/product-web/dist/
+apps/product-web/.vite/
 
 # Env
 .env

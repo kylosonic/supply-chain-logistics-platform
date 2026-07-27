@@ -1,103 +1,74 @@
-# Supply Chain Logistics Platform (Monorepo)
+# Supply Chain Logistics Platform Monorepo
 
-Full-stack platform for inventory visibility, demand forecasting, and delivery route optimization.
+Full-stack logistics platform with an operations console, API backend, and a product marketing website.
 
-Project path:
-`/mnt/c/Users/nahom/Downloads/Projects/supply-chain-logistics-platform`
+## What is included
+
+- Operations console for logistics workflows (inventory, planning, routing, alerts)
+- API backend for data, forecasting, and optimization endpoints
+- Product website for company signup, desktop download CTAs, and product positioning
+- Desktop shell for dispatch/operator teams (Electron)
+- Dockerized local stack for backend, operations UI, and product website
+- Company onboarding flow: business-email signup, subscription selection, data import, and preferred AI provider selection
+
+## Monorepo layout
+
+- `apps/platform-api` FastAPI + SQLAlchemy + Alembic backend
+- `apps/ops-console` React + Tailwind operations frontend (Vite + TypeScript)
+- `apps/product-web` React + TypeScript product website (Vite)
+- `apps/desktop` Electron shell for desktop distribution
+- `sample-data` CSV demo datasets for warehouses, items, inventory, and orders
+- `scripts` backup and restore scripts for PostgreSQL
+- `docs` architecture and roadmap documentation
 
 ## Tech stack
-- Frontend: React + Tailwind + Recharts (Vite + TypeScript)
-- Backend: FastAPI + SQLAlchemy + Alembic
+
+- Backend: FastAPI, SQLAlchemy, Alembic, Pydantic, psycopg
+- Frontend (ops): React, Recharts, React Router, Tailwind
+- Product web: React, Vite
 - Database: PostgreSQL
-- ML: Scikit-learn (weekly demand forecasting)
-- Routing: Greedy weighted heuristic + Dijkstra utility
+- Forecasting: scikit-learn and pandas
 
-## Monorepo structure
-- `frontend/` React app
-- `backend/` FastAPI app
-- `sample-data/` example CSV files
-
-## Industry-standard defaults used
-Because precise domain schema/constraints were not provided, this implementation uses common logistics defaults:
-1. Forecast target: weekly demand quantity per SKU per warehouse
-2. Forecast horizon default: 4 weeks
-3. Weather: deterministic simulated features (temperature, precipitation, disruption index)
-4. Routing objective: weighted total cost (distance/time/monetary cost)
-5. Route UI: list view + route optimizer form
-6. API versioning: `/api/v1`
-7. Auth: JWT bearer auth + role-based access control (admin/operator/viewer)
-8. Local run model: native backend/frontend + PostgreSQL (Docker or native)
-
-## Data model (implemented)
-- Warehouses: code, name, address, city, state, country, latitude, longitude, capacity_units
-- Items: sku, name, category, unit_cost, reorder_level
-- Inventory: warehouse_id, item_id, quantity_on_hand, safety_stock
-- Historical orders: order_date, warehouse_id, item_id, quantity, unit_price, customer_region, weather_* fields
-- Route schedules: route_name, schedule_date, start_warehouse_id, objective, total_distance_km, total_cost, estimated_duration_min, status
-- Route stops: sequence, warehouse_id, planned_arrival/departure, load_units
-- Shipments: shipment_no, origin/destination warehouse, sku, quantity_units, lifecycle status, delivery proof reference
-- Alerts: low-stock, delayed-shipment, and manual exception alerts with acknowledge/resolve workflow
-- Replenishment plans: generated suggestions with pending approval, approve/reject decision tracking
-
-## CSV upload formats
-
-### Orders CSV (`POST /api/v1/ingestion/orders-csv`)
-Required columns:
-- `order_date` (YYYY-MM-DD)
-- `warehouse_code` (string)
-- `sku` (string)
-- `quantity` (int)
-Optional:
-- `unit_price` (float)
-- `customer_region` (string)
-- `weather_avg_temp_c` (float)
-- `weather_precip_mm` (float)
-- `weather_disruption_index` (float 0..1)
-
-### Inventory CSV (`POST /api/v1/ingestion/inventory-csv`)
-Required columns:
-- `warehouse_code` (string)
-- `sku` (string)
-- `quantity_on_hand` (int)
-Optional:
-- `safety_stock` (int)
-
-## API highlights
-- Warehouses CRUD: `/api/v1/warehouses`
-- Items CRUD: `/api/v1/items`
-- Inventory management + overview: `/api/v1/inventory`, `/api/v1/inventory/overview`
-- Orders ingest/create/list: `/api/v1/orders`, CSV endpoints under `/api/v1/ingestion/*`
-- Forecast: `POST /api/v1/forecast/weekly-demand`
-- Route optimize + schedules: `POST /api/v1/routes/optimize`, `GET /api/v1/routes/schedules`
-- Shipment lifecycle: `GET/POST /api/v1/shipments`, `POST /api/v1/shipments/{shipment_id}/status`
-- Exception management: `GET/POST /api/v1/alerts`, `POST /api/v1/alerts/scan`, `POST /api/v1/alerts/{alert_id}/acknowledge`, `POST /api/v1/alerts/{alert_id}/resolve`
-- Planning approvals: `GET /api/v1/planning/replenishment`, `POST /api/v1/planning/replenishment/generate`, `POST /api/v1/planning/replenishment/{plan_id}/approve`, `POST /api/v1/planning/replenishment/{plan_id}/reject`
-- Health: `GET /health`
-- Readiness: `GET /api/v1/ops/ready`
-- Runtime metrics (admin-only): `GET /api/v1/ops/metrics`
-
-## Quick start (Windows + WSL)
-
-### Option A: Full Docker stack (production-style local run)
-Prerequisite: Docker Desktop with WSL integration enabled.
+## Root workspace scripts
 
 From repo root:
+
+```bash
+npm run dev:ops
+npm run dev:web
+npm run dev:desktop
+npm run build:ops
+npm run build:web
+npm run build
+npm run test:ops
+npm run lint:ops
+npm run typecheck:ops
+```
+
+## Local development
+
+### 1) Configure environment
+
 ```bash
 copy .env.example .env
-docker compose up -d
+```
+
+### 2) Start full Docker stack
+
+```bash
+docker compose up -d --build
 ```
 
 Services:
-- Frontend + reverse proxy: `http://localhost` (or `${FRONTEND_PORT}`)
-- Backend API (direct): `http://localhost:8000` (or `${BACKEND_PORT}`)
+- Operations console: `http://localhost` (or `${FRONTEND_PORT}`)
+- Product website: `http://localhost:8081` (or `${PRODUCT_WEB_PORT}`)
+- API backend: `http://localhost:8000` (or `${BACKEND_PORT}`)
 - PostgreSQL: `${POSTGRES_PORT}`
 
-### Option B: Native PostgreSQL on Windows/WSL
-Create database `supply_chain` and set `DATABASE_URL` accordingly.
+### 3) Run backend locally without Docker (optional)
 
-### Backend run
 ```bash
-cd backend
+cd apps/platform-api
 copy .env.example .env
 python -m pip install -e ".[dev]"
 alembic upgrade head
@@ -105,47 +76,132 @@ python scripts/seed_data.py
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend run
-In another terminal:
+### 4) Run operations console locally without Docker (optional)
+
 ```bash
-cd frontend
+cd apps/ops-console
 copy .env.example .env
 npm install
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-Open: `http://localhost:5173`
+### 5) Run product website locally without Docker (optional)
+
+```bash
+cd apps/product-web
+copy .env.example .env
+npm install
+npm run dev
+```
+
+### 6) Run desktop shell locally (optional)
+
+```bash
+cd apps/desktop
+npm install
+npm run start
+```
+
+The desktop package now validates and repairs Electron runtime artifacts during install and before startup.
+
+You can run a standalone runtime health check with:
+
+```bash
+npm --prefix apps/desktop run doctor
+```
+
+If your machine still reports an Electron install failure, run a clean reinstall:
+
+```bash
+npm --prefix apps/desktop remove electron
+npm --prefix apps/desktop install electron@31.0.2
+```
+
+## Product website environment variables
+
+`apps/product-web/.env.example` contains:
+
+- `VITE_DESKTOP_DOWNLOAD_URL`: desktop installer/download center URL
+- `VITE_DOCS_URL`: docs portal URL
+- `VITE_APP_CONSOLE_URL`: operations console URL
+- `VITE_PLATFORM_API_URL`: backend API base URL used by inline company signup form
+
+## Company onboarding flow
+
+1. Open product site and use the company signup form with a business email domain.
+2. Download and launch desktop app (or open ops console directly).
+3. Sign in with company credentials.
+4. Go to Account page to choose subscription tier.
+5. Add provider API keys and set the preferred provider for dashboard AI workflows.
+6. Go to CSV Upload and import, in order: warehouses, items, fleet assets (cars + drivers), inventory, orders.
+
+## API capabilities (current)
+
+Base API prefix: `/api/v1`
+
+- Auth: register/login/me/users
+- Company onboarding: `POST /auth/company-signup` (company email + workspace bootstrap)
+- Warehouses, items, inventory CRUD and overview
+- Orders ingestion and CSV uploads
+- Forecasting endpoints
+- Routing optimization and schedule views
+- Live feed, shipment lifecycle, alerts, replenishment planning
+- Operations readiness and metrics endpoints
+- Subscription management: plans listing, select tier, tenant subscription state
+- Provider key management: BYOK create/list/test/revoke with encrypted storage
+- Provider preference: set/get organization preferred AI provider key used by dashboard workflows
+- Expanded onboarding ingestion endpoints: warehouses, items, fleet assets, inventory, and orders CSV imports
 
 ## Testing
-Backend unit tests for core modules:
+
+### Backend
+
 ```bash
-cd backend
+cd apps/platform-api
 pytest -q
 ```
 
-Authentication notes:
-- `/api/v1/auth/register` is public only for the first user (bootstraps the first admin).
-- After the first user exists, only an authenticated admin can register additional users.
-- Seeded default users are created by `python scripts/seed_data.py`:
-  - `admin/admin12345`
-  - `operator/operator12345`
-  - `viewer/viewer12345`
+### Operations console
 
-## Operations
-- DB backup (PowerShell): `.\scripts\db_backup.ps1 -OutputFile backup.sql`
-- DB restore (PowerShell): `.\scripts\db_restore.ps1 -InputFile backup.sql`
-- DB backup (bash): `./scripts/db_backup.sh backup.sql`
-- DB restore (bash): `./scripts/db_restore.sh backup.sql`
-
-## Seed/demo data
-Sample CSVs are in `sample-data/`:
-- `warehouses.csv`
-- `items.csv`
-- `inventory.csv`
-- `orders.csv`
-
-Seed script:
 ```bash
-cd backend
-python3 scripts/seed_data.py
+cd apps/ops-console
+npm run test
 ```
+
+## Operations scripts
+
+- PowerShell backup: `./scripts/db_backup.ps1 -OutputFile backup.sql`
+- PowerShell restore: `./scripts/db_restore.ps1 -InputFile backup.sql`
+- Bash backup: `./scripts/db_backup.sh backup.sql`
+- Bash restore: `./scripts/db_restore.sh backup.sql`
+
+## Seed and demo data
+
+CSV examples live in `sample-data`.
+
+```bash
+cd apps/platform-api
+python scripts/seed_data.py
+```
+
+Default seeded users:
+- `admin/admin12345`
+- `operator/operator12345`
+- `viewer/viewer12345`
+
+Default seeded user emails:
+- `admin@testco.com`
+- `operator@testco.com`
+- `viewer@testco.com`
+
+Extra onboarding sample:
+- `sample-data/fleet_assets.csv`
+
+## Roadmap for desktop B2B SaaS
+
+See `docs/desktop-b2b-roadmap.md` for recommended next additions:
+
+- Multi-tenant organization model
+- BYOK API key vault and provider adapter layer
+- Desktop shell packaging and secure updates
+- Audit trails, metering, and enterprise governance

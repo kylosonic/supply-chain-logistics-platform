@@ -1,0 +1,23 @@
+{
+  "name": "supply-chain-logistics-platform",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Supply Chain Logistics Platform monorepo",
+  "workspaces": [
+    "apps/ops-console",
+    "apps/product-web",
+    "apps/desktop"
+  ],
+  "scripts": {
+    "dev:ops": "npm --prefix apps/ops-console run dev",
+    "dev:web": "npm --prefix apps/product-web run dev",
+    "dev:desktop": "npm --prefix apps/desktop run dev",
+    "build:ops": "npm --prefix apps/ops-console run build",
+    "build:web": "npm --prefix apps/product-web run build",
+    "build": "npm run build:ops && npm run build:web",
+    "doctor:desktop": "npm --prefix apps/desktop run doctor",
+    "test:ops": "npm --prefix apps/ops-console run test",
+    "lint:ops": "npm --prefix apps/ops-console run lint",
+    "typecheck:ops": "npm --prefix apps/ops-console run typecheck"
+  }
+}

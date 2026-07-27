@@ -1,0 +1,4 @@
+vehicle_code,driver_name,driver_contact,capacity_units,status
+TRUCK-1001,Nahom Bekele,+251911000001,40,active
+TRUCK-1002,Selam Tadesse,+251911000002,32,active
+TRUCK-1003,Abel Demissie,+251911000003,25,maintenance

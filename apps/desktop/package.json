@@ -1,0 +1,17 @@
+{
+  "name": "supply-chain-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/main.cjs",
+  "scripts": {
+    "postinstall": "node scripts/ensure-electron-binary.cjs",
+    "predev": "node scripts/ensure-electron-binary.cjs",
+    "dev": "electron .",
+    "prestart": "node scripts/ensure-electron-binary.cjs",
+    "start": "electron .",
+    "doctor": "node scripts/ensure-electron-binary.cjs --check"
+  },
+  "devDependencies": {
+    "electron": "^31.0.2"
+  }
+}
