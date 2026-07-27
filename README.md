@@ -32,6 +32,8 @@ Full-stack logistics platform with an operations console, API backend, and a pro
 ## Production endpoints
 
 - Product website (Vercel): https://product-web-chi.vercel.app
+- Operations console (Vercel): https://ops-console-azure.vercel.app
+- Backend API (Vercel): https://platform-api-smoky.vercel.app
 - Supabase project ref: `azljjrjatdpkcvjbpztn`
 - Supabase API base: `https://azljjrjatdpkcvjbpztn.supabase.co`
 
@@ -42,6 +44,14 @@ From repo root:
 ```bash
 npx supabase link --project-ref azljjrjatdpkcvjbpztn --password <db-password>
 npx supabase db push --linked --yes
+```
+
+Apply backend schema migrations to the same Supabase database:
+
+```bash
+cd apps/platform-api
+set DATABASE_URL=postgresql+psycopg://postgres.azljjrjatdpkcvjbpztn:<db-password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
+python -m alembic upgrade head
 ```
 
 Applied migration in this repo:
@@ -173,6 +183,7 @@ Base API prefix: `/api/v1`
 - Live feed, shipment lifecycle, alerts, replenishment planning
 - Operations readiness and metrics endpoints
 - Subscription management: plans listing, select tier, tenant subscription state
+- Usage metering: monthly task counters with threshold events at 80%, 100%, and overage, automatically recorded from route optimization delivery tasks and available via `POST /subscriptions/usage/record` and `GET /subscriptions/usage/me`
 - Provider key management: BYOK create/list/test/revoke with encrypted storage
 - Provider preference: set/get organization preferred AI provider key used by dashboard workflows
 - Expanded onboarding ingestion endpoints: warehouses, items, fleet assets, inventory, and orders CSV imports

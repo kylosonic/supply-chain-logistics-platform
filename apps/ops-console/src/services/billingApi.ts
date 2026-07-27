@@ -6,6 +6,8 @@ import type {
   ProviderPreference,
   SubscriptionPlan,
   SubscriptionTier,
+  UsageRecordResponse,
+  UsageSummary,
 } from '../types/api';
 
 export async function listPlans(): Promise<SubscriptionPlan[]> {
@@ -54,5 +56,15 @@ export async function getProviderPreference(): Promise<ProviderPreference> {
 
 export async function setProviderPreference(keyId: string): Promise<ProviderPreference> {
   const { data } = await api.post<ProviderPreference>('/providers/preference', { key_id: keyId });
+  return data;
+}
+
+export async function getCurrentUsage(): Promise<UsageSummary> {
+  const { data } = await api.get<UsageSummary>('/subscriptions/usage/me');
+  return data;
+}
+
+export async function recordUsage(units: number): Promise<UsageRecordResponse> {
+  const { data } = await api.post<UsageRecordResponse>('/subscriptions/usage/record', { units });
   return data;
 }

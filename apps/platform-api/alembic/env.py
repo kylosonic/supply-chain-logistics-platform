@@ -7,7 +7,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.db.base import Base
-from app.models import alert, fleet_asset, item, inventory, membership, order, organization, provider_key, replenishment, route, shipment, user, warehouse  # noqa: F401
+from app.models import alert, fleet_asset, item, inventory, membership, order, organization, provider_key, replenishment, route, shipment, usage_meter, user, warehouse  # noqa: F401
 
 config = context.config
 config.set_main_option('sqlalchemy.url', settings.database_url)

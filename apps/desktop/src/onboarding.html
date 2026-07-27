@@ -55,12 +55,24 @@
           </div>
         </div>
 
-        <div class="checklist" id="checklist">
-          <label class="check-item"><input type="checkbox" data-key="createdAccount" /> <span>Created company account</span></label>
-          <label class="check-item"><input type="checkbox" data-key="connectedConsole" /> <span>Connected control tower URL</span></label>
-          <label class="check-item"><input type="checkbox" data-key="invitedTeam" /> <span>Invited operators and dispatchers</span></label>
-          <label class="check-item"><input type="checkbox" data-key="importedData" /> <span>Imported fleet and order data</span></label>
+        <ol id="wizardSteps" class="wizard-steps" aria-label="Onboarding steps"></ol>
+
+        <section class="wizard-detail" aria-labelledby="stepTitle">
+          <p class="eyebrow" id="stepStage">Step 1</p>
+          <h2 id="stepTitle">Loading step...</h2>
+          <p id="stepDescription" class="subtle"></p>
+          <div id="stepActions" class="step-actions"></div>
+        </section>
+
+        <div class="wizard-nav">
+          <button id="prevStepBtn" class="btn-secondary" type="button">Back</button>
+          <button id="nextStepBtn" class="btn-primary" type="button">Next step</button>
         </div>
+
+        <section class="milestone-panel" aria-label="Milestones">
+          <h3>Milestones</h3>
+          <ul id="milestoneList"></ul>
+        </section>
 
         <div class="quick-links">
           <a href="#" id="openSignup" class="quick-link">Open company signup</a>
@@ -76,6 +88,33 @@
     <script>
       const bridge = window.freightPilotDesktop;
 
+      const STEP_DEFINITIONS = [
+        {
+          key: 'createdAccount',
+          title: 'Create your company workspace',
+          description: 'Use the signup page to create an owner account with your company email domain.',
+          actions: ['openSignup', 'markComplete'],
+        },
+        {
+          key: 'connectedConsole',
+          title: 'Validate control tower connectivity',
+          description: 'Run a connection test to confirm your ops console URL is reachable from this machine.',
+          actions: ['testConsole', 'markComplete'],
+        },
+        {
+          key: 'invitedTeam',
+          title: 'Invite operators and dispatchers',
+          description: 'Open docs and invite the initial team members who will run daily planning workflows.',
+          actions: ['openDocs', 'markComplete'],
+        },
+        {
+          key: 'importedData',
+          title: 'Import data and go live',
+          description: 'Import your warehouse, fleet, and order data, then launch the control tower window.',
+          actions: ['openDocs', 'launchConsole', 'markComplete'],
+        },
+      ];
+
       const elements = {
         opsUrl: document.getElementById('opsUrl'),
         signupUrl: document.getElementById('signupUrl'),
@@ -87,12 +126,28 @@
         progressBar: document.getElementById('progressBar'),
         progressLabel: document.getElementById('progressLabel'),
         progressTrack: document.getElementById('progressTrack'),
+        wizardSteps: document.getElementById('wizardSteps'),
+        stepStage: document.getElementById('stepStage'),
+        stepTitle: document.getElementById('stepTitle'),
+        stepDescription: document.getElementById('stepDescription'),
+        stepActions: document.getElementById('stepActions'),
+        prevStepBtn: document.getElementById('prevStepBtn'),
+        nextStepBtn: document.getElementById('nextStepBtn'),
+        milestoneList: document.getElementById('milestoneList'),
         openSignup: document.getElementById('openSignup'),
         openDocs: document.getElementById('openDocs'),
-        checklist: Array.from(document.querySelectorAll('input[type="checkbox"][data-key]')),
+      };
+
+      const onboardingDefaults = {
+        createdAccount: false,
+        connectedConsole: false,
+        invitedTeam: false,
+        importedData: false,
+        activeStep: 0,
       };
 
       let config = null;
+      let onboarding = { ...onboardingDefaults };
 
       function setStatus(message, type) {
         elements.status.textContent = message;
@@ -102,17 +157,35 @@
         }
       }
 
-      function onboardingStateFromUi() {
-        const onboarding = {};
-        elements.checklist.forEach((item) => {
-          onboarding[item.dataset.key] = item.checked;
-        });
-        return onboarding;
+      function coerceOnboarding(raw) {
+        const merged = {
+          ...onboardingDefaults,
+          ...(raw || {}),
+        };
+
+        const maxStep = STEP_DEFINITIONS.length - 1;
+        const activeStep = Number.isInteger(merged.activeStep) ? merged.activeStep : 0;
+
+        return {
+          ...merged,
+          activeStep: Math.min(Math.max(activeStep, 0), maxStep),
+        };
+      }
+
+      function buildOnboardingPayload() {
+        return {
+          ...onboarding,
+          activeStep: onboarding.activeStep,
+        };
+      }
+
+      function completedCount() {
+        return STEP_DEFINITIONS.filter((step) => onboarding[step.key]).length;
       }
 
       function applyProgress() {
-        const completed = elements.checklist.filter((item) => item.checked).length;
-        const total = elements.checklist.length;
+        const completed = completedCount();
+        const total = STEP_DEFINITIONS.length;
         const pct = Math.round((completed / total) * 100);
 
         elements.progressBar.style.width = `${pct}%`;
@@ -120,28 +193,159 @@
         elements.progressTrack.setAttribute('aria-valuenow', String(pct));
       }
 
+      function renderWizardSteps() {
+        elements.wizardSteps.innerHTML = '';
+
+        STEP_DEFINITIONS.forEach((step, index) => {
+          const item = document.createElement('li');
+          const stepBtn = document.createElement('button');
+          const status = onboarding[step.key] ? 'Done' : index === onboarding.activeStep ? 'In progress' : 'Pending';
+
+          stepBtn.type = 'button';
+          stepBtn.className = `wizard-step ${onboarding[step.key] ? 'done' : ''} ${index === onboarding.activeStep ? 'active' : ''}`;
+          stepBtn.innerHTML = `<span class="step-index">${index + 1}</span><span class="step-copy"><span>${step.title}</span><small>${status}</small></span>`;
+          stepBtn.addEventListener('click', () => {
+            onboarding.activeStep = index;
+            renderWizard();
+            persistConfig({ showMessage: false }).catch(() => {
+              setStatus('Could not persist step selection.', 'warn');
+            });
+          });
+
+          item.appendChild(stepBtn);
+          elements.wizardSteps.appendChild(item);
+        });
+      }
+
+      function renderMilestones() {
+        elements.milestoneList.innerHTML = '';
+
+        STEP_DEFINITIONS.forEach((step) => {
+          const row = document.createElement('li');
+          row.className = onboarding[step.key] ? 'milestone done' : 'milestone';
+          row.textContent = `${onboarding[step.key] ? 'Completed' : 'Pending'}: ${step.title}`;
+          elements.milestoneList.appendChild(row);
+        });
+      }
+
+      function markStepComplete(stepKey, completed) {
+        onboarding[stepKey] = completed;
+        applyProgress();
+        renderWizardSteps();
+        renderMilestones();
+        return persistConfig({ showMessage: false });
+      }
+
+      async function runConsoleConnectivityTest() {
+        await persistConfig({ showMessage: false });
+        setStatus('Testing connection...', null);
+        const result = await bridge.testConsole(elements.opsUrl.value.trim());
+        setStatus(result.message, result.ok ? 'ok' : 'warn');
+
+        if (result.ok) {
+          await markStepComplete('connectedConsole', true);
+        }
+
+        return result.ok;
+      }
+
+      function createActionButton(label, className, handler) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = className;
+        button.textContent = label;
+        button.addEventListener('click', () => {
+          Promise.resolve(handler()).catch((error) => {
+            setStatus(error instanceof Error ? error.message : 'Action failed.', 'warn');
+          });
+        });
+        return button;
+      }
+
+      function renderStepDetail() {
+        const step = STEP_DEFINITIONS[onboarding.activeStep];
+        elements.stepStage.textContent = `Step ${onboarding.activeStep + 1} of ${STEP_DEFINITIONS.length}`;
+        elements.stepTitle.textContent = step.title;
+        elements.stepDescription.textContent = step.description;
+        elements.stepActions.innerHTML = '';
+
+        if (step.actions.includes('openSignup')) {
+          elements.stepActions.appendChild(
+            createActionButton('Open signup page', 'btn-secondary', async () => {
+              await persistConfig({ showMessage: false });
+              await bridge.openExternal(elements.signupUrl.value.trim());
+              setStatus('Opened signup page in browser.', 'ok');
+            }),
+          );
+        }
+
+        if (step.actions.includes('openDocs')) {
+          elements.stepActions.appendChild(
+            createActionButton('Open docs', 'btn-secondary', async () => {
+              await persistConfig({ showMessage: false });
+              await bridge.openExternal(elements.docsUrl.value.trim());
+              setStatus('Opened docs in browser.', 'ok');
+            }),
+          );
+        }
+
+        if (step.actions.includes('testConsole')) {
+          elements.stepActions.appendChild(
+            createActionButton('Run console test', 'btn-accent', async () => {
+              await runConsoleConnectivityTest();
+            }),
+          );
+        }
+
+        if (step.actions.includes('launchConsole')) {
+          elements.stepActions.appendChild(
+            createActionButton('Launch control tower', 'btn-accent', async () => {
+              await persistConfig({ showMessage: false });
+              await bridge.launchConsole(elements.opsUrl.value.trim());
+              setStatus('Control tower opened in a new window.', 'ok');
+            }),
+          );
+        }
+
+        if (step.actions.includes('markComplete')) {
+          const markLabel = onboarding[step.key] ? 'Mark as incomplete' : 'Mark step complete';
+          elements.stepActions.appendChild(
+            createActionButton(markLabel, 'btn-primary', async () => {
+              await markStepComplete(step.key, !onboarding[step.key]);
+              renderStepDetail();
+            }),
+          );
+        }
+
+        elements.prevStepBtn.disabled = onboarding.activeStep === 0;
+        elements.nextStepBtn.disabled = onboarding.activeStep >= STEP_DEFINITIONS.length - 1;
+      }
+
+      function renderWizard() {
+        applyProgress();
+        renderWizardSteps();
+        renderMilestones();
+        renderStepDetail();
+      }
+
       function loadUiFromConfig() {
         elements.opsUrl.value = config.opsConsoleUrl || '';
         elements.signupUrl.value = config.productSignupUrl || '';
         elements.docsUrl.value = config.docsUrl || '';
-
-        elements.checklist.forEach((item) => {
-          item.checked = Boolean(config.onboarding && config.onboarding[item.dataset.key]);
-        });
-
-        applyProgress();
+        onboarding = coerceOnboarding(config.onboarding);
+        renderWizard();
       }
 
-      async function saveConfig({ showMessage = true } = {}) {
+      async function persistConfig({ showMessage = true } = {}) {
         const partial = {
           opsConsoleUrl: elements.opsUrl.value.trim(),
           productSignupUrl: elements.signupUrl.value.trim(),
           docsUrl: elements.docsUrl.value.trim(),
-          onboarding: onboardingStateFromUi(),
+          onboarding: buildOnboardingPayload(),
         };
 
         config = await bridge.saveConfig(partial);
-        loadUiFromConfig();
+        onboarding = coerceOnboarding(config.onboarding);
 
         if (showMessage) {
           setStatus('Setup saved successfully.', 'ok');
@@ -154,7 +358,7 @@
 
         elements.saveBtn.addEventListener('click', async () => {
           try {
-            await saveConfig();
+            await persistConfig();
           } catch (error) {
             setStatus(error instanceof Error ? error.message : 'Could not save setup.', 'warn');
           }
@@ -162,18 +366,7 @@
 
         elements.testBtn.addEventListener('click', async () => {
           try {
-            await saveConfig({ showMessage: false });
-            setStatus('Testing connection...', null);
-            const result = await bridge.testConsole(elements.opsUrl.value.trim());
-            setStatus(result.message, result.ok ? 'ok' : 'warn');
-
-            if (result.ok) {
-              const checkbox = document.querySelector('input[data-key="connectedConsole"]');
-              if (checkbox && !checkbox.checked) {
-                checkbox.checked = true;
-                await saveConfig({ showMessage: false });
-              }
-            }
+            await runConsoleConnectivityTest();
           } catch (error) {
             setStatus(error instanceof Error ? error.message : 'Connection test failed.', 'warn');
           }
@@ -181,7 +374,7 @@
 
         elements.launchBtn.addEventListener('click', async () => {
           try {
-            await saveConfig({ showMessage: false });
+            await persistConfig({ showMessage: false });
             await bridge.launchConsole(elements.opsUrl.value.trim());
             setStatus('Control tower opened in a new window.', 'ok');
           } catch (error) {
@@ -192,7 +385,7 @@
         elements.openSignup.addEventListener('click', async (event) => {
           event.preventDefault();
           try {
-            await saveConfig({ showMessage: false });
+            await persistConfig({ showMessage: false });
             await bridge.openExternal(elements.signupUrl.value.trim());
             setStatus('Opened company signup in your browser.', 'ok');
           } catch (error) {
@@ -203,7 +396,7 @@
         elements.openDocs.addEventListener('click', async (event) => {
           event.preventDefault();
           try {
-            await saveConfig({ showMessage: false });
+            await persistConfig({ showMessage: false });
             await bridge.openExternal(elements.docsUrl.value.trim());
             setStatus('Opened documentation in your browser.', 'ok');
           } catch (error) {
@@ -211,11 +404,30 @@
           }
         });
 
-        elements.checklist.forEach((item) => {
-          item.addEventListener('change', async () => {
-            applyProgress();
-            await saveConfig({ showMessage: false });
-          });
+        elements.prevStepBtn.addEventListener('click', async () => {
+          if (onboarding.activeStep === 0) {
+            return;
+          }
+
+          onboarding.activeStep -= 1;
+          renderWizard();
+          await persistConfig({ showMessage: false });
+        });
+
+        elements.nextStepBtn.addEventListener('click', async () => {
+          const currentStep = STEP_DEFINITIONS[onboarding.activeStep];
+          if (!onboarding[currentStep.key]) {
+            setStatus('Complete this milestone before moving to the next step.', 'warn');
+            return;
+          }
+
+          if (onboarding.activeStep >= STEP_DEFINITIONS.length - 1) {
+            return;
+          }
+
+          onboarding.activeStep += 1;
+          renderWizard();
+          await persistConfig({ showMessage: false });
         });
       }
 

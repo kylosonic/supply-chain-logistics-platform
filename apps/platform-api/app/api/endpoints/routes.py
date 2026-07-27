@@ -13,6 +13,7 @@ from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.schemas.auth import UserRole
 from app.schemas.route import RouteOptimizeRequest, RouteOptimizeResponse, RouteScheduleDetail, RouteScheduleSummary, RouteStopOut
+from app.services.metering import record_usage_for_user_membership
 from app.services.routing import Delivery, Node, optimize_route_greedy
 
 router = APIRouter()
@@ -22,7 +23,7 @@ router = APIRouter()
 def optimize_routes(
     payload: RouteOptimizeRequest,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     warehouses = db.execute(select(Warehouse)).scalars().all()
     if not warehouses:
@@ -43,6 +44,12 @@ def optimize_routes(
         speed_kmh=payload.speed_kmh,
         cost_per_km=payload.cost_per_km,
         weights=payload.weights.model_dump(),
+    )
+
+    usage_recorded = record_usage_for_user_membership(
+        db,
+        user=actor,
+        units=len(payload.deliveries),
     )
 
     if payload.persist_schedule:
@@ -79,6 +86,8 @@ def optimize_routes(
             )
             db.add(rs)
 
+        db.commit()
+    elif usage_recorded:
         db.commit()
 
     return RouteOptimizeResponse(

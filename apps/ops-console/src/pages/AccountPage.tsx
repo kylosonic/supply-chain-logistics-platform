@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 
 import {
   createProviderKey,
+  getCurrentUsage,
   getCurrentSubscription,
   getProviderPreference,
   listPlans,
@@ -12,7 +13,8 @@ import {
   setProviderPreference,
   testProviderKey,
 } from '../services/billingApi';
-import type { CurrentSubscription, ProviderKey, SubscriptionPlan, SubscriptionTier } from '../types/api';
+import { includedTasksLabel, overageRateLabel, usageMetricLabel, usageProgressPercent } from './accountUsageUtils';
+import type { CurrentSubscription, ProviderKey, SubscriptionPlan, SubscriptionTier, UsageSummary } from '../types/api';
 
 function priceText(plan: SubscriptionPlan): string {
   if (plan.monthly_price_usd == null) {
@@ -24,6 +26,7 @@ function priceText(plan: SubscriptionPlan): string {
 export function AccountPage() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
+  const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [keys, setKeys] = useState<ProviderKey[]>([]);
   const [providerName, setProviderName] = useState('openai');
   const [keyName, setKeyName] = useState('primary');
@@ -41,10 +44,18 @@ export function AccountPage() {
       listProviderKeys(),
       getProviderPreference(),
     ]);
+
     setPlans(plansData);
     setSubscription(subData);
     setKeys(keysData);
     setPreferredKeyId(preference.key_id || '');
+
+    try {
+      const usageData = await getCurrentUsage();
+      setUsage(usageData);
+    } catch {
+      setUsage(null);
+    }
   }
 
   useEffect(() => {
@@ -128,10 +139,23 @@ export function AccountPage() {
     }
   }
 
+  async function onRefreshUsage() {
+    setStatusMessage(null);
+    try {
+      const usageData = await getCurrentUsage();
+      setUsage(usageData);
+    } catch {
+      setStatusMessage('Failed to refresh usage data.');
+    }
+  }
+
   const tierLabel = useMemo(() => {
     if (!subscription) return 'Unknown';
     return `${subscription.tier} (${subscription.status})`;
   }, [subscription]);
+
+  const progressPercent = useMemo(() => usageProgressPercent(usage), [usage]);
+  const metricLabel = useMemo(() => usageMetricLabel(usage), [usage]);
 
   if (loading) {
     return <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">Loading account settings...</div>;
@@ -146,6 +170,75 @@ export function AccountPage() {
           <p className="font-medium text-slate-800">Current plan: {tierLabel}</p>
           <p className="text-slate-600">Organization: {subscription?.organization_name ?? 'Unknown'}</p>
         </div>
+
+        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Usage meter</p>
+              <p className="text-xs text-slate-600">{metricLabel}</p>
+            </div>
+            <button
+              type="button"
+              onClick={onRefreshUsage}
+              className="rounded border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
+            >
+              Refresh usage
+            </button>
+          </div>
+
+          {usage ? (
+            <div className="mt-3 space-y-3">
+              <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-3">
+                <p>
+                  Period: <span className="font-semibold text-slate-800">{usage.period_start}</span> to{' '}
+                  <span className="font-semibold text-slate-800">{usage.period_end}</span>
+                </p>
+                <p>
+                  Used: <span className="font-semibold text-slate-800">{usage.used_units.toLocaleString()}</span>
+                </p>
+                <p>
+                  Included:{' '}
+                  <span className="font-semibold text-slate-800">
+                    {usage.included_units == null ? 'Unlimited' : usage.included_units.toLocaleString()}
+                  </span>
+                </p>
+              </div>
+
+              {usage.included_units != null ? (
+                <>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                    <div className="h-full bg-slate-900" style={{ width: `${progressPercent}%` }} />
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    Utilization: <span className="font-semibold text-slate-800">{usage.utilization_percent ?? 0}%</span>
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-slate-600">No monthly cap on this plan.</p>
+              )}
+
+              <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+                <p>
+                  Overage units: <span className="font-semibold text-slate-800">{usage.overage_units.toLocaleString()}</span>
+                </p>
+                <p>
+                  Estimated overage cost:{' '}
+                  <span className="font-semibold text-slate-800">
+                    {usage.estimated_overage_cost_usd == null
+                      ? 'N/A'
+                      : `$${usage.estimated_overage_cost_usd.toLocaleString()}`}
+                  </span>
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-slate-600">
+              Usage endpoint unavailable. Run the latest backend migration and refresh.
+            </p>
+          )}
+
+        </div>
+
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           {plans.map((plan) => (
             <div key={plan.tier} className="rounded-xl border border-slate-200 p-4">
@@ -153,6 +246,12 @@ export function AccountPage() {
               <p className="text-sm text-slate-600">{priceText(plan)}</p>
               <p className="mt-2 text-xs text-slate-500">Seats: {plan.seat_limit ?? 'Unlimited'}</p>
               <p className="text-xs text-slate-500">Vehicles: {plan.vehicle_limit ?? 'Unlimited'}</p>
+              <p className="text-xs text-slate-500">
+                Included tasks: {includedTasksLabel(plan)}
+              </p>
+              <p className="text-xs text-slate-500">
+                Overage rate: {overageRateLabel(plan)}
+              </p>
               <button
                 type="button"
                 disabled={currentTier === plan.tier}

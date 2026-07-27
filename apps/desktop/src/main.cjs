@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const DEFAULT_CONFIG = {
-  opsConsoleUrl: process.env.OPS_CONSOLE_URL || 'http://localhost:5173/login',
+  opsConsoleUrl: process.env.OPS_CONSOLE_URL || 'https://ops-console-azure.vercel.app/login',
   productSignupUrl: process.env.PRODUCT_SIGNUP_URL || 'https://product-web-chi.vercel.app#signup',
   docsUrl: process.env.DOCS_URL || 'https://product-web-chi.vercel.app',
   onboarding: {
@@ -11,6 +11,7 @@ const DEFAULT_CONFIG = {
     connectedConsole: false,
     invitedTeam: false,
     importedData: false,
+    activeStep: 0,
   },
 };
 

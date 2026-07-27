@@ -132,6 +132,8 @@ export type SubscriptionPlan = {
   monthly_price_usd: number | null;
   seat_limit: number | null;
   vehicle_limit: number | null;
+  included_tasks_per_month: number | null;
+  overage_unit_price_usd: number | null;
   includes_sso: boolean;
   includes_priority_support: boolean;
 };
@@ -144,6 +146,36 @@ export type CurrentSubscription = {
   preferred_ai_provider: string | null;
   preferred_ai_key_id: string | null;
   updated_at: string | null;
+};
+
+export type UsageMetric = 'delivery_tasks';
+
+export type UsageSummary = {
+  metric: UsageMetric;
+  period_start: string;
+  period_end: string;
+  included_units: number | null;
+  used_units: number;
+  overage_units: number;
+  utilization_percent: number | null;
+  estimated_overage_cost_usd: number | null;
+};
+
+export type UsageThresholdLevel = 'approaching_limit' | 'limit_reached' | 'overage';
+
+export type UsageThresholdEvent = {
+  metric: UsageMetric;
+  tier: SubscriptionTier;
+  level: UsageThresholdLevel;
+  usage_units: number;
+  included_units: number;
+  utilization_percent: number;
+  message: string;
+};
+
+export type UsageRecordResponse = {
+  usage: UsageSummary;
+  events: UsageThresholdEvent[];
 };
 
 export type ProviderKey = {

@@ -206,28 +206,136 @@ button,
   transition: width 0.28s ease;
 }
 
-.checklist {
-  display: grid;
-  gap: 10px;
+.eyebrow {
+  margin: 0;
+  color: #5f7790;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-.check-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.wizard-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.wizard-steps li {
+  margin: 0;
+}
+
+.wizard-step {
+  width: 100%;
+  background: #fff;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px 12px;
-  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-2);
+  text-align: left;
 }
 
-.check-item span {
+.wizard-step.active {
+  border-color: #2f5b8f;
+  background: #f0f6ff;
+}
+
+.wizard-step.done {
+  border-color: #98cfb0;
+  background: #eefaf2;
+}
+
+.step-index {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #dde7f2;
+  color: #1f3a57;
+}
+
+.wizard-step.done .step-index {
+  background: #c8ecd7;
+  color: #12623a;
+}
+
+.step-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.step-copy small {
+  color: var(--ink-3);
+}
+
+.wizard-detail {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px;
+}
+
+.wizard-detail h2 {
+  margin: 8px 0 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+}
+
+.step-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wizard-nav {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wizard-nav button[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.milestone-panel {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: #f9f4eb;
+}
+
+.milestone-panel h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.milestone-panel ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.milestone {
   color: var(--ink-2);
 }
 
-.check-item input {
-  width: 18px;
-  height: 18px;
+.milestone.done {
+  color: var(--good);
+  font-weight: 600;
 }
 
 .quick-links {

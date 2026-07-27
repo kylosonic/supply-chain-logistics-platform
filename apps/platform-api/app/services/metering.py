@@ -1,0 +1,72 @@
+from __future__ import annotations
+
+from datetime import UTC, date, datetime, timedelta
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.membership import OrganizationMembership
+from app.models.usage_meter import OrganizationUsageCounter
+from app.models.user import User
+
+
+def current_usage_window(reference_day: date) -> tuple[date, date]:
+    period_start = reference_day.replace(day=1)
+    next_month_start = (period_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    period_end = next_month_start - timedelta(days=1)
+    return period_start, period_end
+
+
+def record_usage_for_user_membership(
+    db: Session,
+    user: User,
+    *,
+    metric: str = 'delivery_tasks',
+    units: int = 1,
+    occurred_at: datetime | None = None,
+) -> bool:
+    if units <= 0:
+        return False
+
+    membership = db.execute(
+        select(OrganizationMembership)
+        .where(
+            OrganizationMembership.user_id == user.id,
+            OrganizationMembership.is_active.is_(True),
+        )
+        .order_by(OrganizationMembership.created_at.asc())
+    ).scalar_one_or_none()
+    if not membership:
+        return False
+
+    event_time = occurred_at or datetime.now(UTC)
+    if event_time.tzinfo is None:
+        event_time = event_time.replace(tzinfo=UTC)
+    else:
+        event_time = event_time.astimezone(UTC)
+
+    period_start, period_end = current_usage_window(event_time.date())
+
+    counter = db.execute(
+        select(OrganizationUsageCounter).where(
+            OrganizationUsageCounter.organization_id == membership.organization_id,
+            OrganizationUsageCounter.metric == metric,
+            OrganizationUsageCounter.period_start == period_start,
+        )
+    ).scalar_one_or_none()
+
+    if not counter:
+        counter = OrganizationUsageCounter(
+            organization_id=membership.organization_id,
+            metric=metric,
+            period_start=period_start,
+            period_end=period_end,
+            used_units=0,
+        )
+        db.add(counter)
+
+    counter.used_units += units
+    counter.period_end = period_end
+    counter.updated_at = datetime.now(UTC)
+    db.add(counter)
+    return True
