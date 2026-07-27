@@ -1,0 +1,4 @@
+code,name,address,city,state,country,latitude,longitude,capacity_units
+WH-001,Addis Central Warehouse,Bole Road,Addis Ababa,Addis Ababa,Ethiopia,8.9806,38.7578,5000
+WH-002,North Distribution Hub,Arat Kilo,Addis Ababa,Addis Ababa,Ethiopia,9.0360,38.7620,3500
+WH-003,East Fulfillment Center,Kality,Addis Ababa,Addis Ababa,Ethiopia,8.9158,38.8219,4000

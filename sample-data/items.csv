@@ -1,0 +1,4 @@
+sku,name,category,unit_cost,reorder_level
+SKU-001,Industrial Bearings,Mechanical,35.5,120
+SKU-002,Hydraulic Pumps,Mechanical,120.0,80
+SKU-003,Electrical Relays,Electrical,8.75,300
