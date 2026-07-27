@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
     database_url: str = 'postgresql+psycopg://postgres:postgres@localhost:5432/supply_chain'
-    jwt_secret_key: str = 'change-me-in-production'
+    jwt_secret_key: str = 'change-me-in-production-minimum-32-bytes'
     jwt_algorithm: str = 'HS256'
     jwt_access_token_expire_minutes: int = 120
     password_salt: str = 'supply-chain-static-salt-change-me'
