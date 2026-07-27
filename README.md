@@ -29,6 +29,31 @@ Full-stack logistics platform with an operations console, API backend, and a pro
 - Database: PostgreSQL
 - Forecasting: scikit-learn and pandas
 
+## Production endpoints
+
+- Product website (Vercel): https://product-web-chi.vercel.app
+- Supabase project ref: `azljjrjatdpkcvjbpztn`
+- Supabase API base: `https://azljjrjatdpkcvjbpztn.supabase.co`
+
+## Supabase CLI workflow (database + auth)
+
+From repo root:
+
+```bash
+npx supabase link --project-ref azljjrjatdpkcvjbpztn --password <db-password>
+npx supabase db push --linked --yes
+```
+
+Applied migration in this repo:
+
+- `supabase/migrations/20260727153410_company_onboarding_and_profiles.sql`
+
+This migration provisions:
+
+- `public.company_profiles` table for company onboarding state
+- Row-level security policies tied to `auth.uid()`
+- Update timestamp trigger for profile mutations
+
 ## Root workspace scripts
 
 From repo root:

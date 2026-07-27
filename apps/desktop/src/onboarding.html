@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FreightPilot Desktop Setup</title>
+    <link rel="stylesheet" href="./onboarding.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <section class="panel left-panel" aria-labelledby="setup-heading">
+        <div class="brand-row">
+          <div class="brand-mark" aria-hidden="true">FP</div>
+          <div>
+            <div class="brand-text">FreightPilot Desktop</div>
+            <p class="subtle">Launch-ready setup for dispatch teams in under five minutes.</p>
+          </div>
+        </div>
+
+        <h1 id="setup-heading" class="section-title">Workspace Connection</h1>
+        <p class="subtle">Set your production URLs once. The app remembers them for every relaunch.</p>
+
+        <div class="field-grid">
+          <label>
+            Ops console URL
+            <input id="opsUrl" type="url" autocomplete="off" placeholder="https://your-console.example.com/login" />
+          </label>
+          <label>
+            Company signup URL
+            <input id="signupUrl" type="url" autocomplete="off" placeholder="https://your-product-site.example.com#signup" />
+          </label>
+          <label>
+            Documentation URL
+            <input id="docsUrl" type="url" autocomplete="off" placeholder="https://docs.example.com" />
+          </label>
+        </div>
+
+        <div class="btn-row">
+          <button id="saveBtn" class="btn-primary" type="button">Save setup</button>
+          <button id="testBtn" class="btn-secondary" type="button">Test console connection</button>
+          <button id="launchBtn" class="btn-accent" type="button">Open control tower</button>
+        </div>
+
+        <p id="status" class="status" aria-live="polite"></p>
+      </section>
+
+      <aside class="panel right-panel" aria-labelledby="onboarding-heading">
+        <div class="progress-wrap">
+          <div class="progress-head">
+            <span id="onboarding-heading">Onboarding progress</span>
+            <span id="progressLabel">0 / 4 complete</span>
+          </div>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+        </div>
+
+        <div class="checklist" id="checklist">
+          <label class="check-item"><input type="checkbox" data-key="createdAccount" /> <span>Created company account</span></label>
+          <label class="check-item"><input type="checkbox" data-key="connectedConsole" /> <span>Connected control tower URL</span></label>
+          <label class="check-item"><input type="checkbox" data-key="invitedTeam" /> <span>Invited operators and dispatchers</span></label>
+          <label class="check-item"><input type="checkbox" data-key="importedData" /> <span>Imported fleet and order data</span></label>
+        </div>
+
+        <div class="quick-links">
+          <a href="#" id="openSignup" class="quick-link">Open company signup</a>
+          <a href="#" id="openDocs" class="quick-link">Open implementation docs</a>
+        </div>
+
+        <div class="tip">
+          Pro tip: have one dispatcher run this setup, then distribute the same console URL to every team machine.
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      const bridge = window.freightPilotDesktop;
+
+      const elements = {
+        opsUrl: document.getElementById('opsUrl'),
+        signupUrl: document.getElementById('signupUrl'),
+        docsUrl: document.getElementById('docsUrl'),
+        saveBtn: document.getElementById('saveBtn'),
+        testBtn: document.getElementById('testBtn'),
+        launchBtn: document.getElementById('launchBtn'),
+        status: document.getElementById('status'),
+        progressBar: document.getElementById('progressBar'),
+        progressLabel: document.getElementById('progressLabel'),
+        progressTrack: document.getElementById('progressTrack'),
+        openSignup: document.getElementById('openSignup'),
+        openDocs: document.getElementById('openDocs'),
+        checklist: Array.from(document.querySelectorAll('input[type="checkbox"][data-key]')),
+      };
+
+      let config = null;
+
+      function setStatus(message, type) {
+        elements.status.textContent = message;
+        elements.status.classList.remove('ok', 'warn');
+        if (type) {
+          elements.status.classList.add(type);
+        }
+      }
+
+      function onboardingStateFromUi() {
+        const onboarding = {};
+        elements.checklist.forEach((item) => {
+          onboarding[item.dataset.key] = item.checked;
+        });
+        return onboarding;
+      }
+
+      function applyProgress() {
+        const completed = elements.checklist.filter((item) => item.checked).length;
+        const total = elements.checklist.length;
+        const pct = Math.round((completed / total) * 100);
+
+        elements.progressBar.style.width = `${pct}%`;
+        elements.progressLabel.textContent = `${completed} / ${total} complete`;
+        elements.progressTrack.setAttribute('aria-valuenow', String(pct));
+      }
+
+      function loadUiFromConfig() {
+        elements.opsUrl.value = config.opsConsoleUrl || '';
+        elements.signupUrl.value = config.productSignupUrl || '';
+        elements.docsUrl.value = config.docsUrl || '';
+
+        elements.checklist.forEach((item) => {
+          item.checked = Boolean(config.onboarding && config.onboarding[item.dataset.key]);
+        });
+
+        applyProgress();
+      }
+
+      async function saveConfig({ showMessage = true } = {}) {
+        const partial = {
+          opsConsoleUrl: elements.opsUrl.value.trim(),
+          productSignupUrl: elements.signupUrl.value.trim(),
+          docsUrl: elements.docsUrl.value.trim(),
+          onboarding: onboardingStateFromUi(),
+        };
+
+        config = await bridge.saveConfig(partial);
+        loadUiFromConfig();
+
+        if (showMessage) {
+          setStatus('Setup saved successfully.', 'ok');
+        }
+      }
+
+      async function initialize() {
+        config = await bridge.getConfig();
+        loadUiFromConfig();
+
+        elements.saveBtn.addEventListener('click', async () => {
+          try {
+            await saveConfig();
+          } catch (error) {
+            setStatus(error instanceof Error ? error.message : 'Could not save setup.', 'warn');
+          }
+        });
+
+        elements.testBtn.addEventListener('click', async () => {
+          try {
+            await saveConfig({ showMessage: false });
+            setStatus('Testing connection...', null);
+            const result = await bridge.testConsole(elements.opsUrl.value.trim());
+            setStatus(result.message, result.ok ? 'ok' : 'warn');
+
+            if (result.ok) {
+              const checkbox = document.querySelector('input[data-key="connectedConsole"]');
+              if (checkbox && !checkbox.checked) {
+                checkbox.checked = true;
+                await saveConfig({ showMessage: false });
+              }
+            }
+          } catch (error) {
+            setStatus(error instanceof Error ? error.message : 'Connection test failed.', 'warn');
+          }
+        });
+
+        elements.launchBtn.addEventListener('click', async () => {
+          try {
+            await saveConfig({ showMessage: false });
+            await bridge.launchConsole(elements.opsUrl.value.trim());
+            setStatus('Control tower opened in a new window.', 'ok');
+          } catch (error) {
+            setStatus(error instanceof Error ? error.message : 'Could not open control tower.', 'warn');
+          }
+        });
+
+        elements.openSignup.addEventListener('click', async (event) => {
+          event.preventDefault();
+          try {
+            await saveConfig({ showMessage: false });
+            await bridge.openExternal(elements.signupUrl.value.trim());
+            setStatus('Opened company signup in your browser.', 'ok');
+          } catch (error) {
+            setStatus(error instanceof Error ? error.message : 'Could not open signup URL.', 'warn');
+          }
+        });
+
+        elements.openDocs.addEventListener('click', async (event) => {
+          event.preventDefault();
+          try {
+            await saveConfig({ showMessage: false });
+            await bridge.openExternal(elements.docsUrl.value.trim());
+            setStatus('Opened documentation in your browser.', 'ok');
+          } catch (error) {
+            setStatus(error instanceof Error ? error.message : 'Could not open docs URL.', 'warn');
+          }
+        });
+
+        elements.checklist.forEach((item) => {
+          item.addEventListener('change', async () => {
+            applyProgress();
+            await saveConfig({ showMessage: false });
+          });
+        });
+      }
+
+      initialize().catch((error) => {
+        setStatus(error instanceof Error ? error.message : 'Could not initialize setup.', 'warn');
+      });
+    </script>
+  </body>
+</html>

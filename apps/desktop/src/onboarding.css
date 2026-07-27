@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap');
+
+:root {
+  --bg-0: #f4efe6;
+  --bg-1: #eadfce;
+  --ink-1: #1e2a33;
+  --ink-2: #344958;
+  --ink-3: #607184;
+  --card: #fffdf8;
+  --line: #d8cdb9;
+  --good: #1c8b52;
+  --warn: #ab3b2e;
+  --cta: #2f5b8f;
+  --cta-ink: #f6f8fb;
+  --accent: #d18031;
+  --shadow: 0 20px 40px rgba(23, 38, 53, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+  color: var(--ink-1);
+  background:
+    radial-gradient(1200px 700px at 85% 0%, rgba(209, 128, 49, 0.18), transparent 65%),
+    radial-gradient(900px 500px at 10% 100%, rgba(47, 91, 143, 0.2), transparent 65%),
+    linear-gradient(135deg, var(--bg-0), var(--bg-1));
+}
+
+body {
+  padding: 28px;
+}
+
+.app-shell {
+  max-width: 1260px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 24px;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+.left-panel {
+  padding: 28px;
+}
+
+.right-panel {
+  padding: 24px;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(140deg, #2f5b8f, #24456b);
+}
+
+.brand-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.subtle {
+  color: var(--ink-3);
+  margin: 0 0 18px;
+}
+
+.section-title {
+  margin: 24px 0 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+}
+
+.field-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+input[type='url'] {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--ink-1);
+  background: #fff;
+}
+
+input[type='url']:focus,
+button:focus-visible,
+a:focus-visible,
+input[type='checkbox']:focus-visible {
+  outline: 3px solid rgba(47, 91, 143, 0.35);
+  outline-offset: 2px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+button,
+.quick-link {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--cta), #264b74);
+  color: var(--cta-ink);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--ink-2);
+  border-color: var(--line);
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent), #b26824);
+  color: #fff;
+}
+
+.status {
+  margin-top: 12px;
+  min-height: 22px;
+  font-weight: 600;
+}
+
+.status.ok {
+  color: var(--good);
+}
+
+.status.warn {
+  color: var(--warn);
+}
+
+.progress-wrap {
+  background: #f7f1e7;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #e8dcc8;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #2f5b8f, #d18031);
+  transition: width 0.28s ease;
+}
+
+.checklist {
+  display: grid;
+  gap: 10px;
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.check-item span {
+  color: var(--ink-2);
+}
+
+.check-item input {
+  width: 18px;
+  height: 18px;
+}
+
+.quick-links {
+  margin-top: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.quick-link {
+  display: block;
+  border-color: var(--line);
+  color: var(--ink-2);
+  background: #fff;
+}
+
+.tip {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8f2ea;
+  border: 1px dashed #d7bfa0;
+  color: #6f5a43;
+  line-height: 1.4;
+}
+
+@media (max-width: 1060px) {
+  body {
+    padding: 16px;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+}

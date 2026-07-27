@@ -83,14 +83,22 @@ export default function App() {
     setStatusMessage(null);
     setIsSubmitting(true);
     try {
-      await companySignup({
+      const result = await companySignup({
         company_name: companyName,
         company_email: companyEmail,
         password,
         full_name: fullName || undefined,
         subscription_tier: tier,
       });
-      setStatusMessage('Company account created. You can now sign in from the desktop app or ops console.');
+
+      if (result.email_verification_required) {
+        setStatusMessage(
+          'Account created. Check your email to verify your account, then sign in from the desktop app or ops console.',
+        );
+      } else {
+        setStatusMessage('Company account created. You can now sign in from the desktop app or ops console.');
+      }
+
       setCompanyName('');
       setCompanyEmail('');
       setFullName('');
