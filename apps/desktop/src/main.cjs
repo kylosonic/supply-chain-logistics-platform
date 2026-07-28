@@ -11,6 +11,10 @@ const DEFAULT_CONFIG = {
     connectedConsole: false,
     invitedTeam: false,
     importedData: false,
+    launchedLive: false,
+    roleDispatcherReady: false,
+    roleDataReady: false,
+    roleSecurityReady: false,
     activeStep: 0,
   },
 };

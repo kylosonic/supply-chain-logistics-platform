@@ -2,10 +2,27 @@ import { FormEvent, useMemo, useState } from 'react';
 
 import { companySignup, type SignupTier } from './services';
 
-type Feature = {
+type Capability = {
   title: string;
   detail: string;
   impact: string;
+};
+
+type WorkflowPhase = {
+  title: string;
+  detail: string;
+  actions: string[];
+};
+
+type BenchmarkSignal = {
+  company: string;
+  signal: string;
+  pattern: string;
+};
+
+type TrustMarker = {
+  title: string;
+  detail: string;
 };
 
 type Plan = {
@@ -13,9 +30,7 @@ type Plan = {
   name: string;
   price: string;
   summary: string;
-  bulletA: string;
-  bulletB: string;
-  bulletC: string;
+  bullets: string[];
   monthlyPriceUsd: number | null;
 };
 
@@ -26,24 +41,89 @@ type OutcomeTarget = {
   impact: string;
 };
 
-const features: Feature[] = [
+const capabilities: Capability[] = [
   {
-    title: 'Risk-aware route optimization',
+    title: 'Decision control tower',
     detail:
-      'Blend live weather, geopolitical disruption, and regional congestion signals to assign safer and faster truck routes.',
-    impact: 'Reduce late deliveries during disruptions',
+      'Unify weather risk, inventory pressure, and route constraints into one desktop-first command surface built for dispatchers and operations leads.',
+    impact: 'Fewer context switches when disruption windows are short.',
   },
   {
-    title: 'Bring your own AI provider',
+    title: 'Bring-your-own AI architecture',
     detail:
-      'Each company can plug in its own model provider and API keys for forecasting and route intelligence.',
-    impact: 'Keep model strategy under your control',
+      'Keep your model strategy in your own hands. Plug in provider keys, rotate credentials safely, and route workloads by role and policy.',
+    impact: 'Control cost, governance, and provider portability.',
   },
   {
-    title: 'Control tower dashboards',
+    title: 'Operational cash-flow visibility',
     detail:
-      'Track fleet performance, inventory health, and exception alerts from one desktop-first operations workspace.',
-    impact: 'Shorten decision cycles for dispatch teams',
+      'Tie route execution quality to margin-sensitive metrics like failed-delivery loss, exception labor, and avoidable overage in one view.',
+    impact: 'Prioritize actions that protect contribution margin first.',
+  },
+];
+
+const workflow: WorkflowPhase[] = [
+  {
+    title: 'Detect',
+    detail: 'Stream incoming disruptions into a single queue with ETA confidence, risk category, and recommended owner.',
+    actions: ['Live feed ingestion', 'Exception triage', 'Confidence scoring'],
+  },
+  {
+    title: 'Decide',
+    detail: 'Run route scenarios with constraints and expected cost impact before committing dispatch changes.',
+    actions: ['Scenario comparison', 'Task-weighted optimization', 'Margin impact preview'],
+  },
+  {
+    title: 'Act',
+    detail: 'Execute playbooks, notify stakeholders, and track outcomes with an auditable timeline per decision.',
+    actions: ['Owner handoff', 'Customer notification', 'Post-action audit trail'],
+  },
+];
+
+const benchmarkSignals: BenchmarkSignal[] = [
+  {
+    company: 'Onfleet',
+    signal: 'Publishes 400M+ deliveries and outcome benchmarks like 99% on-time and 45% fuel savings from optimized delivery operations.',
+    pattern: 'Leads with quantifiable proof, then demonstrates operational modules.',
+  },
+  {
+    company: 'project44',
+    signal: 'Shows large-scale evidence: 3.7T data points annually, 700M+ daily events, and customer cost-avoidance examples such as $16M.',
+    pattern: 'Pairs network scale with hard financial outcomes per use case.',
+  },
+  {
+    company: 'FourKites',
+    signal: 'Frames autonomous resolution with 85% self-resolved exceptions and a 1.1M+ partner network footprint.',
+    pattern: 'Positions AI as an execution workforce, not just analytics.',
+  },
+  {
+    company: 'Route4Me',
+    signal: 'Anchors trust with 3B+ miles optimized, 30M+ routes planned, and extensive category social proof.',
+    pattern: 'Uses scale metrics plus broad industry case coverage to reduce buyer risk.',
+  },
+  {
+    company: 'FarEye',
+    signal: 'Highlights enterprise outcomes including 36% growth in case narratives and measurable labor savings stories.',
+    pattern: 'Combines transformation language with concrete customer wins.',
+  },
+];
+
+const trustMarkers: TrustMarker[] = [
+  {
+    title: 'Tenant-level boundaries',
+    detail: 'Company-scoped isolation across users, operations data, and provider credentials.',
+  },
+  {
+    title: 'Encrypted key lifecycle',
+    detail: 'Credential masking, secure storage, and revoke or rotate controls for incident response.',
+  },
+  {
+    title: 'Action audit timeline',
+    detail: 'Trace who changed what, when it changed, and which decision was affected.',
+  },
+  {
+    title: 'Role-aware access',
+    detail: 'Least-privilege flows for admins, dispatchers, operators, and external collaborators.',
   },
 ];
 
@@ -52,30 +132,24 @@ const plans: Plan[] = [
     tier: 'starter',
     name: 'Starter',
     price: '$399/mo',
-    summary: 'For small regional fleets and single dispatch teams.',
-    bulletA: 'Up to 25 active vehicles',
-    bulletB: '3 workspace users',
-    bulletC: '2,500 optimized tasks per month, then usage-based overage',
+    summary: 'Single-region teams proving first route margin improvements.',
+    bullets: ['Up to 25 active vehicles', '3 workspace users', '2,500 optimized tasks per month'],
     monthlyPriceUsd: 399,
   },
   {
     tier: 'scale',
     name: 'Scale',
     price: '$1,290/mo',
-    summary: 'For multi-region logistics operations with live risk feeds.',
-    bulletA: 'Up to 250 active vehicles',
-    bulletB: '20 workspace users',
-    bulletC: '5,000 optimized tasks per month with workflow automations',
+    summary: 'Multi-region operations that need exception playbooks and workflow automation.',
+    bullets: ['Up to 250 active vehicles', '20 workspace users', '5,000 optimized tasks per month'],
     monthlyPriceUsd: 1290,
   },
   {
     tier: 'enterprise',
     name: 'Enterprise',
     price: 'Custom',
-    summary: 'For global networks with governance and dedicated infrastructure.',
-    bulletA: 'Unlimited vehicles and regions',
-    bulletB: 'Dedicated onboarding pod',
-    bulletC: 'Private network deployment options',
+    summary: 'Global programs with governance, dedicated support, and private deployment needs.',
+    bullets: ['Unlimited vehicles and regions', 'Dedicated onboarding pod', 'Private network deployment options'],
     monthlyPriceUsd: null,
   },
 ];
@@ -83,22 +157,29 @@ const plans: Plan[] = [
 const outcomeTargets: OutcomeTarget[] = [
   {
     title: 'Exception response speed',
-    baseline: 'Reactive email and spreadsheet triage',
-    target: 'Control tower alerts with guided owner actions',
-    impact: 'Reduce SLA misses from unresolved disruptions',
+    baseline: 'Email-heavy, reactive triage and unclear ownership.',
+    target: 'Prioritized queue with recommended owners and suggested action paths.',
+    impact: 'Fewer unattended disruptions and lower SLA breach rates.',
   },
   {
     title: 'Route margin visibility',
-    baseline: 'Cost and ETA tracked in separate systems',
-    target: 'Dispatch, route cost, and alert data in one workspace',
-    impact: 'See profitable vs loss-making routes earlier',
+    baseline: 'Routing, cost, and customer feedback spread across disconnected tools.',
+    target: 'Single operational view across route outcomes, cost drift, and exception burden.',
+    impact: 'Faster intervention on loss-making execution patterns.',
   },
   {
-    title: 'Onboarding cycle time',
-    baseline: 'Manual setup across multiple tools',
-    target: 'Company signup, desktop setup, and team launch workflow',
-    impact: 'Get new operations teams active faster',
+    title: 'Go-live readiness',
+    baseline: 'Manual setup checklists with inconsistent handoffs across teams.',
+    target: 'Guided desktop onboarding with explicit role milestones and launch checkpoints.',
+    impact: 'Shorter time from contract to first successful dispatch cycle.',
   },
+];
+
+const launchChecklist = [
+  'Create your company workspace and owner account',
+  'Install desktop launch cockpit for dispatch workstations',
+  'Connect provider keys and assign team roles',
+  'Run dry-run route simulation and move to live operations',
 ];
 
 const downloadUrl = import.meta.env.VITE_DESKTOP_DOWNLOAD_URL || 'https://example.com/download';
@@ -149,6 +230,7 @@ export default function App() {
       netMonthlyGain,
       annualNetGain,
       paybackDays,
+      assumedFailureReductionRate,
     };
   }, [
     avgDeliveryCost,
@@ -163,6 +245,7 @@ export default function App() {
     event.preventDefault();
     setStatusMessage(null);
     setIsSubmitting(true);
+
     try {
       const result = await companySignup({
         company_name: companyName,
@@ -174,10 +257,10 @@ export default function App() {
 
       if (result.email_verification_required) {
         setStatusMessage(
-          'Account created. Check your email to verify your account, then sign in from the desktop app or ops console.',
+          'Account created. Verify your email, then sign in from the desktop app or ops console to complete launch setup.',
         );
       } else {
-        setStatusMessage('Company account created. You can now sign in from the desktop app or ops console.');
+        setStatusMessage('Company account created. Your team can now sign in from desktop and start launch readiness.');
       }
 
       setCompanyName('');
@@ -199,28 +282,28 @@ export default function App() {
           <span className="brand-text">FreightPilot AI</span>
         </a>
         <nav className="nav-links" aria-label="Primary">
-          <a href="#features">Platform</a>
-          <a href="#outcomes">Outcomes</a>
+          <a href="#benchmark">Benchmark</a>
+          <a href="#platform">Platform</a>
           <a href="#pricing">Pricing</a>
           <a href="#roi">ROI</a>
-          <a href="#security">Security</a>
+          <a href="#signup">Signup</a>
           <a href={docsUrl} target="_blank" rel="noreferrer">
             Docs
           </a>
         </nav>
-        <a className="btn btn-quiet" href={appUrl} target="_blank" rel="noreferrer">
+        <a className="btn btn-nav" href={appUrl} target="_blank" rel="noreferrer">
           Open Console
         </a>
       </header>
 
       <main id="top">
-        <section className="hero-grid">
-          <div className="hero-copy reveal reveal-2">
-            <p className="eyebrow">Desktop Logistics Intelligence Platform</p>
-            <h1>Optimize routes with your own AI keys, not someone else&apos;s black box.</h1>
+        <section className="hero-grid section-surface reveal reveal-2">
+          <div className="hero-copy">
+            <p className="eyebrow">Evidence-Led Logistics Orchestration</p>
+            <h1>Operate with the same proof-driven rigor category leaders publish.</h1>
             <p className="lead">
-              FreightPilot AI gives every logistics company a secure control tower: sign up, invite your team, connect
-              your provider keys, and dispatch smarter routes based on weather and real-time disruption signals.
+              FreightPilot combines risk-aware routing, BYOK AI governance, and desktop-first launch workflows so teams can
+              respond faster, protect delivery margin, and scale with confidence.
             </p>
             <div className="cta-row">
               <a className="btn btn-primary" href="#signup">
@@ -230,33 +313,52 @@ export default function App() {
                 Download desktop app
               </a>
             </div>
-            <p className="subtle">Supports bring-your-own-key workflows for OpenAI-compatible providers and private endpoints.</p>
+            <p className="subtle">
+              Product direction benchmarked against publicly stated proof patterns from Onfleet, project44, FourKites,
+              Route4Me, and FarEye.
+            </p>
           </div>
 
-          <aside className="hero-panel reveal reveal-3" aria-label="Launch checklist">
-            <h2>Launch in 4 steps</h2>
+          <aside className="hero-proof" aria-label="Launch readiness checklist">
+            <h2>Launch readiness checklist</h2>
             <ol>
-              <li>Create your company workspace</li>
-              <li>Install desktop on dispatch machines</li>
-              <li>Add provider API keys in the admin portal</li>
-              <li>Run risk-aware optimization with live constraints</li>
+              {launchChecklist.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
             </ol>
-            <div className="pill-row" role="list" aria-label="Platform highlights">
+            <div className="chip-row" role="list" aria-label="Core controls">
               <span role="listitem">Tenant isolation</span>
-              <span role="listitem">Audit logs</span>
-              <span role="listitem">Role-based access</span>
+              <span role="listitem">Audit timeline</span>
+              <span role="listitem">Role controls</span>
+              <span role="listitem">Usage metering</span>
             </div>
           </aside>
         </section>
 
-        <section id="features" className="section">
+        <section id="benchmark" className="section">
           <div className="section-heading reveal reveal-2">
-            <p className="eyebrow">What Teams Get</p>
-            <h2>Built for operators who plan under pressure.</h2>
+            <p className="eyebrow">Competitive Evidence</p>
+            <h2>What leading logistics platforms prove publicly, and what we mirrored in this overhaul.</h2>
           </div>
-          <div className="card-grid">
-            {features.map((feature, idx) => (
-              <article className={`feature-card reveal reveal-${idx + 2}`} key={feature.title}>
+          <div className="benchmark-grid">
+            {benchmarkSignals.map((entry, idx) => (
+              <article className={`benchmark-card reveal reveal-${idx + 2}`} key={entry.company}>
+                <h3>{entry.company}</h3>
+                <p>{entry.signal}</p>
+                <p className="impact">Pattern adopted: {entry.pattern}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="platform" className="section">
+          <div className="section-heading reveal reveal-2">
+            <p className="eyebrow">Platform Capabilities</p>
+            <h2>Built for operators making decisions under disruption pressure.</h2>
+          </div>
+          <div className="capability-grid">
+            {capabilities.map((feature, idx) => (
+              <article className={`capability-card reveal reveal-${idx + 2}`} key={feature.title}>
                 <h3>{feature.title}</h3>
                 <p>{feature.detail}</p>
                 <p className="impact">Impact: {feature.impact}</p>
@@ -265,10 +367,30 @@ export default function App() {
           </div>
         </section>
 
+        <section className="section process-section reveal reveal-2" aria-labelledby="process-heading">
+          <div className="section-heading process-heading">
+            <p className="eyebrow">Decision Loop</p>
+            <h2 id="process-heading">Detect, decide, and act with one operational rhythm.</h2>
+          </div>
+          <div className="process-grid">
+            {workflow.map((phase, idx) => (
+              <article className={`process-card reveal reveal-${idx + 2}`} key={phase.title}>
+                <h3>{phase.title}</h3>
+                <p>{phase.detail}</p>
+                <ul>
+                  {phase.actions.map((action) => (
+                    <li key={action}>{action}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section id="outcomes" className="section">
           <div className="section-heading reveal reveal-2">
             <p className="eyebrow">Outcome Playbook</p>
-            <h2>Measure value in margin, speed, and reliability.</h2>
+            <h2>Use a before-to-after model that maps directly to cash flow and service reliability.</h2>
           </div>
           <div className="outcome-grid">
             {outcomeTargets.map((item, idx) => (
@@ -284,54 +406,64 @@ export default function App() {
           </div>
         </section>
 
-        <section id="security" className="section split-section">
-          <div className="reveal reveal-2">
-            <p className="eyebrow">Security</p>
+        <section id="security" className="section split-section reveal reveal-2">
+          <div>
+            <p className="eyebrow">Trust And Governance</p>
             <h2>Enterprise controls from day one.</h2>
             <p>
-              Keep customer operations data separated by tenant, store provider credentials with encryption at rest,
-              and enforce least-privilege access with role-aware permissions.
+              Security and governance are built into daily workflows so operators move quickly without bypassing controls
+              or introducing hidden risk.
             </p>
           </div>
-          <ul className="security-list reveal reveal-3" aria-label="Security highlights">
-            <li>Company-scoped data partitioning and user boundaries</li>
-            <li>Encrypted API key storage with masked visibility</li>
-            <li>Action-level audit timeline for admin and dispatcher actions</li>
-            <li>Environment-based key rotation and emergency revoke options</li>
-          </ul>
-        </section>
-
-        <section id="pricing" className="section">
-          <div className="section-heading reveal reveal-2">
-            <p className="eyebrow">Pricing</p>
-            <h2>Choose the operating model that fits your fleet.</h2>
-          </div>
-          <div className="pricing-grid">
-            {plans.map((plan, idx) => (
-              <article className={`pricing-card reveal reveal-${idx + 2}`} key={plan.name}>
-                <h3>{plan.name}</h3>
-                <p className="price">{plan.price}</p>
-                <p>{plan.summary}</p>
-                <ul>
-                  <li>{plan.bulletA}</li>
-                  <li>{plan.bulletB}</li>
-                  <li>{plan.bulletC}</li>
-                </ul>
-                <a className="btn btn-quiet" href="#signup">
-                  Choose {plan.name}
-                </a>
+          <div className="trust-grid" aria-label="Trust highlights">
+            {trustMarkers.map((marker) => (
+              <article className="trust-card" key={marker.title}>
+                <h3>{marker.title}</h3>
+                <p>{marker.detail}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section id="roi" className="section split-section roi-grid">
+        <section id="pricing" className="section">
+          <div className="section-heading reveal reveal-2">
+            <p className="eyebrow">Pricing</p>
+            <h2>Select the model that matches your operating footprint.</h2>
+          </div>
+          <div className="pricing-grid">
+            {plans.map((plan, idx) => (
+              <article
+                className={`pricing-card ${tier === plan.tier ? 'selected' : ''} reveal reveal-${idx + 2}`}
+                key={plan.name}
+              >
+                <h3>{plan.name}</h3>
+                <p className="price">{plan.price}</p>
+                <p>{plan.summary}</p>
+                <ul>
+                  {plan.bullets.map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
+                </ul>
+                <button
+                  className="btn btn-pricing"
+                  type="button"
+                  onClick={() => setTier(plan.tier)}
+                  aria-pressed={tier === plan.tier}
+                >
+                  {tier === plan.tier ? 'Selected' : `Choose ${plan.name}`}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="roi" className="section split-section roi-section">
           <div className="reveal reveal-2">
             <p className="eyebrow">ROI Estimator</p>
-            <h2>Model your monthly and annual operating upside.</h2>
+            <h2>Model route and exception economics before procurement signoff.</h2>
             <p>
-              Use your delivery volume and cost baseline to estimate savings from route optimization and exception
-              automation. The model applies your selected subscription tier as the platform cost.
+              Enter your current delivery profile to estimate route efficiency upside and avoidable failed-delivery loss.
+              Selected plan pricing is automatically included.
             </p>
             <form className="roi-form" onSubmit={(event) => event.preventDefault()}>
               <label>
@@ -387,16 +519,16 @@ export default function App() {
           </div>
           <aside className="roi-panel reveal reveal-3" aria-label="ROI results">
             <p className="eyebrow">Modeled Results</p>
-            <h3>{selectedPlan.name} plan scenario</h3>
+            <h3>{selectedPlan.name} scenario</h3>
             <ul>
               <li>
-                Monthly delivery spend baseline: <strong>${roi.monthlySpend.toLocaleString()}</strong>
+                Monthly spend baseline: <strong>${roi.monthlySpend.toLocaleString()}</strong>
               </li>
               <li>
                 Route efficiency savings: <strong>${roi.optimizationSavings.toLocaleString()}</strong>
               </li>
               <li>
-                Failed delivery reduction savings: <strong>${roi.failureSavings.toLocaleString()}</strong>
+                Failed-delivery savings: <strong>${roi.failureSavings.toLocaleString()}</strong>
               </li>
               <li>
                 Gross monthly savings: <strong>${roi.grossMonthlySavings.toLocaleString()}</strong>
@@ -415,21 +547,21 @@ export default function App() {
               </li>
             </ul>
             <p className="subtle">
-              This estimator is a planning tool. Use your own costs and delivery profile to refine commercial forecasts.
+              Includes an assumed {roi.assumedFailureReductionRate}% reduction in failed-delivery incidents as a planning baseline.
             </p>
           </aside>
         </section>
 
-        <section id="signup" className="section split-section">
+        <section id="signup" className="section split-section signup-section">
           <div className="reveal reveal-2">
             <p className="eyebrow">Company Onboarding</p>
-            <h2>Create your company account</h2>
+            <h2>Create your workspace and launch your desktop readiness flow.</h2>
             <p>
-              Use a company email, choose a subscription tier, and your team can immediately log in from the desktop
-              app and manage provider API keys.
+              Register with a company email, choose your operating tier, and move straight into the desktop launch
+              cockpit to complete role assignments, connectivity checks, and go-live milestones.
             </p>
           </div>
-          <form className="security-list reveal reveal-3" onSubmit={signupAndOpenApp}>
+          <form className="signup-form reveal reveal-3" onSubmit={signupAndOpenApp}>
             <label>
               Company name
               <input required value={companyName} onChange={(event) => setCompanyName(event.target.value)} />
@@ -466,17 +598,17 @@ export default function App() {
               </select>
             </label>
             <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating account…' : 'Create company account'}
+              {isSubmitting ? 'Creating account...' : 'Create company account'}
             </button>
-            {statusMessage ? <p>{statusMessage}</p> : null}
+            {statusMessage ? <p className="status-note">{statusMessage}</p> : null}
           </form>
         </section>
 
         <section className="final-cta reveal reveal-3">
-          <h2>Start with your own keys. Keep your own control.</h2>
+          <h2>Move from visibility to decisive execution.</h2>
           <p>
-            FreightPilot AI is designed so you can modernize routing intelligence without replacing your security model
-            or vendor strategy.
+            FreightPilot is built for teams that want provable operational outcomes, not another dashboard that reports
+            problems after the margin is gone.
           </p>
           <div className="cta-row">
             <a className="btn btn-primary" href="#signup">

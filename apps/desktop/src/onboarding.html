@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FreightPilot Desktop Setup</title>
+    <title>FreightPilot Launch Cockpit</title>
     <link rel="stylesheet" href="./onboarding.css" />
   </head>
   <body>
@@ -12,13 +12,13 @@
         <div class="brand-row">
           <div class="brand-mark" aria-hidden="true">FP</div>
           <div>
-            <div class="brand-text">FreightPilot Desktop</div>
-            <p class="subtle">Launch-ready setup for dispatch teams in under five minutes.</p>
+            <div class="brand-text">FreightPilot Launch Cockpit</div>
+            <p class="subtle">Configure once, validate once, and roll out confidently across dispatch desktops.</p>
           </div>
         </div>
 
         <h1 id="setup-heading" class="section-title">Workspace Connection</h1>
-        <p class="subtle">Set your production URLs once. The app remembers them for every relaunch.</p>
+        <p class="subtle">Set production endpoints for operations, signup, and docs. Every machine reuses these values.</p>
 
         <div class="field-grid">
           <label>
@@ -42,6 +42,37 @@
         </div>
 
         <p id="status" class="status" aria-live="polite"></p>
+
+        <section class="readiness-panel" aria-labelledby="readiness-heading">
+          <div class="readiness-head">
+            <h2 id="readiness-heading">Go-live readiness</h2>
+            <span id="readinessScore" class="score-pill">0</span>
+          </div>
+          <p id="readinessLabel" class="subtle">Setup in progress.</p>
+          <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="readinessMeter">
+            <div id="readinessBar" class="meter-fill"></div>
+          </div>
+          <ul id="readinessRisks" class="risk-list"></ul>
+        </section>
+
+        <section class="roles-panel" aria-labelledby="roles-heading">
+          <h2 id="roles-heading">Role sign-off</h2>
+          <p class="subtle">Mark owners before rollout so responsibilities are clear from day one.</p>
+          <div class="check-grid">
+            <label class="check-row">
+              <input id="roleDispatcher" type="checkbox" />
+              Dispatch lead assigned
+            </label>
+            <label class="check-row">
+              <input id="roleData" type="checkbox" />
+              Data owner assigned
+            </label>
+            <label class="check-row">
+              <input id="roleSecurity" type="checkbox" />
+              Security owner assigned
+            </label>
+          </div>
+        </section>
       </section>
 
       <aside class="panel right-panel" aria-labelledby="onboarding-heading">
@@ -61,6 +92,7 @@
           <p class="eyebrow" id="stepStage">Step 1</p>
           <h2 id="stepTitle">Loading step...</h2>
           <p id="stepDescription" class="subtle"></p>
+          <p id="stepOutcome" class="outcome"></p>
           <div id="stepActions" class="step-actions"></div>
         </section>
 
@@ -80,7 +112,7 @@
         </div>
 
         <div class="tip">
-          Pro tip: have one dispatcher run this setup, then distribute the same console URL to every team machine.
+          Pro tip: complete this flow on one machine, then distribute the same URLs and role checklist as your standard rollout template.
         </div>
       </aside>
     </div>
@@ -92,26 +124,37 @@
         {
           key: 'createdAccount',
           title: 'Create your company workspace',
-          description: 'Use the signup page to create an owner account with your company email domain.',
+          description: 'Create an owner account with your company email domain and verify credentials are shared with the launch lead.',
+          outcome: 'Owner workspace created and ready for operator invitations.',
           actions: ['openSignup', 'markComplete'],
         },
         {
           key: 'connectedConsole',
           title: 'Validate control tower connectivity',
-          description: 'Run a connection test to confirm your ops console URL is reachable from this machine.',
+          description: 'Run a connectivity test to confirm the ops console URL responds from this desktop environment.',
+          outcome: 'Dispatch workstation can reliably access the control tower URL.',
           actions: ['testConsole', 'markComplete'],
         },
         {
           key: 'invitedTeam',
-          title: 'Invite operators and dispatchers',
-          description: 'Open docs and invite the initial team members who will run daily planning workflows.',
+          title: 'Assign operators and playbook ownership',
+          description: 'Confirm role ownership and invite the first wave of operators and dispatchers into the workspace.',
+          outcome: 'Named ownership for dispatch, data integrity, and security response.',
           actions: ['openDocs', 'markComplete'],
         },
         {
           key: 'importedData',
-          title: 'Import data and go live',
-          description: 'Import your warehouse, fleet, and order data, then launch the control tower window.',
+          title: 'Run data rehearsal and dry dispatch',
+          description: 'Import warehouse, fleet, and order data, then perform one dry-run optimization cycle before live dispatch.',
+          outcome: 'Baseline data quality and route optimization flow validated.',
           actions: ['openDocs', 'launchConsole', 'markComplete'],
+        },
+        {
+          key: 'launchedLive',
+          title: 'Launch live operations',
+          description: 'Open the control tower and run your first live dispatch window with role owners monitoring outcomes.',
+          outcome: 'Production launch complete with readiness score and role sign-off captured.',
+          actions: ['launchConsole', 'markComplete'],
         },
       ];
 
@@ -130,12 +173,21 @@
         stepStage: document.getElementById('stepStage'),
         stepTitle: document.getElementById('stepTitle'),
         stepDescription: document.getElementById('stepDescription'),
+        stepOutcome: document.getElementById('stepOutcome'),
         stepActions: document.getElementById('stepActions'),
         prevStepBtn: document.getElementById('prevStepBtn'),
         nextStepBtn: document.getElementById('nextStepBtn'),
         milestoneList: document.getElementById('milestoneList'),
         openSignup: document.getElementById('openSignup'),
         openDocs: document.getElementById('openDocs'),
+        readinessBar: document.getElementById('readinessBar'),
+        readinessMeter: document.getElementById('readinessMeter'),
+        readinessScore: document.getElementById('readinessScore'),
+        readinessLabel: document.getElementById('readinessLabel'),
+        readinessRisks: document.getElementById('readinessRisks'),
+        roleDispatcher: document.getElementById('roleDispatcher'),
+        roleData: document.getElementById('roleData'),
+        roleSecurity: document.getElementById('roleSecurity'),
       };
 
       const onboardingDefaults = {
@@ -143,6 +195,10 @@
         connectedConsole: false,
         invitedTeam: false,
         importedData: false,
+        launchedLive: false,
+        roleDispatcherReady: false,
+        roleDataReady: false,
+        roleSecurityReady: false,
         activeStep: 0,
       };
 
@@ -168,6 +224,9 @@
 
         return {
           ...merged,
+          roleDispatcherReady: Boolean(merged.roleDispatcherReady),
+          roleDataReady: Boolean(merged.roleDataReady),
+          roleSecurityReady: Boolean(merged.roleSecurityReady),
           activeStep: Math.min(Math.max(activeStep, 0), maxStep),
         };
       }
@@ -183,6 +242,76 @@
         return STEP_DEFINITIONS.filter((step) => onboarding[step.key]).length;
       }
 
+      function validHttpUrl(value) {
+        try {
+          const parsed = new URL(value);
+          return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        } catch {
+          return false;
+        }
+      }
+
+      function computeReadiness() {
+        const totalSteps = STEP_DEFINITIONS.length;
+        const completedSteps = completedCount();
+        const completedRatio = totalSteps === 0 ? 0 : completedSteps / totalSteps;
+
+        const rolesDone = [onboarding.roleDispatcherReady, onboarding.roleDataReady, onboarding.roleSecurityReady].filter(Boolean).length;
+        const roleRatio = rolesDone / 3;
+
+        const validUrls = [elements.opsUrl.value, elements.signupUrl.value, elements.docsUrl.value].filter(validHttpUrl).length;
+        const urlRatio = validUrls / 3;
+
+        const score = Math.round(completedRatio * 70 + roleRatio * 20 + urlRatio * 10);
+
+        const risks = [];
+        if (!onboarding.connectedConsole) {
+          risks.push('Console connectivity has not been verified yet.');
+        }
+        if (rolesDone < 3) {
+          risks.push('Not all rollout owners are assigned.');
+        }
+        if (validUrls < 3) {
+          risks.push('One or more setup URLs are invalid or missing.');
+        }
+        if (!onboarding.launchedLive) {
+          risks.push('Live launch milestone is still pending.');
+        }
+
+        let label = 'Setup in progress';
+        if (score >= 85) {
+          label = 'Launch-ready';
+        } else if (score >= 60) {
+          label = 'Almost ready';
+        }
+
+        return { score, label, risks };
+      }
+
+      function renderReadiness() {
+        const readiness = computeReadiness();
+        elements.readinessScore.textContent = String(readiness.score);
+        elements.readinessLabel.textContent = readiness.label;
+        elements.readinessBar.style.width = `${readiness.score}%`;
+        elements.readinessMeter.setAttribute('aria-valuenow', String(readiness.score));
+
+        elements.readinessRisks.innerHTML = '';
+        if (readiness.risks.length === 0) {
+          const item = document.createElement('li');
+          item.className = 'risk-item ok';
+          item.textContent = 'No launch blockers detected.';
+          elements.readinessRisks.appendChild(item);
+          return;
+        }
+
+        readiness.risks.forEach((risk) => {
+          const item = document.createElement('li');
+          item.className = 'risk-item';
+          item.textContent = risk;
+          elements.readinessRisks.appendChild(item);
+        });
+      }
+
       function applyProgress() {
         const completed = completedCount();
         const total = STEP_DEFINITIONS.length;
@@ -191,6 +320,21 @@
         elements.progressBar.style.width = `${pct}%`;
         elements.progressLabel.textContent = `${completed} / ${total} complete`;
         elements.progressTrack.setAttribute('aria-valuenow', String(pct));
+        renderReadiness();
+      }
+
+      function isStepBlocked(index) {
+        if (index === 0) {
+          return false;
+        }
+
+        for (let i = 0; i < index; i += 1) {
+          if (!onboarding[STEP_DEFINITIONS[i].key]) {
+            return true;
+          }
+        }
+
+        return false;
       }
 
       function renderWizardSteps() {
@@ -199,10 +343,12 @@
         STEP_DEFINITIONS.forEach((step, index) => {
           const item = document.createElement('li');
           const stepBtn = document.createElement('button');
-          const status = onboarding[step.key] ? 'Done' : index === onboarding.activeStep ? 'In progress' : 'Pending';
+          const blocked = isStepBlocked(index);
+          const status = onboarding[step.key] ? 'Done' : blocked ? 'Blocked' : index === onboarding.activeStep ? 'In progress' : 'Pending';
 
           stepBtn.type = 'button';
-          stepBtn.className = `wizard-step ${onboarding[step.key] ? 'done' : ''} ${index === onboarding.activeStep ? 'active' : ''}`;
+          stepBtn.className = `wizard-step ${onboarding[step.key] ? 'done' : ''} ${index === onboarding.activeStep ? 'active' : ''} ${blocked ? 'blocked' : ''}`;
+          stepBtn.disabled = blocked;
           stepBtn.innerHTML = `<span class="step-index">${index + 1}</span><span class="step-copy"><span>${step.title}</span><small>${status}</small></span>`;
           stepBtn.addEventListener('click', () => {
             onboarding.activeStep = index;
@@ -267,6 +413,7 @@
         elements.stepStage.textContent = `Step ${onboarding.activeStep + 1} of ${STEP_DEFINITIONS.length}`;
         elements.stepTitle.textContent = step.title;
         elements.stepDescription.textContent = step.description;
+        elements.stepOutcome.textContent = `Success outcome: ${step.outcome}`;
         elements.stepActions.innerHTML = '';
 
         if (step.actions.includes('openSignup')) {
@@ -303,6 +450,10 @@
               await persistConfig({ showMessage: false });
               await bridge.launchConsole(elements.opsUrl.value.trim());
               setStatus('Control tower opened in a new window.', 'ok');
+
+              if (step.key === 'launchedLive' && !onboarding.launchedLive) {
+                await markStepComplete('launchedLive', true);
+              }
             }),
           );
         }
@@ -318,7 +469,8 @@
         }
 
         elements.prevStepBtn.disabled = onboarding.activeStep === 0;
-        elements.nextStepBtn.disabled = onboarding.activeStep >= STEP_DEFINITIONS.length - 1;
+        elements.nextStepBtn.disabled =
+          onboarding.activeStep >= STEP_DEFINITIONS.length - 1 || !onboarding[STEP_DEFINITIONS[onboarding.activeStep].key];
       }
 
       function renderWizard() {
@@ -333,6 +485,9 @@
         elements.signupUrl.value = config.productSignupUrl || '';
         elements.docsUrl.value = config.docsUrl || '';
         onboarding = coerceOnboarding(config.onboarding);
+        elements.roleDispatcher.checked = onboarding.roleDispatcherReady;
+        elements.roleData.checked = onboarding.roleDataReady;
+        elements.roleSecurity.checked = onboarding.roleSecurityReady;
         renderWizard();
       }
 
@@ -376,6 +531,9 @@
           try {
             await persistConfig({ showMessage: false });
             await bridge.launchConsole(elements.opsUrl.value.trim());
+            if (!onboarding.launchedLive) {
+              await markStepComplete('launchedLive', true);
+            }
             setStatus('Control tower opened in a new window.', 'ok');
           } catch (error) {
             setStatus(error instanceof Error ? error.message : 'Could not open control tower.', 'warn');
@@ -428,6 +586,23 @@
           onboarding.activeStep += 1;
           renderWizard();
           await persistConfig({ showMessage: false });
+        });
+
+        const roleInputs = [elements.roleDispatcher, elements.roleData, elements.roleSecurity];
+        roleInputs.forEach((input) => {
+          input.addEventListener('change', async () => {
+            onboarding.roleDispatcherReady = elements.roleDispatcher.checked;
+            onboarding.roleDataReady = elements.roleData.checked;
+            onboarding.roleSecurityReady = elements.roleSecurity.checked;
+            renderReadiness();
+            await persistConfig({ showMessage: false });
+          });
+        });
+
+        [elements.opsUrl, elements.signupUrl, elements.docsUrl].forEach((input) => {
+          input.addEventListener('input', () => {
+            renderReadiness();
+          });
         });
       }
 
