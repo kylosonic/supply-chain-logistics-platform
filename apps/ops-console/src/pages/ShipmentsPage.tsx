@@ -1,9 +1,20 @@
 import { FormEvent, useEffect, useState } from 'react';
 
+import { MetricTile } from '../components/ui/MetricTile';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Panel } from '../components/ui/Panel';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import { createShipment, listShipments, updateShipmentStatus } from '../services/logisticsApi';
 import type { Shipment, ShipmentStatus } from '../types/api';
 
 const statusTransitions: ShipmentStatus[] = ['in_transit', 'delayed', 'delivered', 'cancelled'];
+
+function statusTone(status: ShipmentStatus) {
+  if (status === 'delivered') return 'success';
+  if (status === 'delayed' || status === 'cancelled') return 'danger';
+  if (status === 'in_transit') return 'warning';
+  return 'neutral';
+}
 
 export function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -71,111 +82,101 @@ export function ShipmentsPage() {
     }
   }
 
+  const counts = {
+    planned: shipments.filter((shipment) => shipment.status === 'planned').length,
+    inTransit: shipments.filter((shipment) => shipment.status === 'in_transit').length,
+    delayed: shipments.filter((shipment) => shipment.status === 'delayed').length,
+    delivered: shipments.filter((shipment) => shipment.status === 'delivered').length,
+  };
+
+  const fieldClassName =
+    'min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-slate-700">Create Shipment</h2>
-        <form className="grid grid-cols-1 gap-3 md:grid-cols-5" onSubmit={onCreate}>
-          <input
-            className="rounded border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Shipment No"
-            value={form.shipment_no}
-            onChange={(e) => setForm((prev) => ({ ...prev, shipment_no: e.target.value }))}
-            required
-          />
-          <input
-            className="rounded border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Origin Code"
-            value={form.origin_warehouse_code}
-            onChange={(e) => setForm((prev) => ({ ...prev, origin_warehouse_code: e.target.value.toUpperCase() }))}
-            required
-          />
-          <input
-            className="rounded border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Destination Code"
-            value={form.destination_warehouse_code}
-            onChange={(e) => setForm((prev) => ({ ...prev, destination_warehouse_code: e.target.value.toUpperCase() }))}
-            required
-          />
-          <input
-            className="rounded border border-slate-300 px-3 py-2 text-sm"
-            placeholder="SKU"
-            value={form.sku}
-            onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }))}
-            required
-          />
+      <PageHeader
+        eyebrow="Shipment board"
+        title="Track movement health across every lane"
+        description="Create shipments, monitor lane progression, and update status without losing the context around delay pressure and throughput."
+      />
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+        <MetricTile title="Planned" value={counts.planned} detail="Shipments queued but not yet in motion." tone="neutral" />
+        <MetricTile title="In transit" value={counts.inTransit} detail="Active movement currently underway across tracked lanes." tone="info" />
+        <MetricTile title="Delayed" value={counts.delayed} detail="Shipments requiring intervention or follow-up." tone={counts.delayed > 0 ? 'danger' : 'success'} />
+        <MetricTile title="Delivered" value={counts.delivered} detail="Completed movements recorded in the current board." tone="success" />
+      </div>
+
+      <Panel
+        eyebrow="Manual entry"
+        title="Create a shipment"
+        description="Use this for direct movement creation when the order flow does not originate from a bulk CSV load."
+      >
+        <form className="grid grid-cols-1 gap-3 lg:grid-cols-5" onSubmit={onCreate}>
+          <input className={fieldClassName} placeholder="Shipment No" value={form.shipment_no} onChange={(e) => setForm((prev) => ({ ...prev, shipment_no: e.target.value }))} required />
+          <input className={fieldClassName} placeholder="Origin Code" value={form.origin_warehouse_code} onChange={(e) => setForm((prev) => ({ ...prev, origin_warehouse_code: e.target.value.toUpperCase() }))} required />
+          <input className={fieldClassName} placeholder="Destination Code" value={form.destination_warehouse_code} onChange={(e) => setForm((prev) => ({ ...prev, destination_warehouse_code: e.target.value.toUpperCase() }))} required />
+          <input className={fieldClassName} placeholder="SKU" value={form.sku} onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }))} required />
           <div className="flex gap-2">
-            <input
-              className="w-24 rounded border border-slate-300 px-3 py-2 text-sm"
-              type="number"
-              min={1}
-              value={form.quantity_units}
-              onChange={(e) => setForm((prev) => ({ ...prev, quantity_units: Number(e.target.value) }))}
-              required
-            />
+            <input className={`${fieldClassName} w-full`} type="number" min={1} value={form.quantity_units} onChange={(e) => setForm((prev) => ({ ...prev, quantity_units: Number(e.target.value) }))} required />
             <button
               type="submit"
               disabled={creating}
-              className="rounded bg-slate-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
+              className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {creating ? 'Creating...' : 'Create'}
             </button>
           </div>
         </form>
-      </div>
+      </Panel>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {loading ? <p className="text-slate-600">Loading shipments...</p> : null}
+      <Panel
+        eyebrow="Movement board"
+        title="Shipment lifecycle"
+        description="Keep each lane visible and progress status deliberately when a movement changes state."
+      >
+        {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+        {loading ? <p className="text-sm text-slate-400">Loading shipments...</p> : null}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-3 py-2 text-left">Shipment</th>
-              <th className="px-3 py-2 text-left">Lane</th>
-              <th className="px-3 py-2 text-left">SKU</th>
-              <th className="px-3 py-2 text-left">Qty</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {shipments.map((shipment) => (
-              <tr key={shipment.id}>
-                <td className="px-3 py-2">
-                  <div className="font-medium text-slate-800">{shipment.shipment_no}</div>
-                  <div className="text-xs text-slate-500">{new Date(shipment.created_at).toLocaleString()}</div>
-                </td>
-                <td className="px-3 py-2">{shipment.origin_warehouse_code} → {shipment.destination_warehouse_code}</td>
-                <td className="px-3 py-2">{shipment.sku}</td>
-                <td className="px-3 py-2">{shipment.quantity_units}</td>
-                <td className="px-3 py-2">{shipment.status}</td>
-                <td className="px-3 py-2">
-                  <div className="flex flex-wrap gap-2">
-                    {statusTransitions.map((status) => (
-                      <button
-                        key={status}
-                        className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100"
-                        onClick={() => onStatusUpdate(shipment, status)}
-                        disabled={shipment.status === status}
-                      >
-                        Mark {status}
-                      </button>
-                    ))}
+        <div className="space-y-3">
+          {shipments.map((shipment) => (
+            <article key={shipment.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge label={shipment.status} tone={statusTone(shipment.status)} />
+                    <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{new Date(shipment.created_at).toLocaleString()}</span>
                   </div>
-                </td>
-              </tr>
-            ))}
-            {shipments.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
-                  No shipments yet.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+                  <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{shipment.shipment_no}</h3>
+                </div>
+                <div className="text-right text-sm text-slate-400">
+                  <p>{shipment.origin_warehouse_code} to {shipment.destination_warehouse_code}</p>
+                  <p>{shipment.sku} - {shipment.quantity_units} units</p>
+                </div>
+              </div>
+
+              <p className="mt-3 text-sm leading-6 text-slate-400">
+                {shipment.delay_reason ? `Delay note: ${shipment.delay_reason}` : 'No delay reason logged for this shipment.'}
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {statusTransitions.map((status) => (
+                  <button
+                    key={status}
+                    className="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => onStatusUpdate(shipment, status)}
+                    disabled={shipment.status === status}
+                  >
+                    Mark {status}
+                  </button>
+                ))}
+              </div>
+            </article>
+          ))}
+
+          {!loading && shipments.length === 0 ? <p className="text-sm text-slate-500">No shipments yet.</p> : null}
+        </div>
+      </Panel>
     </div>
   );
 }

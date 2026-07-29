@@ -58,14 +58,14 @@ export function CsvUploadPanel() {
     inventory: null,
     orders: null,
   });
-  const [result, setResult] = useState<string>('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [results, setResults] = useState<Partial<Record<UploadKind, string>>>({});
+  const [activeKind, setActiveKind] = useState<UploadKind | null>(null);
 
   async function submit(kind: UploadKind) {
     const file = files[kind];
     if (!file) return;
 
-    setIsUploading(true);
+    setActiveKind(kind);
     try {
       const response =
         kind === 'warehouses'
@@ -78,43 +78,66 @@ export function CsvUploadPanel() {
                 ? await uploadInventoryCsv(file)
                 : await uploadOrdersCsv(file);
 
-      setResult(
-        `${kind} import: processed=${response.records_processed}, created=${response.records_created}, updated=${response.records_updated}, errors=${response.errors.length}`,
-      );
+        setResults((prev) => ({
+          ...prev,
+          [kind]: `${kind} import: processed=${response.records_processed}, created=${response.records_created}, updated=${response.records_updated}, errors=${response.errors.length}`,
+        }));
     } catch (err: any) {
-      setResult(`${kind} import failed: ${err?.response?.data?.detail || err.message}`);
+        setResults((prev) => ({
+          ...prev,
+          [kind]: `${kind} import failed: ${err?.response?.data?.detail || err.message}`,
+        }));
     } finally {
-      setIsUploading(false);
+        setActiveKind(null);
     }
   }
 
-  return (
-    <div className="space-y-6">
-      {uploadSpecs.map((spec) => (
-        <div key={spec.key} className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <h3 className="mb-1 text-sm font-semibold text-slate-700">{spec.title}</h3>
-          <p className="mb-3 text-xs text-slate-500">{spec.hint}</p>
-          <input
-            type="file"
-            accept=".csv"
-            onChange={(event) =>
-              setFiles((prev) => ({
-                ...prev,
-                [spec.key]: event.target.files?.[0] || null,
-              }))
-            }
-          />
-          <button
-            disabled={!files[spec.key] || isUploading}
-            onClick={() => submit(spec.key)}
-            className="ml-3 rounded bg-slate-900 px-3 py-2 text-sm text-white"
-          >
-            {spec.actionLabel}
-          </button>
-        </div>
-      ))}
+    const fieldClassName =
+      'min-h-11 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-sky-400/15 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sky-200 hover:file:bg-sky-400/20';
 
-      {result ? <p className="text-sm text-slate-700">{result}</p> : null}
+  return (
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {uploadSpecs.map((spec, index) => (
+          <article key={spec.key} className="rounded-[26px] border border-slate-800/80 bg-slate-950/72 p-5 shadow-[0_24px_80px_rgba(2,12,20,0.28)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300/80">Step {index + 1}</p>
+                <h3 className="mt-2 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{spec.title}</h3>
+              </div>
+              <span className="rounded-full border border-slate-700 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                {spec.key}
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-400">{spec.hint}</p>
+
+            <div className="mt-4 space-y-3">
+              <input
+                className={fieldClassName}
+                type="file"
+                accept=".csv"
+                onChange={(event) =>
+                  setFiles((prev) => ({
+                    ...prev,
+                    [spec.key]: event.target.files?.[0] || null,
+                  }))
+                }
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  disabled={!files[spec.key] || activeKind !== null}
+                  onClick={() => submit(spec.key)}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {activeKind === spec.key ? 'Uploading...' : spec.actionLabel}
+                </button>
+                <span className="text-sm text-slate-500">{files[spec.key]?.name || 'No file selected'}</span>
+              </div>
+            </div>
+
+            {results[spec.key] ? <p className="mt-4 text-sm text-slate-300">{results[spec.key]}</p> : null}
+          </article>
+        ))}
     </div>
   );
 }

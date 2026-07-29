@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { MetricTile } from '../components/ui/MetricTile';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Panel } from '../components/ui/Panel';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import {
   createProviderKey,
   getCurrentUsage,
@@ -21,6 +25,12 @@ function priceText(plan: SubscriptionPlan): string {
     return 'Contact sales';
   }
   return `$${plan.monthly_price_usd}/mo`;
+}
+
+function keyTone(status: string) {
+  if (status === 'active') return 'success';
+  if (status === 'revoked') return 'danger';
+  return 'neutral';
 }
 
 export function AccountPage() {
@@ -156,196 +166,205 @@ export function AccountPage() {
 
   const progressPercent = useMemo(() => usageProgressPercent(usage), [usage]);
   const metricLabel = useMemo(() => usageMetricLabel(usage), [usage]);
+  const activeKeyCount = useMemo(() => keys.filter((key) => key.status === 'active').length, [keys]);
+
+  const fieldClassName =
+    'min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
 
   if (loading) {
-    return <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">Loading account settings...</div>;
+    return (
+      <div className="space-y-5">
+        <PageHeader
+          eyebrow="Workspace controls"
+          title="Billing, quota, and AI provider governance"
+          description="Loading subscription state, usage posture, and workspace provider settings."
+        />
+        <Panel>
+          <p className="text-sm text-slate-400">Loading account settings...</p>
+        </Panel>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-900">Account and Billing</h1>
-        <p className="mt-1 text-sm text-slate-600">Manage your plan and team entitlements.</p>
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-          <p className="font-medium text-slate-800">Current plan: {tierLabel}</p>
-          <p className="text-slate-600">Organization: {subscription?.organization_name ?? 'Unknown'}</p>
-        </div>
+      <PageHeader
+        eyebrow="Workspace controls"
+        title="Billing, quota, and AI provider governance"
+        description="Keep subscription posture, included task capacity, overage pressure, and provider configuration visible to the team running the workspace."
+      />
 
-        <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Usage meter</p>
-              <p className="text-xs text-slate-600">{metricLabel}</p>
-            </div>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+        <MetricTile title="Current plan" value={subscription?.tier ?? 'Unknown'} detail={`Status: ${subscription?.status ?? 'unknown'}`} tone="info" />
+        <MetricTile title="Usage" value={usage ? `${usage.used_units.toLocaleString()}` : 'N/A'} detail={metricLabel} tone={progressPercent >= 100 ? 'danger' : progressPercent >= 80 ? 'warning' : 'success'} />
+        <MetricTile title="Preferred provider" value={subscription?.preferred_ai_provider ?? 'None'} detail="Dashboard workflows use this provider when configured." tone="neutral" />
+        <MetricTile title="Active keys" value={activeKeyCount} detail="Provider credentials available for current workspace use." tone={activeKeyCount > 0 ? 'success' : 'warning'} />
+      </div>
+
+      {statusMessage ? (
+        <Panel className="border-sky-500/20 bg-sky-950/12">
+          <p className="text-sm text-sky-100">{statusMessage}</p>
+        </Panel>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+        <Panel
+          eyebrow="Subscription"
+          title="Current plan and usage posture"
+          description="Switch tiers, monitor included task capacity, and keep the commercial model legible to workspace operators."
+          actions={
             <button
               type="button"
               onClick={onRefreshUsage}
-              className="rounded border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
+              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
             >
               Refresh usage
             </button>
+          }
+        >
+          <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+            <p className="text-sm font-semibold text-slate-100">Current plan: {tierLabel}</p>
+            <p className="mt-2 text-sm text-slate-400">Organization: {subscription?.organization_name ?? 'Unknown'}</p>
           </div>
 
-          {usage ? (
-            <div className="mt-3 space-y-3">
-              <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-3">
-                <p>
-                  Period: <span className="font-semibold text-slate-800">{usage.period_start}</span> to{' '}
-                  <span className="font-semibold text-slate-800">{usage.period_end}</span>
-                </p>
-                <p>
-                  Used: <span className="font-semibold text-slate-800">{usage.used_units.toLocaleString()}</span>
-                </p>
-                <p>
-                  Included:{' '}
-                  <span className="font-semibold text-slate-800">
-                    {usage.included_units == null ? 'Unlimited' : usage.included_units.toLocaleString()}
-                  </span>
-                </p>
-              </div>
+          <div className="mt-4 rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+            <p className="text-sm font-semibold text-slate-100">Usage meter</p>
+            <p className="mt-1 text-xs text-slate-500">{metricLabel}</p>
 
-              {usage.included_units != null ? (
-                <>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                    <div className="h-full bg-slate-900" style={{ width: `${progressPercent}%` }} />
-                  </div>
-                  <p className="text-xs text-slate-600">
-                    Utilization: <span className="font-semibold text-slate-800">{usage.utilization_percent ?? 0}%</span>
+            {usage ? (
+              <div className="mt-4 space-y-4">
+                <div className="grid gap-2 text-xs text-slate-400 md:grid-cols-3">
+                  <p>
+                    Period: <span className="font-semibold text-slate-200">{usage.period_start}</span> to{' '}
+                    <span className="font-semibold text-slate-200">{usage.period_end}</span>
                   </p>
-                </>
-              ) : (
-                <p className="text-xs text-slate-600">No monthly cap on this plan.</p>
-              )}
+                  <p>
+                    Used: <span className="font-semibold text-slate-200">{usage.used_units.toLocaleString()}</span>
+                  </p>
+                  <p>
+                    Included:{' '}
+                    <span className="font-semibold text-slate-200">
+                      {usage.included_units == null ? 'Unlimited' : usage.included_units.toLocaleString()}
+                    </span>
+                  </p>
+                </div>
 
-              <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
-                <p>
-                  Overage units: <span className="font-semibold text-slate-800">{usage.overage_units.toLocaleString()}</span>
-                </p>
-                <p>
-                  Estimated overage cost:{' '}
-                  <span className="font-semibold text-slate-800">
-                    {usage.estimated_overage_cost_usd == null
-                      ? 'N/A'
-                      : `$${usage.estimated_overage_cost_usd.toLocaleString()}`}
-                  </span>
-                </p>
+                {usage.included_units != null ? (
+                  <>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                      <div className="h-full rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300" style={{ width: `${progressPercent}%` }} />
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Utilization: <span className="font-semibold text-slate-200">{usage.utilization_percent ?? 0}%</span>
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-400">No monthly cap on this plan.</p>
+                )}
+
+                <div className="grid gap-2 text-xs text-slate-400 md:grid-cols-2">
+                  <p>
+                    Overage units: <span className="font-semibold text-slate-200">{usage.overage_units.toLocaleString()}</span>
+                  </p>
+                  <p>
+                    Estimated overage cost:{' '}
+                    <span className="font-semibold text-slate-200">
+                      {usage.estimated_overage_cost_usd == null
+                        ? 'N/A'
+                        : `$${usage.estimated_overage_cost_usd.toLocaleString()}`}
+                    </span>
+                  </p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <p className="mt-3 text-xs text-slate-600">
-              Usage endpoint unavailable. Run the latest backend migration and refresh.
-            </p>
-          )}
+            ) : (
+              <p className="mt-4 text-xs text-slate-400">Usage endpoint unavailable. Run the latest backend migration and refresh.</p>
+            )}
+          </div>
 
-        </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {plans.map((plan) => (
+              <div key={plan.tier} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{plan.title}</h2>
+                    <p className="text-sm text-slate-400">{priceText(plan)}</p>
+                  </div>
+                  {currentTier === plan.tier ? <StatusBadge label="Current" tone="info" /> : null}
+                </div>
+                <div className="mt-3 space-y-1 text-xs text-slate-400">
+                  <p>Seats: {plan.seat_limit ?? 'Unlimited'}</p>
+                  <p>Vehicles: {plan.vehicle_limit ?? 'Unlimited'}</p>
+                  <p>Included tasks: {includedTasksLabel(plan)}</p>
+                  <p>Overage rate: {overageRateLabel(plan)}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={currentTier === plan.tier}
+                  onClick={() => onSelectTier(plan.tier)}
+                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-slate-700 px-4 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {currentTier === plan.tier ? 'Current plan' : 'Switch to plan'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </Panel>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {plans.map((plan) => (
-            <div key={plan.tier} className="rounded-xl border border-slate-200 p-4">
-              <h2 className="font-semibold text-slate-900">{plan.title}</h2>
-              <p className="text-sm text-slate-600">{priceText(plan)}</p>
-              <p className="mt-2 text-xs text-slate-500">Seats: {plan.seat_limit ?? 'Unlimited'}</p>
-              <p className="text-xs text-slate-500">Vehicles: {plan.vehicle_limit ?? 'Unlimited'}</p>
-              <p className="text-xs text-slate-500">
-                Included tasks: {includedTasksLabel(plan)}
-              </p>
-              <p className="text-xs text-slate-500">
-                Overage rate: {overageRateLabel(plan)}
-              </p>
+        <Panel
+          eyebrow="AI provider control"
+          title="Bring your own provider keys"
+          description="Set the preferred provider for dashboard workflows, test active keys, and rotate credentials without leaving the workspace."
+        >
+          <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+            <p className="text-sm font-semibold text-slate-100">Preferred AI provider for the dashboard</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <select value={preferredKeyId} onChange={(event) => setPreferredKeyId(event.target.value)} className={`${fieldClassName} min-w-[240px]`}>
+                <option value="">Select active provider key</option>
+                {keys
+                  .filter((key) => key.status === 'active')
+                  .map((key) => (
+                    <option key={key.id} value={key.id}>{`${key.provider_name} - ${key.key_name} (${key.masked_key})`}</option>
+                  ))}
+              </select>
               <button
                 type="button"
-                disabled={currentTier === plan.tier}
-                onClick={() => onSelectTier(plan.tier)}
-                className="mt-3 rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+                onClick={onSetPreferredKey}
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105"
               >
-                {currentTier === plan.tier ? 'Current plan' : 'Switch to plan'}
+                Save preferred provider
               </button>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Bring Your Own AI Keys</h2>
-        <p className="mt-1 text-sm text-slate-600">Connect your preferred AI providers securely.</p>
-
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-800">Preferred AI provider for the dashboard</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <select
-              value={preferredKeyId}
-              onChange={(event) => setPreferredKeyId(event.target.value)}
-              className="min-w-[220px] rounded-md border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="">Select active provider key</option>
-              {keys
-                .filter((key) => key.status === 'active')
-                .map((key) => (
-                  <option key={key.id} value={key.id}>{`${key.provider_name} - ${key.key_name} (${key.masked_key})`}</option>
-                ))}
-            </select>
-            <button
-              type="button"
-              onClick={onSetPreferredKey}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Save preferred provider
-            </button>
+            <p className="mt-2 text-xs text-slate-500">Current: {subscription?.preferred_ai_provider ?? 'Not configured'}</p>
           </div>
-          <p className="mt-2 text-xs text-slate-600">
-            Current: {subscription?.preferred_ai_provider ?? 'Not configured'}
-          </p>
-        </div>
 
-        <form onSubmit={onAddKey} className="mt-4 grid gap-3 md:grid-cols-3">
-          <input
-            value={providerName}
-            onChange={(event) => setProviderName(event.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Provider name"
-          />
-          <input
-            value={keyName}
-            onChange={(event) => setKeyName(event.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Key label"
-          />
-          <input
-            value={apiKey}
-            onChange={(event) => setApiKey(event.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-            placeholder="API key"
-          />
-          <div className="md:col-span-3">
-            <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
-              Save key
-            </button>
-          </div>
-        </form>
+          <form onSubmit={onAddKey} className="mt-4 grid gap-3 md:grid-cols-3">
+            <input value={providerName} onChange={(event) => setProviderName(event.target.value)} className={fieldClassName} placeholder="Provider name" />
+            <input value={keyName} onChange={(event) => setKeyName(event.target.value)} className={fieldClassName} placeholder="Key label" />
+            <input value={apiKey} onChange={(event) => setApiKey(event.target.value)} className={fieldClassName} placeholder="API key" />
+            <div className="md:col-span-3">
+              <button type="submit" className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105">
+                Save key
+              </button>
+            </div>
+          </form>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[520px] divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-3 py-2">Provider</th>
-                <th className="px-3 py-2">Key name</th>
-                <th className="px-3 py-2">Masked key</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {keys.map((key) => (
-                <tr key={key.id}>
-                  <td className="px-3 py-2">{key.provider_name}</td>
-                  <td className="px-3 py-2">{key.key_name}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{key.masked_key}</td>
-                  <td className="px-3 py-2">{key.status}</td>
-                  <td className="space-x-2 px-3 py-2">
+          <div className="mt-4 space-y-3">
+            {keys.map((key) => (
+              <article key={key.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge label={key.status} tone={keyTone(key.status)} />
+                      <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{key.provider_name}</span>
+                    </div>
+                    <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{key.key_name}</h3>
+                    <p className="mt-1 font-mono text-xs text-slate-400">{key.masked_key}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => onTestKey(key.id)}
-                      className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700"
+                      className="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950"
                     >
                       Test
                     </button>
@@ -353,20 +372,20 @@ export function AccountPage() {
                       <button
                         type="button"
                         onClick={() => onRevokeKey(key.id)}
-                        className="rounded border border-red-200 px-2 py-1 text-xs font-semibold text-red-700"
+                        className="rounded-full border border-rose-500/30 px-3 py-2 text-xs font-semibold text-rose-200 transition hover:border-rose-400/50 hover:bg-rose-950/20"
                       >
                         Revoke
                       </button>
                     ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                  </div>
+                </div>
+              </article>
+            ))}
 
-      {statusMessage ? <p className="text-sm text-slate-700">{statusMessage}</p> : null}
+            {keys.length === 0 ? <p className="text-sm text-slate-500">No provider keys configured yet.</p> : null}
+          </div>
+        </Panel>
+      </div>
     </div>
   );
 }

@@ -245,3 +245,4 @@ See `docs/desktop-b2b-roadmap.md` for recommended next additions:
 ## Research artifacts
 
 - `docs/competitive-landscape-2026.md`: evidence-based benchmark of comparable logistics platforms and the rationale behind the latest product-web and desktop onboarding overhaul.
+- `docs/market-dominator-overhaul-implementation.md`: implemented business-model, website, ops-console, and desktop changes derived from the market-dominator benchmark.
