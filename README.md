@@ -65,13 +65,11 @@ npm run vercel:pull:ops
 npm run vercel:pull:api
 ```
 
-Deploy each Vercel-backed section from the monorepo root:
+Production deployments are Git-driven. Pushing to `master` triggers fresh production deployments for these three linked Vercel projects:
 
-```bash
-npm run vercel:deploy:web
-npm run vercel:deploy:ops
-npm run vercel:deploy:api
-```
+- `product-web`
+- `ops-console`
+- `platform-api`
 
 Vercel CLI generates local environment files under `.vercel/.env.production.local` when you run `vercel pull`. Those files are machine-local deployment state and should stay uncommitted.
 
