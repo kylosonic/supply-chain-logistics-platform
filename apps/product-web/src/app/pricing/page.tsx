@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { BadgeCheck, CircleHelp, Sparkles } from 'lucide-react';
+import { BadgeCheck, CircleHelp } from 'lucide-react';
 
 import { FaqAccordion } from '@/components/site/faq-accordion';
 import { MagneticLink } from '@/components/site/magnetic-link';
@@ -46,7 +46,7 @@ export default function PricingPage() {
                   <p className="kicker">{tier.eyebrow}</p>
                   <h3 className="mt-4 font-display text-3xl text-white">{tier.name}</h3>
                 </div>
-                {index === 1 ? <span className="pill"><Sparkles className="h-4 w-4" /> Most cinematic fit</span> : null}
+                {index === 1 ? <span className="pill"><BadgeCheck className="h-4 w-4" /> Recommended plan</span> : null}
               </div>
               <p className="mt-4 font-display text-[clamp(2rem,5vw,3.4rem)] text-white">{tier.price}</p>
               <p className="mt-3 text-sm leading-7 text-white/58">{tier.summary}</p>

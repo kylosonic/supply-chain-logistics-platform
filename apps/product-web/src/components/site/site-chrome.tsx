@@ -169,8 +169,8 @@ export function SiteChrome({ children }: PropsWithChildren) {
 
       <main className="relative z-10 pb-20 pt-4 sm:pb-24 sm:pt-6 lg:pt-8">{children}</main>
 
-      <footer className="relative z-10 border-t border-white/10 px-3 pb-10 pt-6 sm:px-6 sm:pt-8 lg:px-8">
-        <div className="section-shell flex flex-col gap-8 rounded-[32px] border border-white/10 bg-white/[0.04] px-5 py-6 backdrop-blur-xl sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:py-7">
+      <footer className="relative z-10 border-t border-white/10 px-3 pb-10 pt-2 sm:px-6 sm:pt-4 lg:px-8">
+        <div className="section-shell flex flex-col gap-8 rounded-[32px] border border-white/10 bg-white/[0.04] px-5 py-6 backdrop-blur-xl sm:px-6 lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)_auto] lg:items-end lg:gap-8 lg:px-8 lg:py-7">
           <div className="max-w-xl space-y-3">
             <p className="kicker">FreightPilot</p>
             <h3 className="font-display text-2xl text-white">A workspace for route planning, response, and rollout.</h3>
@@ -178,7 +178,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
               Built to give operators one place to plan routes, handle exceptions, manage provider controls, and launch new workspaces.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
             {footerLinks.map((item) => (
               <Link key={item.href} href={item.href} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/70 no-underline transition hover:border-white/20 hover:text-white">
                 <span className="block font-medium text-white">{item.label}</span>
@@ -186,7 +186,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
               </Link>
             ))}
           </div>
-          <MagneticLink href={externalLinks.desktop} variant="secondary" external>
+          <MagneticLink href={externalLinks.desktop} variant="secondary" external className="lg:self-end">
             Download desktop
           </MagneticLink>
         </div>

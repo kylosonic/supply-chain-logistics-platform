@@ -23,14 +23,14 @@ export default function HomePage() {
   return (
     <>
       <section className="section-shell pt-4 sm:pt-8 lg:pt-10">
-        <div className="grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-start xl:gap-10">
+        <div className="grid gap-8 lg:grid-cols-[1.18fr_0.82fr] lg:items-start xl:gap-10">
           <div className="space-y-6 sm:space-y-7">
             <div className="space-y-5">
               <span className="pill">
                 <Sparkles className="h-4 w-4" />
                 FreightPilot operations platform
               </span>
-              <h1 className="balanced-headline max-w-[9.5ch] font-display text-[clamp(2.7rem,5.6vw,5rem)] leading-[0.94] tracking-[-0.035em] text-white">
+              <h1 className="balanced-headline max-w-[11ch] font-display text-[clamp(2.45rem,4.9vw,4.5rem)] leading-[0.95] tracking-[-0.03em] text-white lg:max-w-[11.5ch]">
                 Plan routes, manage exceptions, and launch operations from one control layer.
               </h1>
               <p className="lede text-base sm:text-lg">
@@ -173,9 +173,9 @@ export default function HomePage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell py-16 sm:py-20" delay={0.16}>
+      <MotionSection className="section-shell pb-8 pt-14 sm:pb-10 sm:pt-18" delay={0.16}>
         <div className="glass-panel rounded-[38px] px-6 py-8 sm:px-8 sm:py-10">
-          <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
             <div>
               <p className="kicker">Next step</p>
               <h2 className="balanced-headline mt-4 max-w-[12ch] font-display text-[clamp(2rem,5vw,4.5rem)] leading-[0.92] tracking-[-0.03em] text-white">
@@ -185,7 +185,7 @@ export default function HomePage() {
                 Review the product by workflow or move directly into workspace setup if the team is ready to begin a pilot.
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+            <div className="flex flex-col gap-3 sm:flex-row lg:justify-end lg:self-end">
               <MagneticLink href="/platform" variant="secondary">
                 Explore platform
               </MagneticLink>
