@@ -156,25 +156,25 @@ export function HeroScene() {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid gap-4 xl:grid-cols-[0.94fr_1.06fr]">
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
             className="glass-panel overflow-hidden rounded-[28px] border border-white/10 px-4 py-4 sm:px-5 sm:py-5"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-white/45">Operations summary</p>
-                <h3 className="balanced-headline mt-3 max-w-[8ch] font-display text-[clamp(2rem,3vw,2.4rem)] leading-[0.95] text-white">Control overview</h3>
+                <h3 className="balanced-headline mt-3 max-w-[9ch] font-display text-[clamp(1.9rem,2.6vw,2.25rem)] leading-[0.98] text-white">Control overview</h3>
               </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-2 text-xs text-violet-100">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-2 text-xs text-violet-100">
                 <BrainCircuit className="h-4 w-4" />
                 Assisted decisions
               </div>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3 [&>*:last-child]:sm:col-span-2 [&>*:last-child]:2xl:col-span-1">
               {commandStats.map(([title, value, detail]) => (
                 <div key={title} className="rounded-[22px] border border-white/10 bg-black/30 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-white/45">{title}</p>
@@ -189,11 +189,11 @@ export function HeroScene() {
                 <span className="text-xs uppercase tracking-[0.18em]">Recommended actions</span>
                 <ArrowUpRight className="h-4 w-4" />
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 [&>*:last-child]:sm:col-span-2">
                 {rhythmSteps.map((item, index) => (
                   <div key={item} className="rounded-[18px] border border-white/10 bg-white/[0.03] p-3">
                     <span className="text-xs text-cyan-200/80">0{index + 1}</span>
-                    <p className="mt-2 text-sm text-white">{item}</p>
+                    <p className="mt-2 text-sm leading-6 text-white">{item}</p>
                   </div>
                 ))}
               </div>
@@ -226,16 +226,16 @@ export function HeroScene() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.28 }}
-              className="grid gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2"
+              className="grid gap-4 2xl:grid-cols-2"
             >
               <SpotlightCard>
                 <p className="text-xs uppercase tracking-[0.2em] text-white/45">Launch workspace</p>
-                <p className="balanced-headline mt-4 max-w-[8ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Launch checklist</p>
+                <p className="balanced-headline mt-4 max-w-[10ch] font-display text-[clamp(1.55rem,2.2vw,1.9rem)] leading-[1.02] text-white">Launch checklist</p>
                 <p className="mt-2 text-sm leading-7 text-white/60">Track approvals, environment checks, and go-live readiness in one flow.</p>
               </SpotlightCard>
               <SpotlightCard>
                 <p className="text-xs uppercase tracking-[0.2em] text-white/45">Provider controls</p>
-                <p className="balanced-headline mt-4 max-w-[8ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Approved models</p>
+                <p className="balanced-headline mt-4 max-w-[10ch] font-display text-[clamp(1.55rem,2.2vw,1.9rem)] leading-[1.02] text-white">Approved models</p>
                 <p className="mt-2 text-sm leading-7 text-white/60">Choose preferred providers without giving up workspace policy and audit history.</p>
               </SpotlightCard>
             </motion.div>

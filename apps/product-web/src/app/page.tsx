@@ -23,14 +23,14 @@ export default function HomePage() {
   return (
     <>
       <section className="section-shell pt-4 sm:pt-8 lg:pt-10">
-        <div className="grid gap-8 lg:grid-cols-[1.18fr_0.82fr] lg:items-start xl:gap-10">
+        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start xl:gap-10">
           <div className="space-y-6 sm:space-y-7">
             <div className="space-y-5">
               <span className="pill">
                 <Sparkles className="h-4 w-4" />
                 FreightPilot operations platform
               </span>
-              <h1 className="balanced-headline max-w-[11ch] font-display text-[clamp(2.45rem,4.9vw,4.5rem)] leading-[0.95] tracking-[-0.03em] text-white lg:max-w-[11.5ch]">
+              <h1 className="balanced-headline max-w-[13ch] font-display text-[clamp(2.3rem,4.35vw,4.15rem)] leading-[0.96] tracking-[-0.03em] text-white">
                 Plan routes, manage exceptions, and launch operations from one control layer.
               </h1>
               <p className="lede text-base sm:text-lg">
