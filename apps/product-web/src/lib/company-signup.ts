@@ -17,9 +17,9 @@ export type CompanySignupResponse = {
   email_verification_required: boolean;
 };
 
-const apiBase = import.meta.env.VITE_PLATFORM_API_URL || 'http://localhost:8000/api/v1';
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const apiBase = process.env.NEXT_PUBLIC_PLATFORM_API_URL || 'http://localhost:8000/api/v1';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const supabaseClient = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 

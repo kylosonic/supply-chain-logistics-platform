@@ -1,0 +1,147 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { ArrowUpRight, BrainCircuit, ChartNoAxesCombined, ShieldCheck, Sparkles } from 'lucide-react';
+
+import { SpotlightCard } from './spotlight-card';
+
+const particles = Array.from({ length: 14 }, (_, index) => ({
+  id: index,
+  left: `${8 + ((index * 11) % 78)}%`,
+  top: `${6 + ((index * 17) % 82)}%`,
+  delay: index * 0.18,
+  duration: 6 + (index % 4),
+}));
+
+export function HeroScene() {
+  return (
+    <div className="relative isolate min-h-[520px] overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-2xl shadow-luxe">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(96,165,250,0.24),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.16),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:34px_34px] opacity-20" />
+
+      {particles.map((particle) => (
+        <motion.span
+          key={particle.id}
+          className="absolute h-1.5 w-1.5 rounded-full bg-cyan-200/60 shadow-[0_0_18px_rgba(103,232,249,0.7)]"
+          style={{ left: particle.left, top: particle.top }}
+          animate={{ y: [0, -18, 0], opacity: [0.3, 1, 0.4] }}
+          transition={{ duration: particle.duration, repeat: Infinity, ease: 'easeInOut', delay: particle.delay }}
+        />
+      ))}
+
+      <div className="relative z-10 grid h-full gap-5 lg:grid-rows-[auto_1fr_auto]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs uppercase tracking-[0.22em] text-white/70">
+            <Sparkles className="h-4 w-4" />
+            Live product visualization
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100">
+            <ShieldCheck className="h-4 w-4" />
+            Workspace governed
+          </div>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            className="glass-panel overflow-hidden rounded-[28px] border border-white/10 px-5 py-5"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Command stream</p>
+                <h3 className="mt-3 font-display text-2xl text-white">FreightPilot Control Grid</h3>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-2 text-xs text-violet-100">
+                <BrainCircuit className="h-4 w-4" />
+                AI orchestration
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {[
+                ['Exception rate', '03', 'Open high-priority items'],
+                ['Margin drift', '+8.4%', 'Route and failure variance'],
+                ['Launch score', '82/100', 'Control tower almost live'],
+              ].map(([title, value, detail]) => (
+                <div key={title} className="rounded-[22px] border border-white/10 bg-black/30 p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/45">{title}</p>
+                  <p className="mt-3 font-display text-3xl text-white">{value}</p>
+                  <p className="mt-2 text-sm text-white/55">{detail}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-[24px] border border-white/10 bg-black/35 p-4">
+              <div className="flex items-center justify-between text-white/65">
+                <span className="text-xs uppercase tracking-[0.18em]">Operational rhythm</span>
+                <ArrowUpRight className="h-4 w-4" />
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {['Detect route drift', 'Decide with margin context', 'Act with audit trace'].map((item, index) => (
+                  <div key={item} className="rounded-[18px] border border-white/10 bg-white/[0.03] p-3">
+                    <span className="text-xs text-cyan-200/80">0{index + 1}</span>
+                    <p className="mt-2 text-sm text-white">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          <div className="grid gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.15 }}
+            >
+              <SpotlightCard className="min-h-[210px]">
+                <div className="flex items-center justify-between gap-3 text-white/75">
+                  <span className="text-xs uppercase tracking-[0.2em]">Live feed</span>
+                  <ChartNoAxesCombined className="h-4 w-4" />
+                </div>
+                <div className="mt-4 space-y-3">
+                  {[
+                    ['SH-402', 'Delivery window drifting by 27 min'],
+                    ['AX-14', 'Below safety stock in West Hub'],
+                    ['Route 7', 'Capacity threshold crossed'],
+                  ].map(([title, detail]) => (
+                    <div key={title} className="rounded-[18px] border border-white/10 bg-black/30 px-4 py-3">
+                      <p className="text-sm font-semibold text-white">{title}</p>
+                      <p className="mt-1 text-xs text-white/55">{detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </SpotlightCard>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.28 }}
+              className="grid gap-4 sm:grid-cols-2"
+            >
+              <SpotlightCard>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Desktop launch</p>
+                <p className="mt-4 font-display text-2xl text-white">Role sign-off</p>
+                <p className="mt-2 text-sm leading-7 text-white/60">Track dispatch, security, and data owner confirmations in one workstation flow.</p>
+              </SpotlightCard>
+              <SpotlightCard>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Workspace AI</p>
+                <p className="mt-4 font-display text-2xl text-white">Provider routing</p>
+                <p className="mt-2 text-sm leading-7 text-white/60">Choose a preferred model stack without surrendering vendor control.</p>
+              </SpotlightCard>
+            </motion.div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-[24px] border border-white/10 bg-black/30 px-4 py-4 text-sm text-white/65">
+          <span>Scroll to explore the platform story page by page.</span>
+          <motion.span animate={{ y: [0, 8, 0] }} transition={{ duration: 1.8, repeat: Infinity }}>
+            ↓
+          </motion.span>
+        </div>
+      </div>
+    </div>
+  );
+}

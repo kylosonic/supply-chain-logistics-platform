@@ -15,7 +15,7 @@ Full-stack logistics platform with an operations console, API backend, and a pro
 
 - `apps/platform-api` FastAPI + SQLAlchemy + Alembic backend
 - `apps/ops-console` React + Tailwind operations frontend (Vite + TypeScript)
-- `apps/product-web` React + TypeScript product website (Vite)
+- `apps/product-web` Next.js + React + Tailwind product website
 - `apps/desktop` Electron shell for desktop distribution
 - `sample-data` CSV demo datasets for warehouses, items, inventory, and orders
 - `scripts` backup and restore scripts for PostgreSQL
@@ -156,10 +156,12 @@ npm --prefix apps/desktop install electron@31.0.2
 
 `apps/product-web/.env.example` contains:
 
-- `VITE_DESKTOP_DOWNLOAD_URL`: desktop installer/download center URL
-- `VITE_DOCS_URL`: docs portal URL
-- `VITE_APP_CONSOLE_URL`: operations console URL
-- `VITE_PLATFORM_API_URL`: backend API base URL used by inline company signup form
+- `NEXT_PUBLIC_DESKTOP_DOWNLOAD_URL`: desktop installer/download center URL
+- `NEXT_PUBLIC_DOCS_URL`: docs portal URL
+- `NEXT_PUBLIC_APP_CONSOLE_URL`: operations console URL
+- `NEXT_PUBLIC_PLATFORM_API_URL`: backend API base URL used by inline company signup form
+- `NEXT_PUBLIC_SUPABASE_URL`: optional Supabase project URL for auth-backed signup
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: optional Supabase publishable key
 
 ## Company onboarding flow
 
