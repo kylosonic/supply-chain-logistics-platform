@@ -20,13 +20,13 @@ const launchSchema = z.object({
 type LaunchValues = z.infer<typeof launchSchema>;
 
 const launchOptions: Array<{ value: SignupTier; label: string; detail: string }> = [
-  { value: 'starter', label: 'Starter', detail: 'Single-region launch teams' },
-  { value: 'scale', label: 'Scale', detail: 'Multi-region operations' },
-  { value: 'enterprise', label: 'Enterprise', detail: 'Transformation programs' },
+  { value: 'starter', label: 'Starter', detail: 'Pilot or single-region team' },
+  { value: 'scale', label: 'Scale', detail: 'Growing multi-site operation' },
+  { value: 'enterprise', label: 'Enterprise', detail: 'Large rollout program' },
 ];
 
 const fieldClassName =
-  'peer min-h-14 w-full rounded-[22px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-sm text-white outline-none transition placeholder:text-transparent focus:border-cyan-300/50';
+  'peer min-h-14 w-full rounded-[22px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-base text-white outline-none transition placeholder:text-transparent focus:border-cyan-300/50 sm:text-sm';
 
 export function SignupForm() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -73,11 +73,11 @@ export function SignupForm() {
   });
 
   return (
-    <div className="glass-panel overflow-hidden rounded-[32px] px-6 py-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="glass-panel overflow-hidden rounded-[32px] px-5 py-5 sm:px-6 sm:py-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="kicker">Launch workspace</p>
-          <h2 className="mt-4 font-display text-3xl text-white">Create the company command space</h2>
+          <h2 className="mt-4 max-w-[12ch] font-display text-3xl text-white">Create the company workspace</h2>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs text-cyan-100">
           <ShieldCheck className="h-4 w-4" />
@@ -86,7 +86,7 @@ export function SignupForm() {
       </div>
 
       <form className="mt-6 space-y-5" onSubmit={onSubmit}>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Company name" error={errors.company_name?.message}>
             <input className={fieldClassName} placeholder="Company name" {...register('company_name')} />
           </Field>
@@ -95,7 +95,7 @@ export function SignupForm() {
           </Field>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Company email" error={errors.company_email?.message}>
             <input className={fieldClassName} placeholder="Company email" type="email" {...register('company_email')} />
           </Field>
@@ -106,12 +106,12 @@ export function SignupForm() {
 
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/48">Subscription tier</p>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 lg:grid-cols-3">
             {launchOptions.map((option) => (
               <label
                 key={option.value}
                 className={cn(
-                  'cursor-pointer rounded-[24px] border px-4 py-4 transition',
+                  'cursor-pointer rounded-[24px] border px-4 py-4 transition lg:min-h-[132px]',
                   activeTier === option.value ? 'border-cyan-300/40 bg-cyan-300/10 text-white' : 'border-white/10 bg-white/[0.03] text-white/68',
                 )}
               >
@@ -129,7 +129,7 @@ export function SignupForm() {
           className="group inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-400 via-cyan-300 to-violet-300 px-5 text-sm font-semibold text-slate-950 shadow-[0_18px_60px_rgba(56,189,248,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {isSubmitting ? 'Creating workspace...' : 'Create company workspace'}
+          {isSubmitting ? 'Creating workspace...' : 'Create workspace'}
         </button>
 
         {statusMessage ? (

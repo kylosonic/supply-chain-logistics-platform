@@ -24,7 +24,7 @@ export default function HomePage() {
     <>
       <section className="section-shell pt-4 sm:pt-8 lg:pt-10">
         <div className="grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-start xl:gap-10">
-          <MotionSection className="space-y-6 sm:space-y-7" delay={0.05}>
+          <div className="space-y-6 sm:space-y-7">
             <div className="space-y-5">
               <span className="pill">
                 <Sparkles className="h-4 w-4" />
@@ -55,11 +55,11 @@ export default function HomePage() {
                 </span>
               ))}
             </div>
-          </MotionSection>
+          </div>
 
-          <MotionSection delay={0.14}>
+          <div>
             <HeroScene />
-          </MotionSection>
+          </div>
         </div>
       </section>
 

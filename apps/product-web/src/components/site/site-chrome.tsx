@@ -65,7 +65,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
             </span>
             <span className="hidden sm:grid">
               <strong className="font-display text-sm text-white">FreightPilot</strong>
-              <span className="text-xs text-white/48">AI logistics control layer</span>
+              <span className="text-xs text-white/48">Logistics operations workspace</span>
             </span>
           </Link>
 
@@ -173,9 +173,9 @@ export function SiteChrome({ children }: PropsWithChildren) {
         <div className="section-shell flex flex-col gap-8 rounded-[32px] border border-white/10 bg-white/[0.04] px-5 py-6 backdrop-blur-xl sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:py-7">
           <div className="max-w-xl space-y-3">
             <p className="kicker">FreightPilot</p>
-            <h3 className="font-display text-2xl text-white">The future-facing logistics command layer.</h3>
+            <h3 className="font-display text-2xl text-white">A workspace for route planning, response, and rollout.</h3>
             <p className="text-sm leading-7 text-white/56">
-              Built to feel premium, deliberate, and operationally intelligent from first scroll to first launch.
+              Built to give operators one place to plan routes, handle exceptions, manage provider controls, and launch new workspaces.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

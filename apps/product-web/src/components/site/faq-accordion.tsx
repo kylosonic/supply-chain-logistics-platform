@@ -23,10 +23,10 @@ export function FaqAccordion({ items }: FaqAccordionProps) {
             <button
               type="button"
               onClick={() => setOpenIndex(open ? -1 : index)}
-              className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left"
+              className="flex min-h-14 w-full items-center justify-between gap-4 px-5 py-5 text-left"
               aria-expanded={open}
             >
-              <span className="text-base font-semibold text-white">{item.question}</span>
+              <span className="text-pretty pr-2 text-base font-semibold text-white">{item.question}</span>
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/75">
                 {open ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
               </span>

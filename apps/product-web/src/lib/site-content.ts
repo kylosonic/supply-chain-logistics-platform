@@ -373,17 +373,17 @@ export const secondaryFeatures: FeatureCard[] = [
 
 export const pageIntro = {
   home: {
-    eyebrow: 'FreightPilot 2026',
-    title: 'The logistics command layer for teams who want the future to feel real.',
+    eyebrow: 'FreightPilot platform',
+    title: 'Plan routes, manage exceptions, and launch operations from one control layer.',
     description:
-      'A multi-page product narrative built to feel premium, cinematic, and unmistakably modern while preserving real workspace onboarding and signup functionality.',
+      'A multi-page product site that explains the same routing, launch, and governance workflows available in the product itself.',
   },
 };
 
 export const iconLinks = [
-  { label: 'Open Console', href: externalLinks.console, icon: ArrowUpRight },
-  { label: 'Get Desktop', href: externalLinks.desktop, icon: Boxes },
-  { label: 'Read Docs', href: externalLinks.docs, icon: BadgeCheck },
+  { label: 'Open console', href: externalLinks.console, icon: ArrowUpRight },
+  { label: 'Download desktop', href: externalLinks.desktop, icon: Boxes },
+  { label: 'Read docs', href: externalLinks.docs, icon: BadgeCheck },
 ];
 
 export const benefitStrip = [
@@ -405,25 +405,25 @@ export const pageCards: FeatureCard[] = [
   {
     icon: Compass,
     title: 'Home',
-    description: 'A dramatic top-level narrative for the product vision and hero promise.',
-    detail: 'Use this page to make the emotional first impression count.',
+    description: 'A concise overview of planning, exceptions, rollout, and provider controls.',
+    detail: 'Use this page to understand the product scope and move into the relevant workflow.',
   },
   {
     icon: Layers3,
     title: 'Platform',
-    description: 'A page focused on products, surfaces, workflows, and operational depth.',
-    detail: 'Use this page to understand how the stack fits together.',
+    description: 'A page focused on product modules, workflows, and operational responsibilities.',
+    detail: 'Use this page to understand how the product is organized for day-to-day work.',
   },
   {
     icon: Activity,
     title: 'Technology',
-    description: 'A page centered on orchestration, models, governance, and intelligence framing.',
-    detail: 'Use this page when buyers want to understand the AI substrate.',
+    description: 'A page centered on providers, governance, and decision support controls.',
+    detail: 'Use this page when teams need to understand how model use is controlled and reviewed.',
   },
   {
     icon: Zap,
     title: 'Pricing + Launch',
-    description: 'Commercial clarity and workspace rollout presented with premium polish.',
-    detail: 'Use these pages to move from interest into action.',
+    description: 'Commercial planning and workspace setup guidance for real rollout work.',
+    detail: 'Use these pages to move from evaluation into a controlled pilot or launch.',
   },
 ];

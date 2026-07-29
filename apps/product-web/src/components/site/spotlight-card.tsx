@@ -24,7 +24,7 @@ export function SpotlightCard({ children, className }: SpotlightCardProps) {
   return (
     <motion.article
       className={cn(
-        'group relative overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.05] p-6 backdrop-blur-2xl shadow-luxe transition duration-300',
+        'group relative min-w-0 overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.05] p-5 backdrop-blur-2xl shadow-luxe transition duration-300 sm:p-6',
         className,
       )}
       animate={reduceMotion ? {} : { rotateX: state.rx, rotateY: state.ry }}

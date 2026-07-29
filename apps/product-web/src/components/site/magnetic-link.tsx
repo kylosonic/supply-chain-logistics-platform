@@ -47,7 +47,7 @@ function useMagnet() {
 
 function LinkContent({ children, showIcon = true }: Pick<MagneticLinkProps, 'showIcon'> & PropsWithChildren) {
   return (
-    <span className="relative z-10 flex items-center gap-2">
+    <span className="relative z-10 flex items-center justify-center gap-2 text-center sm:text-left">
       {children}
       {showIcon ? <ArrowUpRight className="h-4 w-4 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /> : null}
     </span>
@@ -65,7 +65,7 @@ function AnchorShell({
   const { offset, handlers } = useMagnet();
   const content = <LinkContent showIcon={showIcon}>{children}</LinkContent>;
   const sharedClassName = cn(
-    'group inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full px-5 text-sm font-semibold transition will-change-transform',
+    'group inline-flex min-h-12 min-w-0 items-center justify-center overflow-hidden rounded-full px-4 text-sm font-semibold transition will-change-transform sm:px-5',
     variantClasses[variant],
     className,
   );

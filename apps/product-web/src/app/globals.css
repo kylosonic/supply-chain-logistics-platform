@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  /* Shared layout bounds and spotlight origin for the site shell. */
   color-scheme: dark;
   --spotlight-x: 50%;
   --spotlight-y: 12%;
@@ -53,6 +54,7 @@ textarea {
 }
 
 @layer components {
+  /* Content width stays consistent across pages and breakpoints. */
   .section-shell {
     margin-inline: auto;
     width: min(100%, var(--site-max-width));

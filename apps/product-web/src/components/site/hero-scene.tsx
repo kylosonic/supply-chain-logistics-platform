@@ -5,7 +5,7 @@ import { ArrowUpRight, BrainCircuit, ChartNoAxesCombined, ShieldCheck, Sparkles 
 
 import { SpotlightCard } from './spotlight-card';
 
-const particles = Array.from({ length: 14 }, (_, index) => ({
+const particles = Array.from({ length: 10 }, (_, index) => ({
   id: index,
   left: `${8 + ((index * 11) % 78)}%`,
   top: `${6 + ((index * 17) % 82)}%`,
@@ -29,14 +29,14 @@ const liveFeedItems = [
 
 export function HeroScene() {
   return (
-    <div className="relative isolate overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04] p-4 backdrop-blur-2xl shadow-luxe sm:p-5 lg:min-h-[500px] xl:min-h-[540px] xl:p-6">
+    <div className="relative isolate overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04] p-4 shadow-luxe sm:p-5 lg:min-h-[500px] xl:min-h-[540px] xl:p-6">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(96,165,250,0.24),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.16),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:34px_34px] opacity-20" />
 
       {particles.map((particle) => (
         <motion.span
           key={particle.id}
-          className="absolute h-1.5 w-1.5 rounded-full bg-cyan-200/60 shadow-[0_0_18px_rgba(103,232,249,0.7)]"
+          className={`absolute h-1.5 w-1.5 rounded-full bg-cyan-200/60 shadow-[0_0_18px_rgba(103,232,249,0.7)] ${particle.id > 5 ? 'hidden lg:block' : ''}`}
           style={{ left: particle.left, top: particle.top }}
           animate={{ y: [0, -18, 0], opacity: [0.3, 1, 0.4] }}
           transition={{ duration: particle.duration, repeat: Infinity, ease: 'easeInOut', delay: particle.delay }}
@@ -156,7 +156,7 @@ export function HeroScene() {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -174,7 +174,7 @@ export function HeroScene() {
               </div>
             </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {commandStats.map(([title, value, detail]) => (
                 <div key={title} className="rounded-[22px] border border-white/10 bg-black/30 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-white/45">{title}</p>
@@ -230,19 +230,19 @@ export function HeroScene() {
             >
               <SpotlightCard>
                 <p className="text-xs uppercase tracking-[0.2em] text-white/45">Launch workspace</p>
-                  <p className="balanced-headline mt-4 max-w-[8ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Launch checklist</p>
+                <p className="balanced-headline mt-4 max-w-[8ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Launch checklist</p>
                 <p className="mt-2 text-sm leading-7 text-white/60">Track approvals, environment checks, and go-live readiness in one flow.</p>
               </SpotlightCard>
               <SpotlightCard>
                 <p className="text-xs uppercase tracking-[0.2em] text-white/45">Provider controls</p>
-                  <p className="balanced-headline mt-4 max-w-[8ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Approved models</p>
+                <p className="balanced-headline mt-4 max-w-[8ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Approved models</p>
                 <p className="mt-2 text-sm leading-7 text-white/60">Choose preferred providers without giving up workspace policy and audit history.</p>
               </SpotlightCard>
             </motion.div>
           </div>
         </div>
 
-          <div className="flex flex-col items-start gap-2 rounded-[24px] border border-white/10 bg-black/30 px-4 py-4 text-sm text-white/65 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col items-start gap-2 rounded-[24px] border border-white/10 bg-black/30 px-4 py-4 text-sm text-white/65 sm:flex-row sm:items-center sm:justify-between">
           <span>Explore how the platform handles planning, response, launch, and governance.</span>
           <motion.span animate={{ y: [0, 8, 0] }} transition={{ duration: 1.8, repeat: Infinity }}>
             ↓
