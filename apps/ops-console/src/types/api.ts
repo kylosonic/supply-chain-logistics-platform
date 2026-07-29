@@ -64,6 +64,41 @@ export type RouteOptimizePayload = {
   persist_schedule: boolean;
 };
 
+export type RouteOptimizationRunSummary = {
+  id: string;
+  created_at: string;
+  route_name: string;
+  schedule_date: string;
+  start_warehouse_code: string;
+  objective: string;
+  total_distance_km: number;
+  total_cost: number;
+  estimated_duration_min: number;
+  capacity_used: number;
+  deliveries_count: number;
+  stops_count: number;
+  unassigned_count: number;
+  persist_requested: boolean;
+  persisted_schedule_id: string | null;
+};
+
+export type RouteOptimizationRunDetail = RouteOptimizationRunSummary & {
+  actor_user_id: string | null;
+  organization_id: string | null;
+  vehicle_capacity_units: number;
+  max_stops: number;
+  speed_kmh: number;
+  cost_per_km: number;
+  weights: {
+    distance: number;
+    time: number;
+    cost: number;
+  };
+  deliveries: { warehouse_code: string; demand_units: number }[];
+  stops: RouteStop[];
+  unassigned_deliveries: { warehouse_code: string; demand_units: number }[];
+};
+
 export type ShipmentStatus = 'planned' | 'in_transit' | 'delivered' | 'delayed' | 'cancelled';
 
 export type Shipment = {
@@ -199,6 +234,43 @@ export type ProviderPreference = {
   organization_id: string;
   provider_name: string | null;
   key_id: string | null;
+};
+
+export type AuditEvent = {
+  id: string;
+  created_at: string;
+  event_type: string;
+  entity_type: string;
+  entity_id: string | null;
+  actor_user_id: string | null;
+  organization_id: string | null;
+  description: string;
+  payload: Record<string, unknown> | unknown[] | null;
+};
+
+export type ExceptionFeedItem = {
+  source_type: string;
+  source_id: string;
+  severity: string;
+  status: string;
+  title: string;
+  message: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  created_at: string;
+  metadata: Record<string, unknown> | null;
+};
+
+export type ExceptionFeedSummary = {
+  open_alerts: number;
+  delayed_shipments: number;
+  pending_replenishment_plans: number;
+  route_runs_with_unassigned_deliveries: number;
+};
+
+export type ExceptionFeedResponse = {
+  summary: ExceptionFeedSummary;
+  items: ExceptionFeedItem[];
 };
 
 export type IngestionResult = {

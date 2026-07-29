@@ -3,16 +3,28 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import asc, select
+from sqlalchemy import asc, desc, select
 from sqlalchemy.orm import Session
 
 from app.api.security import require_roles
 from app.db.session import get_db
+from app.models.route_history import RouteOptimizationRun
 from app.models.route import RouteSchedule, RouteStop
 from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.schemas.auth import UserRole
-from app.schemas.route import RouteOptimizeRequest, RouteOptimizeResponse, RouteScheduleDetail, RouteScheduleSummary, RouteStopOut
+from app.schemas.route import (
+    DeliveryDemand,
+    RouteOptimizeRequest,
+    RouteOptimizeResponse,
+    RouteOptimizationRunDetail,
+    RouteOptimizationRunSummary,
+    RouteScheduleDetail,
+    RouteScheduleSummary,
+    RouteStopOut,
+    RouteWeights,
+)
+from app.services.audit import record_audit_event, resolve_actor_organization_id
 from app.services.metering import record_usage_for_user_membership
 from app.services.routing import Delivery, Node, optimize_route_greedy
 
@@ -52,6 +64,35 @@ def optimize_routes(
         units=len(payload.deliveries),
     )
 
+    serialized_stops = [RouteStopOut(**stop).model_dump(mode='json') for stop in result['stops']]
+    organization_id = resolve_actor_organization_id(db, actor)
+
+    history_run = RouteOptimizationRun(
+        actor_user_id=actor.id,
+        organization_id=organization_id,
+        route_name=payload.route_name,
+        schedule_date=payload.schedule_date,
+        start_warehouse_code=payload.start_warehouse_code,
+        vehicle_capacity_units=payload.vehicle_capacity_units,
+        max_stops=payload.max_stops,
+        speed_kmh=payload.speed_kmh,
+        cost_per_km=payload.cost_per_km,
+        objective=result['objective'],
+        total_distance_km=result['total_distance_km'],
+        total_cost=result['total_cost'],
+        estimated_duration_min=result['estimated_duration_min'],
+        capacity_used=result['capacity_used'],
+        deliveries_count=len(payload.deliveries),
+        stops_count=len(result['stops']),
+        unassigned_count=len(result['unassigned_deliveries']),
+        persist_requested=payload.persist_schedule,
+        deliveries_json=[delivery.model_dump(mode='json') for delivery in payload.deliveries],
+        weights_json=payload.weights.model_dump(mode='json'),
+        stops_json=serialized_stops,
+        unassigned_deliveries_json=[DeliveryDemand(**delivery).model_dump(mode='json') for delivery in result['unassigned_deliveries']],
+    )
+    db.add(history_run)
+
     if payload.persist_schedule:
         start_wh = db.execute(select(Warehouse).where(Warehouse.code == payload.start_warehouse_code)).scalar_one()
         schedule = RouteSchedule(
@@ -85,10 +126,25 @@ def optimize_routes(
                 notes=f"generated_at={current_time.isoformat()}",
             )
             db.add(rs)
+        history_run.persisted_schedule_id = schedule.id
 
-        db.commit()
-    elif usage_recorded:
-        db.commit()
+    record_audit_event(
+        db,
+        event_type='route.optimized',
+        entity_type='route_optimization_run',
+        entity_id=history_run.id,
+        actor=actor,
+        organization_id=organization_id,
+        description=f'Optimized route scenario {payload.route_name}',
+        payload={
+            'deliveries_count': len(payload.deliveries),
+            'persist_requested': payload.persist_schedule,
+            'usage_recorded': usage_recorded,
+            'unassigned_count': len(result['unassigned_deliveries']),
+        },
+    )
+
+    db.commit()
 
     return RouteOptimizeResponse(
         route_name=payload.route_name,
@@ -152,4 +208,52 @@ def route_schedule_detail(
         estimated_duration_min=schedule.estimated_duration_min,
         status=schedule.status,
         stops=stop_payload,
+    )
+
+
+@router.get('/history', response_model=list[RouteOptimizationRunSummary])
+def list_route_optimization_history(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+):
+    runs = db.execute(select(RouteOptimizationRun).order_by(desc(RouteOptimizationRun.created_at))).scalars().all()
+    return runs
+
+
+@router.get('/history/{run_id}', response_model=RouteOptimizationRunDetail)
+def route_optimization_history_detail(
+    run_id: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+):
+    run = db.get(RouteOptimizationRun, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail='Route optimization run not found')
+
+    return RouteOptimizationRunDetail(
+        id=run.id,
+        created_at=run.created_at,
+        route_name=run.route_name,
+        schedule_date=run.schedule_date,
+        start_warehouse_code=run.start_warehouse_code,
+        objective=run.objective,
+        total_distance_km=run.total_distance_km,
+        total_cost=run.total_cost,
+        estimated_duration_min=run.estimated_duration_min,
+        capacity_used=run.capacity_used,
+        deliveries_count=run.deliveries_count,
+        stops_count=run.stops_count,
+        unassigned_count=run.unassigned_count,
+        persist_requested=run.persist_requested,
+        persisted_schedule_id=run.persisted_schedule_id,
+        actor_user_id=run.actor_user_id,
+        organization_id=run.organization_id,
+        vehicle_capacity_units=run.vehicle_capacity_units,
+        max_stops=run.max_stops,
+        speed_kmh=run.speed_kmh,
+        cost_per_km=run.cost_per_km,
+        weights=RouteWeights(**run.weights_json),
+        deliveries=[DeliveryDemand(**delivery) for delivery in run.deliveries_json],
+        stops=[RouteStopOut(**stop) for stop in run.stops_json],
+        unassigned_deliveries=[DeliveryDemand(**delivery) for delivery in run.unassigned_deliveries_json],
     )

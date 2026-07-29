@@ -68,6 +68,48 @@ Key changes:
 - Restyled routes, alerts, shipments, planning, upload, and workspace pages into one coherent operator system.
 - Brought subscription usage and provider-key governance into the same visual language as day-to-day operations.
 
+## Backend insight layer changes
+
+Implemented in:
+
+- `apps/platform-api/app/models/audit_event.py`
+- `apps/platform-api/app/models/route_history.py`
+- `apps/platform-api/app/services/audit.py`
+- `apps/platform-api/app/schemas/ops_insights.py`
+- `apps/platform-api/app/schemas/route.py`
+- `apps/platform-api/app/api/endpoints/auth.py`
+- `apps/platform-api/app/api/endpoints/routes.py`
+- `apps/platform-api/app/api/endpoints/alerts.py`
+- `apps/platform-api/app/api/endpoints/shipments.py`
+- `apps/platform-api/app/api/endpoints/planning.py`
+- `apps/platform-api/app/api/endpoints/providers.py`
+- `apps/platform-api/app/api/endpoints/subscriptions.py`
+- `apps/platform-api/app/api/endpoints/ops.py`
+
+Key changes:
+
+- Added a reusable audit-event model and service for workspace and operational actions.
+- Added route optimization run history so every scenario can be reviewed after execution.
+- Added a unified exception-feed API that combines unresolved alerts, pending replenishment approvals, and route runs with unassigned deliveries.
+- Extended existing mutation endpoints so route, alert, shipment, planning, provider, subscription, and workspace events are recorded consistently.
+
+## Performance and test changes
+
+Implemented in:
+
+- `apps/ops-console/src/App.tsx`
+- `apps/ops-console/vite.config.ts`
+- `apps/ops-console/src/pages/workspaceSurfaces.smoke.test.tsx`
+- `apps/product-web/src/App.smoke.test.tsx`
+- `apps/platform-api/tests/test_operator_insights_api.py`
+
+Key changes:
+
+- Added lazy route loading in the ops console.
+- Split chart and map libraries into dedicated bundles and removed stale compiled `.js` files that were shadowing TypeScript sources.
+- Added backend tests for the new insight endpoints.
+- Added lightweight render smoke tests for the redesigned ops-console and product-web surfaces.
+
 ## Desktop launch workstation changes
 
 Implemented in:
@@ -84,8 +126,11 @@ Key changes:
 ## Validation completed
 
 - `npm --prefix apps/product-web run build`
+- `npm --prefix apps/product-web run test`
 - `npm --prefix apps/ops-console run build`
+- `npm --prefix apps/ops-console run test`
 - `npm --prefix apps/desktop run doctor`
+- `python -m pytest tests/test_mvp_features_api.py tests/test_route_usage_metering_api.py tests/test_subscription_metering_api.py tests/test_operator_insights_api.py -q`
 
 Desktop HTML and CSS were also checked through editor diagnostics after the redesign.
 

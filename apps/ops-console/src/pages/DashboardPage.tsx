@@ -10,15 +10,17 @@ import { useAuth } from '../context/AuthContext';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import { getCurrentUsage } from '../services/billingApi';
 import {
+  getAuditTimeline,
+  getExceptionFeed,
   getForecast,
   getInventoryOverview,
   getRouteSchedules,
-  listAlerts,
   listReplenishmentPlans,
   listShipments,
 } from '../services/logisticsApi';
 import type {
-  Alert,
+  AuditEvent,
+  ExceptionFeedResponse,
   ForecastPoint,
   InventoryOverviewRow,
   ReplenishmentPlan,
@@ -29,10 +31,10 @@ import type {
 
 const POLL_INTERVAL_MS = 30000;
 
-function severityTone(severity: Alert['severity']) {
-  if (severity === 'critical') return 'danger';
-  if (severity === 'high') return 'warning';
-  if (severity === 'medium') return 'info';
+function severityTone(severity: string) {
+  if (severity === 'critical' || severity === 'danger') return 'danger';
+  if (severity === 'high' || severity === 'warning') return 'warning';
+  if (severity === 'medium' || severity === 'info') return 'info';
   return 'neutral';
 }
 
@@ -49,9 +51,10 @@ export function DashboardPage() {
   const [forecast, setForecast] = useState<ForecastPoint[]>([]);
   const [schedules, setSchedules] = useState<RouteScheduleSummary[]>([]);
   const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [plans, setPlans] = useState<ReplenishmentPlan[]>([]);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
+  const [exceptionFeed, setExceptionFeed] = useState<ExceptionFeedResponse | null>(null);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastLiveUpdate, setLastLiveUpdate] = useState<string | null>(null);
@@ -59,22 +62,24 @@ export function DashboardPage() {
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [inventoryData, forecastData, scheduleData, shipmentData, alertData, planData, usageData] = await Promise.all([
+      const [inventoryData, forecastData, scheduleData, shipmentData, planData, usageData, feedData, auditData] = await Promise.all([
         getInventoryOverview(),
         getForecast(4),
         getRouteSchedules(),
         listShipments(),
-        listAlerts('open'),
         listReplenishmentPlans(),
         getCurrentUsage().catch(() => null),
+        getExceptionFeed().catch(() => null),
+        getAuditTimeline().catch(() => []),
       ]);
       setInventory(inventoryData);
       setForecast(forecastData.points);
       setSchedules(scheduleData);
       setShipments(shipmentData);
-      setAlerts(alertData);
       setPlans(planData);
       setUsage(usageData);
+      setExceptionFeed(feedData);
+      setAuditEvents(auditData);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || 'Failed to load dashboard data');
     } finally {
@@ -119,6 +124,9 @@ export function DashboardPage() {
       usagePercent: usage?.utilization_percent ?? null,
     };
   }, [forecast, inventory, plans, shipments, usage]);
+
+  const feedSummary = exceptionFeed?.summary;
+  const feedItems = exceptionFeed?.items ?? [];
 
   const refreshButton = (
     <button
@@ -166,9 +174,9 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
         <MetricTile
           title="Open exceptions"
-          value={alerts.length}
-          detail={`${summary.delayedShipments.length} delayed shipment${summary.delayedShipments.length === 1 ? '' : 's'} currently compounding the queue.`}
-          tone={alerts.length > 0 ? 'warning' : 'success'}
+          value={feedSummary?.open_alerts ?? 0}
+          detail={`${feedSummary?.delayed_shipments ?? summary.delayedShipments.length} delayed shipment${(feedSummary?.delayed_shipments ?? summary.delayedShipments.length) === 1 ? '' : 's'} currently compounding the queue.`}
+          tone={(feedSummary?.open_alerts ?? 0) > 0 ? 'warning' : 'success'}
         />
         <MetricTile
           title="In-transit shipments"
@@ -204,46 +212,30 @@ export function DashboardPage() {
         <Panel
           eyebrow="Exception queue"
           title="What needs operator action now"
-          description="Open alerts and delayed shipments are the fastest path to avoidable cost when they sit unattended."
+          description="The unified exception feed combines unresolved alerts, pending replenishment approvals, and route runs that still need manual intervention."
         >
           <div className="space-y-3">
-            {alerts.slice(0, 4).map((alert) => (
-              <article key={alert.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+            {feedItems.slice(0, 6).map((item) => (
+              <article key={`${item.source_type}:${item.source_id}`} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge label={alert.severity} tone={severityTone(alert.severity)} />
-                      <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{alert.alert_type}</span>
+                      <StatusBadge label={item.severity} tone={severityTone(item.severity)} />
+                      <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{item.source_type}</span>
                     </div>
-                    <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{alert.title}</h3>
+                    <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{item.title}</h3>
                   </div>
-                  <span className="text-xs text-slate-500">{new Date(alert.created_at).toLocaleString()}</span>
+                  <span className="text-xs text-slate-500">{new Date(item.created_at).toLocaleString()}</span>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-slate-400">{alert.message}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-400">{item.message}</p>
               </article>
             ))}
 
-            {alerts.length === 0 ? (
+            {feedItems.length === 0 ? (
               <div className="rounded-[22px] border border-emerald-500/20 bg-emerald-950/12 p-4 text-sm text-emerald-200">
                 No open alerts. The queue is currently clear.
               </div>
             ) : null}
-
-            {summary.delayedShipments.slice(0, 3).map((shipment) => (
-              <article key={shipment.id} className="rounded-[22px] border border-amber-500/20 bg-amber-950/10 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200/80">Delayed shipment</p>
-                    <h3 className="mt-1 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{shipment.shipment_no}</h3>
-                  </div>
-                  <StatusBadge label={shipment.status} tone="warning" />
-                </div>
-                <p className="mt-3 text-sm leading-6 text-slate-400">
-                  {shipment.origin_warehouse_code} to {shipment.destination_warehouse_code}
-                  {shipment.delay_reason ? ` - ${shipment.delay_reason}` : ''}
-                </p>
-              </article>
-            ))}
           </div>
         </Panel>
 
@@ -278,29 +270,24 @@ export function DashboardPage() {
           </Panel>
 
           <Panel
-            eyebrow="Route snapshot"
-            title="Latest saved route schedules"
-            description="A quick read on the most recent route assets before drilling into the Route Studio."
+            eyebrow="Audit timeline"
+            title="Latest workspace actions"
+            description="Key operational and governance events are recorded here so the team can review what changed most recently."
           >
             <div className="space-y-3">
-              {schedules.slice(0, 4).map((schedule) => (
-                <article key={schedule.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              {auditEvents.slice(0, 4).map((event) => (
+                <article key={event.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{schedule.route_name}</h3>
-                      <p className="mt-1 text-sm text-slate-400">{schedule.schedule_date}</p>
+                      <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{event.description}</h3>
+                      <p className="mt-1 text-sm text-slate-400">{event.event_type}</p>
                     </div>
-                    <StatusBadge label={schedule.status} tone={scheduleTone(schedule.status)} />
-                  </div>
-                  <div className="mt-3 grid gap-2 text-sm text-slate-400 sm:grid-cols-3">
-                    <span>{schedule.total_distance_km} km</span>
-                    <span>${schedule.total_cost}</span>
-                    <span>{schedule.estimated_duration_min} min</span>
+                    <span className="text-xs text-slate-500">{new Date(event.created_at).toLocaleString()}</span>
                   </div>
                 </article>
               ))}
 
-              {schedules.length === 0 ? <p className="text-sm text-slate-400">No saved route schedules yet.</p> : null}
+              {auditEvents.length === 0 ? <p className="text-sm text-slate-400">No audit events yet.</p> : null}
             </div>
           </Panel>
         </div>

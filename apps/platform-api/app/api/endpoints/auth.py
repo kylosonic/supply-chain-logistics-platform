@@ -23,6 +23,7 @@ from app.schemas.auth import (
     UserRead,
     UserRole,
 )
+from app.services.audit import record_audit_event
 from app.services.security import create_access_token, create_access_token_for_org, hash_password, verify_password
 
 router = APIRouter()
@@ -148,6 +149,21 @@ def company_signup(payload: CompanySignupRequest, db: Session = Depends(get_db))
         is_active=True,
     )
     db.add(membership)
+
+    record_audit_event(
+        db,
+        event_type='workspace.created',
+        entity_type='organization',
+        entity_id=org.id,
+        actor=user,
+        organization_id=org.id,
+        description=f'Created workspace {org.name}',
+        payload={
+            'organization_name': org.name,
+            'subscription_tier': org.subscription_tier,
+            'owner_email': normalized_email,
+        },
+    )
     db.commit()
     db.refresh(org)
     db.refresh(user)

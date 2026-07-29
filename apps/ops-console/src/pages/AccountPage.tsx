@@ -17,8 +17,9 @@ import {
   setProviderPreference,
   testProviderKey,
 } from '../services/billingApi';
+import { getAuditTimeline } from '../services/logisticsApi';
 import { includedTasksLabel, overageRateLabel, usageMetricLabel, usageProgressPercent } from './accountUsageUtils';
-import type { CurrentSubscription, ProviderKey, SubscriptionPlan, SubscriptionTier, UsageSummary } from '../types/api';
+import type { AuditEvent, CurrentSubscription, ProviderKey, SubscriptionPlan, SubscriptionTier, UsageSummary } from '../types/api';
 
 function priceText(plan: SubscriptionPlan): string {
   if (plan.monthly_price_usd == null) {
@@ -38,6 +39,7 @@ export function AccountPage() {
   const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [keys, setKeys] = useState<ProviderKey[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [providerName, setProviderName] = useState('openai');
   const [keyName, setKeyName] = useState('primary');
   const [apiKey, setApiKey] = useState('');
@@ -48,17 +50,19 @@ export function AccountPage() {
   const currentTier = subscription?.tier;
 
   async function refresh() {
-    const [plansData, subData, keysData, preference] = await Promise.all([
+    const [plansData, subData, keysData, preference, auditData] = await Promise.all([
       listPlans(),
       getCurrentSubscription(),
       listProviderKeys(),
       getProviderPreference(),
+      getAuditTimeline().catch(() => []),
     ]);
 
     setPlans(plansData);
     setSubscription(subData);
     setKeys(keysData);
     setPreferredKeyId(preference.key_id || '');
+    setAuditEvents(auditData);
 
     try {
       const usageData = await getCurrentUsage();
@@ -386,6 +390,31 @@ export function AccountPage() {
           </div>
         </Panel>
       </div>
+
+      <Panel
+        eyebrow="Audit timeline"
+        title="Recent workspace events"
+        description="Subscription changes, provider-key actions, routing decisions, and planning events are recorded here for operator review."
+      >
+        <div className="space-y-3">
+          {auditEvents.slice(0, 8).map((event) => (
+            <article key={event.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge label={event.entity_type} tone="info" />
+                    <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{event.event_type}</span>
+                  </div>
+                  <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{event.description}</h3>
+                </div>
+                <span className="text-xs text-slate-500">{new Date(event.created_at).toLocaleString()}</span>
+              </div>
+            </article>
+          ))}
+
+          {auditEvents.length === 0 ? <p className="text-sm text-slate-500">No audit events recorded yet.</p> : null}
+        </div>
+      </Panel>
     </div>
   );
 }

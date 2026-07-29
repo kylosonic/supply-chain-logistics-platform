@@ -17,6 +17,7 @@ from app.models.warehouse import Warehouse
 from app.schemas.alert import AlertSeverity, AlertStatus, AlertType
 from app.schemas.auth import UserRole
 from app.schemas.shipment import ShipmentCreate, ShipmentRead, ShipmentStatus, ShipmentStatusUpdate
+from app.services.audit import record_audit_event, resolve_actor_organization_id
 
 router = APIRouter()
 
@@ -57,7 +58,7 @@ def list_shipments(
 def create_shipment(
     payload: ShipmentCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     existing = db.execute(select(Shipment).where(Shipment.shipment_no == payload.shipment_no)).scalar_one_or_none()
     if existing:
@@ -94,6 +95,22 @@ def create_shipment(
         status=ShipmentStatus.PLANNED,
     )
     db.add(shipment)
+
+    record_audit_event(
+        db,
+        event_type='shipment.created',
+        entity_type='shipment',
+        entity_id=shipment.id,
+        actor=actor,
+        organization_id=resolve_actor_organization_id(db, actor),
+        description=f'Created shipment {shipment.shipment_no}',
+        payload={
+            'origin_warehouse_code': payload.origin_warehouse_code,
+            'destination_warehouse_code': payload.destination_warehouse_code,
+            'sku': payload.sku,
+            'quantity_units': payload.quantity_units,
+        },
+    )
     db.commit()
     db.refresh(shipment)
     return _shipment_to_read(db, shipment)
@@ -116,7 +133,7 @@ def update_shipment_status(
     shipment_id: str,
     payload: ShipmentStatusUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     shipment = db.get(Shipment, shipment_id)
     if not shipment:
@@ -125,6 +142,7 @@ def update_shipment_status(
     if payload.status == ShipmentStatus.DELAYED and not payload.delay_reason:
         raise HTTPException(status_code=400, detail='delay_reason is required when marking a shipment delayed')
 
+    previous_status = shipment.status
     shipment.status = payload.status
     if payload.last_known_location is not None:
         shipment.last_known_location = payload.last_known_location
@@ -160,6 +178,17 @@ def update_shipment_status(
             )
 
     db.add(shipment)
+
+    record_audit_event(
+        db,
+        event_type='shipment.status_updated',
+        entity_type='shipment',
+        entity_id=shipment.id,
+        actor=actor,
+        organization_id=resolve_actor_organization_id(db, actor),
+        description=f'Updated shipment {shipment.shipment_no} to {payload.status}',
+        payload={'from_status': previous_status, 'to_status': payload.status, 'delay_reason': payload.delay_reason},
+    )
     db.commit()
     db.refresh(shipment)
     return _shipment_to_read(db, shipment)

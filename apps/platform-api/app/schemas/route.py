@@ -2,6 +2,8 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
+from app.schemas.common import ORMBase
+
 
 class DeliveryDemand(BaseModel):
     warehouse_code: str
@@ -62,3 +64,32 @@ class RouteScheduleSummary(BaseModel):
 
 class RouteScheduleDetail(RouteScheduleSummary):
     stops: list[RouteStopOut]
+
+
+class RouteOptimizationRunSummary(ORMBase):
+    route_name: str
+    schedule_date: date
+    start_warehouse_code: str
+    objective: str
+    total_distance_km: float
+    total_cost: float
+    estimated_duration_min: int
+    capacity_used: int
+    deliveries_count: int
+    stops_count: int
+    unassigned_count: int
+    persist_requested: bool
+    persisted_schedule_id: str | None
+
+
+class RouteOptimizationRunDetail(RouteOptimizationRunSummary):
+    actor_user_id: str | None
+    organization_id: str | None
+    vehicle_capacity_units: int
+    max_stops: int
+    speed_kmh: float
+    cost_per_km: float
+    weights: RouteWeights
+    deliveries: list[DeliveryDemand]
+    stops: list[RouteStopOut]
+    unassigned_deliveries: list[DeliveryDemand]

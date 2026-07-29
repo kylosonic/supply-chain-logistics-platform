@@ -21,6 +21,7 @@ from app.schemas.subscription import (
     UsageMetric,
     UsageRecordResponse,
 )
+from app.services.audit import record_audit_event
 from app.services.metering import current_usage_window
 
 router = APIRouter()
@@ -293,18 +294,29 @@ def record_usage(
 def select_tier(
     payload: SelectTierRequest,
     db: Session = Depends(get_db),
-    membership: OrganizationMembership = Depends(require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)),
+    membership_user: OrganizationMembership = Depends(require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)),
 ):
-    organization = db.get(Organization, membership.organization_id)
+    organization = db.get(Organization, membership_user.organization_id)
     if not organization:
         raise HTTPException(status_code=404, detail='Organization not found')
 
+    previous_tier = organization.subscription_tier
     organization.subscription_tier = payload.tier
     if organization.subscription_status in {'trialing', 'past_due'}:
         organization.subscription_status = 'active'
     organization.updated_at = datetime.now(UTC)
 
     db.add(organization)
+
+    record_audit_event(
+        db,
+        event_type='subscription.tier_selected',
+        entity_type='organization',
+        entity_id=organization.id,
+        organization_id=membership_user.organization_id,
+        description=f'Changed subscription tier from {previous_tier} to {payload.tier}',
+        payload={'from_tier': previous_tier, 'to_tier': payload.tier},
+    )
     db.commit()
     db.refresh(organization)
 

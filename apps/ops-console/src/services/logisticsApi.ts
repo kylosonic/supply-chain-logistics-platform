@@ -1,10 +1,14 @@
 import { api } from './api';
 import type {
   Alert,
+  AuditEvent,
+  ExceptionFeedResponse,
   ForecastResponse,
   IngestionResult,
   InventoryOverviewRow,
   ReplenishmentPlan,
+  RouteOptimizationRunDetail,
+  RouteOptimizationRunSummary,
   RouteOptimizePayload,
   RouteOptimizeResponse,
   RouteScheduleSummary,
@@ -31,6 +35,16 @@ export async function getRouteSchedules(): Promise<RouteScheduleSummary[]> {
 
 export async function optimizeRoute(payload: RouteOptimizePayload): Promise<RouteOptimizeResponse> {
   const { data } = await api.post<RouteOptimizeResponse>('/routes/optimize', payload);
+  return data;
+}
+
+export async function getRouteOptimizationHistory(): Promise<RouteOptimizationRunSummary[]> {
+  const { data } = await api.get<RouteOptimizationRunSummary[]>('/routes/history');
+  return data;
+}
+
+export async function getRouteOptimizationRun(runId: string): Promise<RouteOptimizationRunDetail> {
+  const { data } = await api.get<RouteOptimizationRunDetail>(`/routes/history/${runId}`);
   return data;
 }
 
@@ -138,6 +152,16 @@ export async function acknowledgeAlert(alertId: string, note?: string) {
 
 export async function resolveAlert(alertId: string, note?: string) {
   const { data } = await api.post<Alert>(`/alerts/${alertId}/resolve`, { note });
+  return data;
+}
+
+export async function getExceptionFeed(): Promise<ExceptionFeedResponse> {
+  const { data } = await api.get<ExceptionFeedResponse>('/ops/exception-feed');
+  return data;
+}
+
+export async function getAuditTimeline(): Promise<AuditEvent[]> {
+  const { data } = await api.get<AuditEvent[]>('/ops/audit-timeline');
   return data;
 }
 

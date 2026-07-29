@@ -16,6 +16,7 @@ from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.schemas.alert import AlertAction, AlertCreate, AlertRead, AlertSeverity, AlertStatus, AlertType
 from app.schemas.auth import UserRole
+from app.services.audit import record_audit_event, resolve_actor_organization_id
 
 router = APIRouter()
 
@@ -36,7 +37,7 @@ def list_alerts(
 def create_alert(
     payload: AlertCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     alert = Alert(
         alert_type=payload.alert_type,
@@ -48,6 +49,17 @@ def create_alert(
         related_entity_id=payload.related_entity_id,
     )
     db.add(alert)
+
+    record_audit_event(
+        db,
+        event_type='alert.created',
+        entity_type='alert',
+        entity_id=alert.id,
+        actor=actor,
+        organization_id=resolve_actor_organization_id(db, actor),
+        description=f'Created alert {alert.title}',
+        payload={'alert_type': alert.alert_type, 'severity': alert.severity},
+    )
     db.commit()
     db.refresh(alert)
     return alert
@@ -56,7 +68,7 @@ def create_alert(
 @router.post('/scan', response_model=list[AlertRead])
 def scan_alerts(
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     generated: list[Alert] = []
 
@@ -118,6 +130,16 @@ def scan_alerts(
     for alert in generated:
         db.add(alert)
 
+    record_audit_event(
+        db,
+        event_type='alert.scan_generated',
+        entity_type='alert_scan',
+        actor=actor,
+        organization_id=resolve_actor_organization_id(db, actor),
+        description=f'Generated {len(generated)} alerts from exception scan',
+        payload={'generated_count': len(generated)},
+    )
+
     db.commit()
     for alert in generated:
         db.refresh(alert)
@@ -145,6 +167,16 @@ def acknowledge_alert(
     if payload.note:
         alert.resolution_note = payload.note
     db.add(alert)
+
+    record_audit_event(
+        db,
+        event_type='alert.acknowledged',
+        entity_type='alert',
+        entity_id=alert.id,
+        actor=user,
+        description=f'Acknowledged alert {alert.title}',
+        payload={'status': alert.status, 'note': payload.note},
+    )
     db.commit()
     db.refresh(alert)
     return alert
@@ -172,6 +204,16 @@ def resolve_alert(
     if payload.note:
         alert.resolution_note = payload.note
     db.add(alert)
+
+    record_audit_event(
+        db,
+        event_type='alert.resolved',
+        entity_type='alert',
+        entity_id=alert.id,
+        actor=user,
+        description=f'Resolved alert {alert.title}',
+        payload={'status': alert.status, 'note': payload.note},
+    )
     db.commit()
     db.refresh(alert)
     return alert

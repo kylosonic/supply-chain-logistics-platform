@@ -19,6 +19,7 @@ from app.schemas.provider import (
     ProviderKeyRevokeRequest,
     ProviderKeyTestResponse,
 )
+from app.services.audit import record_audit_event
 from app.services.security import decrypt_provider_key, encrypt_provider_key, mask_provider_key
 
 router = APIRouter()
@@ -66,6 +67,17 @@ def create_provider_key(
         status='active',
     )
     db.add(key)
+
+    record_audit_event(
+        db,
+        event_type='providers.key_created',
+        entity_type='provider_key',
+        entity_id=key.id,
+        actor=user,
+        organization_id=membership.organization_id,
+        description=f'Created provider key {key.key_name}',
+        payload={'provider_name': key.provider_name},
+    )
     db.commit()
     db.refresh(key)
     return key
@@ -76,6 +88,7 @@ def revoke_provider_key(
     key_id: str,
     _: ProviderKeyRevokeRequest,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
     membership: OrganizationMembership = Depends(require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)),
 ):
     key = db.get(ProviderApiKey, key_id)
@@ -85,6 +98,17 @@ def revoke_provider_key(
     key.status = 'revoked'
     key.revoked_at = datetime.now(UTC)
     db.add(key)
+
+    record_audit_event(
+        db,
+        event_type='providers.key_revoked',
+        entity_type='provider_key',
+        entity_id=key.id,
+        actor=user,
+        organization_id=membership.organization_id,
+        description=f'Revoked provider key {key.key_name}',
+        payload={'provider_name': key.provider_name},
+    )
     db.commit()
     db.refresh(key)
     return key
@@ -138,6 +162,7 @@ def get_provider_preference(
 def set_provider_preference(
     payload: ProviderPreferenceRequest,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
     membership: OrganizationMembership = Depends(require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)),
 ):
     organization = db.get(Organization, membership.organization_id)
@@ -153,6 +178,17 @@ def set_provider_preference(
     organization.preferred_ai_provider = key.provider_name
     organization.preferred_ai_key_id = key.id
     db.add(organization)
+
+    record_audit_event(
+        db,
+        event_type='providers.preference_set',
+        entity_type='organization',
+        entity_id=organization.id,
+        actor=user,
+        organization_id=membership.organization_id,
+        description=f'Set preferred AI provider to {key.provider_name}',
+        payload={'provider_name': key.provider_name, 'key_id': key.id},
+    )
     db.commit()
     db.refresh(organization)
 

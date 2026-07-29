@@ -23,6 +23,7 @@ from app.schemas.planning import (
     ReplenishmentPlanStatus,
     ReplenishmentRejectRequest,
 )
+from app.services.audit import record_audit_event, resolve_actor_organization_id
 
 router = APIRouter()
 
@@ -125,6 +126,16 @@ def generate_replenishment_plans(
         db.add(plan)
         created.append((plan, row.code, row.sku))
 
+    record_audit_event(
+        db,
+        event_type='planning.replenishment_generated',
+        entity_type='replenishment_plan',
+        actor=user,
+        organization_id=resolve_actor_organization_id(db, user),
+        description=f'Generated {len(created)} replenishment plans',
+        payload={'generated_count': len(created), 'horizon_weeks': payload.horizon_weeks},
+    )
+
     db.commit()
     result: list[ReplenishmentPlanRead] = []
     for plan, warehouse_code, sku in created:
@@ -156,6 +167,17 @@ def approve_replenishment_plan(
     if payload.note:
         plan.rationale = f'{plan.rationale}. Approval note: {payload.note}'
     db.add(plan)
+
+    record_audit_event(
+        db,
+        event_type='planning.replenishment_approved',
+        entity_type='replenishment_plan',
+        entity_id=plan.id,
+        actor=user,
+        organization_id=resolve_actor_organization_id(db, user),
+        description=f'Approved replenishment plan for {plan.id}',
+        payload={'approved_quantity': plan.approved_quantity, 'note': payload.note},
+    )
     db.commit()
     db.refresh(plan)
 
@@ -184,6 +206,17 @@ def reject_replenishment_plan(
     plan.approved_by_user_id = user.id
     plan.approved_at = datetime.now(UTC)
     db.add(plan)
+
+    record_audit_event(
+        db,
+        event_type='planning.replenishment_rejected',
+        entity_type='replenishment_plan',
+        entity_id=plan.id,
+        actor=user,
+        organization_id=resolve_actor_organization_id(db, user),
+        description=f'Rejected replenishment plan for {plan.id}',
+        payload={'reason': payload.reason},
+    )
     db.commit()
     db.refresh(plan)
 
