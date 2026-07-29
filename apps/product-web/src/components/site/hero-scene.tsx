@@ -14,17 +14,17 @@ const particles = Array.from({ length: 14 }, (_, index) => ({
 }));
 
 const commandStats = [
-  ['Exception rate', '03', 'Open high-priority items'],
-  ['Margin drift', '+8.4%', 'Route and failure variance'],
-  ['Launch score', '82/100', 'Control tower almost live'],
+  ['Open exceptions', '03', 'Require dispatcher review'],
+  ['At-risk lanes', '02', 'Crossing margin threshold'],
+  ['Launch readiness', '82%', 'Checks nearly complete'],
 ] as const;
 
-const rhythmSteps = ['Detect route drift', 'Decide with margin context', 'Act with audit trace'] as const;
+const rhythmSteps = ['Review the exception queue', 'Compare route options', 'Record the action and handoff'] as const;
 
 const liveFeedItems = [
-  ['SH-402', 'Delivery window drifting by 27 min'],
-  ['AX-14', 'Below safety stock in West Hub'],
-  ['Route 7', 'Capacity threshold crossed'],
+  ['Shipment SH-402', 'Delivery window drifting by 27 minutes'],
+  ['Item AX-14', 'Safety stock is low in West Hub'],
+  ['Route 7', 'Capacity threshold exceeded'],
 ] as const;
 
 export function HeroScene() {
@@ -48,11 +48,11 @@ export function HeroScene() {
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-white/70">
               <Sparkles className="h-4 w-4" />
-              Live product visualization
+              Live workspace overview
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100">
               <ShieldCheck className="h-4 w-4" />
-              Workspace governed
+              Governance enabled
             </div>
           </div>
 
@@ -65,14 +65,14 @@ export function HeroScene() {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">Command stream</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">Operations summary</p>
                   <h3 className="balanced-headline mt-3 max-w-[8ch] font-display text-[clamp(2rem,10vw,2.7rem)] leading-[0.95] text-white">
-                    FreightPilot Control Grid
+                    Control overview
                   </h3>
                 </div>
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-2 text-xs text-violet-100">
                   <BrainCircuit className="h-4 w-4" />
-                  AI orchestration
+                  Assisted decisions
                 </div>
               </div>
 
@@ -88,7 +88,7 @@ export function HeroScene() {
 
               <div className="rounded-[24px] border border-white/10 bg-black/35 p-4">
                 <div className="flex items-center justify-between text-white/65">
-                  <span className="text-xs uppercase tracking-[0.18em]">Operational rhythm</span>
+                  <span className="text-xs uppercase tracking-[0.18em]">Recommended actions</span>
                   <ArrowUpRight className="h-4 w-4" />
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -106,7 +106,7 @@ export function HeroScene() {
           <div className="grid gap-4">
             <SpotlightCard className="min-h-0">
               <div className="flex items-center justify-between gap-3 text-white/75">
-                <span className="text-xs uppercase tracking-[0.2em]">Live feed</span>
+                <span className="text-xs uppercase tracking-[0.2em]">Live alerts</span>
                 <ChartNoAxesCombined className="h-4 w-4" />
               </div>
               <div className="mt-4 space-y-3">
@@ -120,22 +120,22 @@ export function HeroScene() {
             </SpotlightCard>
 
             <SpotlightCard className="min-h-0">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/45">Launch workspace</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/45">Workspace controls</p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="balanced-headline max-w-[7ch] font-display text-[clamp(1.7rem,8vw,2.1rem)] leading-[1] text-white">
-                    Role sign-off
+                    Launch checklist
                   </p>
                   <p className="mt-2 text-sm leading-7 text-white/60">
-                    Track dispatch, security, and data-owner confirmations in one flow.
+                    Confirm users, devices, and integrations before opening the team to live work.
                   </p>
                 </div>
                 <div>
                   <p className="balanced-headline max-w-[7ch] font-display text-[clamp(1.7rem,8vw,2.1rem)] leading-[1] text-white">
-                    Provider routing
+                    Provider controls
                   </p>
                   <p className="mt-2 text-sm leading-7 text-white/60">
-                    Choose a preferred model stack without surrendering vendor control.
+                    Choose approved providers and keep key ownership inside the workspace.
                   </p>
                 </div>
               </div>
@@ -148,11 +148,11 @@ export function HeroScene() {
         <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs uppercase tracking-[0.22em] text-white/70">
             <Sparkles className="h-4 w-4" />
-            Live product visualization
+            Live workspace overview
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100">
             <ShieldCheck className="h-4 w-4" />
-            Workspace governed
+            Governance enabled
           </div>
         </div>
 
@@ -165,12 +165,12 @@ export function HeroScene() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Command stream</p>
-                <h3 className="balanced-headline mt-3 max-w-[8ch] font-display text-[clamp(2rem,3vw,2.4rem)] leading-[0.95] text-white">FreightPilot Control Grid</h3>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Operations summary</p>
+                <h3 className="balanced-headline mt-3 max-w-[8ch] font-display text-[clamp(2rem,3vw,2.4rem)] leading-[0.95] text-white">Control overview</h3>
               </div>
               <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-2 text-xs text-violet-100">
                 <BrainCircuit className="h-4 w-4" />
-                AI orchestration
+                Assisted decisions
               </div>
             </div>
 
@@ -186,7 +186,7 @@ export function HeroScene() {
 
             <div className="mt-5 rounded-[24px] border border-white/10 bg-black/35 p-4">
               <div className="flex items-center justify-between text-white/65">
-                <span className="text-xs uppercase tracking-[0.18em]">Operational rhythm</span>
+                <span className="text-xs uppercase tracking-[0.18em]">Recommended actions</span>
                 <ArrowUpRight className="h-4 w-4" />
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -208,7 +208,7 @@ export function HeroScene() {
             >
               <SpotlightCard className="min-h-[210px]">
                 <div className="flex items-center justify-between gap-3 text-white/75">
-                  <span className="text-xs uppercase tracking-[0.2em]">Live feed</span>
+                  <span className="text-xs uppercase tracking-[0.2em]">Live alerts</span>
                   <ChartNoAxesCombined className="h-4 w-4" />
                 </div>
                 <div className="mt-4 space-y-3">
@@ -229,21 +229,21 @@ export function HeroScene() {
               className="grid gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2"
             >
               <SpotlightCard>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Desktop launch</p>
-                  <p className="balanced-headline mt-4 max-w-[7ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Role sign-off</p>
-                <p className="mt-2 text-sm leading-7 text-white/60">Track dispatch, security, and data owner confirmations in one workstation flow.</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Launch workspace</p>
+                  <p className="balanced-headline mt-4 max-w-[8ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Launch checklist</p>
+                <p className="mt-2 text-sm leading-7 text-white/60">Track approvals, environment checks, and go-live readiness in one flow.</p>
               </SpotlightCard>
               <SpotlightCard>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Workspace AI</p>
-                  <p className="balanced-headline mt-4 max-w-[7ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Provider routing</p>
-                <p className="mt-2 text-sm leading-7 text-white/60">Choose a preferred model stack without surrendering vendor control.</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Provider controls</p>
+                  <p className="balanced-headline mt-4 max-w-[8ch] font-display text-[clamp(1.7rem,2.8vw,2rem)] leading-[1] text-white">Approved models</p>
+                <p className="mt-2 text-sm leading-7 text-white/60">Choose preferred providers without giving up workspace policy and audit history.</p>
               </SpotlightCard>
             </motion.div>
           </div>
         </div>
 
           <div className="flex flex-col items-start gap-2 rounded-[24px] border border-white/10 bg-black/30 px-4 py-4 text-sm text-white/65 sm:flex-row sm:items-center sm:justify-between">
-          <span>Scroll to explore the platform story page by page.</span>
+          <span>Explore how the platform handles planning, response, launch, and governance.</span>
           <motion.span animate={{ y: [0, 8, 0] }} transition={{ duration: 1.8, repeat: Infinity }}>
             ↓
           </motion.span>

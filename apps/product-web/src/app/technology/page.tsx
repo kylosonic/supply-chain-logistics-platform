@@ -17,8 +17,8 @@ export default function TechnologyPage() {
     <>
       <PageHero
         eyebrow="Technology"
-        title="AI orchestration that feels visible, governed, and fast"
-        description="The technology story is not hidden in an appendix. FreightPilot treats signal ingestion, model routing, workspace governance, and auditability as premium product features."
+        title="AI assistance with visible controls and audit history"
+        description="FreightPilot treats signal handling, model routing, workspace policy, and auditability as operational controls that need to stay visible to the team."
         actions={
           <>
             <MagneticLink href="/pricing" variant="primary">
@@ -41,8 +41,8 @@ export default function TechnologyPage() {
       <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.06}>
         <SectionHeading
           eyebrow="Technology layers"
-          title="A modern system should communicate how it thinks"
-          description="This stack is framed around signals, AI coordination, governance, and composable rollout paths instead of vague platform language."
+          title="The stack should explain how decisions are supported"
+          description="The technology model is organized around live signal, provider control, governance, and rollout support instead of generic AI language."
         />
         <div className="mt-10 grid gap-4 xl:grid-cols-4">
           {technologyLayers.map((layer) => (

@@ -16,13 +16,13 @@ html {
 body {
   min-height: 100vh;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    radial-gradient(circle at 10% 16%, rgba(56, 189, 248, 0.12), transparent 22%),
-    radial-gradient(circle at 88% 12%, rgba(168, 85, 247, 0.16), transparent 24%),
-    radial-gradient(circle at 50% 100%, rgba(34, 211, 238, 0.08), transparent 26%),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    radial-gradient(circle at 10% 16%, rgba(56, 189, 248, 0.1), transparent 22%),
+    radial-gradient(circle at 88% 12%, rgba(168, 85, 247, 0.12), transparent 24%),
+    radial-gradient(circle at 50% 100%, rgba(34, 211, 238, 0.06), transparent 26%),
     #050505;
-  background-size: 36px 36px, 36px 36px, auto, auto, auto, auto;
+  background-size: 40px 40px, 40px 40px, auto, auto, auto, auto;
   color: white;
   overflow-x: hidden;
 }
@@ -33,7 +33,7 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: 0;
-  opacity: 0.08;
+  opacity: 0.05;
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0.7px, transparent 0.8px);
   background-size: 16px 16px;
   mix-blend-mode: soft-light;
@@ -85,6 +85,13 @@ textarea {
 
   .balanced-headline {
     text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 42rem;
+    color: rgb(255 255 255 / 0.68);
+    line-height: 1.9;
+    text-wrap: pretty;
   }
 }
 

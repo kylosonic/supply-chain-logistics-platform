@@ -47,20 +47,20 @@ export function SiteChrome({ children }: PropsWithChildren) {
   return (
     <div className="relative min-h-screen overflow-x-hidden">
       <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_var(--spotlight-x,50%)_var(--spotlight-y,20%),rgba(59,130,246,0.18),transparent_18%),radial-gradient(circle_at_85%_14%,rgba(167,139,250,0.18),transparent_20%)]" />
-      <div className="pointer-events-none fixed inset-0 z-0 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:36px_36px]" />
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.09),transparent_25%),radial-gradient(circle_at_bottom_right,rgba(192,132,252,0.1),transparent_24%)]" />
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-20 sm:opacity-25 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:40px_40px]" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.07),transparent_25%),radial-gradient(circle_at_bottom_right,rgba(192,132,252,0.08),transparent_24%)]" />
 
-      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-6 sm:pt-4 lg:px-8">
+      <header className="sticky top-0 z-40 px-3 pt-2.5 sm:px-6 sm:pt-4 lg:px-8">
         <motion.div
           className={cn(
-            'mx-auto flex w-full max-w-[1380px] items-center justify-between gap-3 rounded-full border border-white/10 bg-black/35 px-4 py-3 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.32)] sm:gap-4',
-            compact ? 'max-w-[1320px] px-4 py-2.5' : 'sm:px-5 sm:py-3.5',
+            'mx-auto flex w-full max-w-[1380px] items-center justify-between gap-3 rounded-[28px] border border-white/10 bg-black/35 px-4 py-2.5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.32)] sm:gap-4 sm:rounded-full sm:py-3',
+            compact ? 'max-w-[1320px] px-4 py-2' : 'sm:px-5 sm:py-3',
           )}
           animate={{ scale: compact ? 0.985 : 1 }}
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         >
           <Link href="/" className="inline-flex items-center gap-3 no-underline">
-            <span className="inline-grid h-10 w-10 place-items-center rounded-[16px] border border-white/15 bg-white/[0.08] font-display text-sm font-semibold text-white shadow-[0_12px_40px_rgba(96,165,250,0.15)]">
+            <span className="inline-grid h-8 w-8 place-items-center rounded-[14px] border border-white/15 bg-white/[0.08] font-display text-sm font-semibold text-white shadow-[0_12px_40px_rgba(96,165,250,0.15)] sm:h-10 sm:w-10 sm:rounded-[16px]">
               FP
             </span>
             <span className="hidden sm:grid">
@@ -100,7 +100,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white/78 lg:hidden"
+            className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm text-white/78 sm:px-4 sm:py-2.5 lg:hidden"
             aria-expanded={menuOpen}
             aria-label="Toggle navigation"
           >

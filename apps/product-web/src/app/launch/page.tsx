@@ -18,8 +18,8 @@ export default function LaunchPage() {
     <>
       <PageHero
         eyebrow="Launch"
-        title="Turn onboarding into a premium rollout ritual"
-        description="Create the workspace, move into the desktop launch workstation, and take the team from first account to live operations without losing control of the process."
+        title="Set up the workspace and launch operations in stages"
+        description="Create the workspace, prepare the launch workstation, and move the team into live operations with clear ownership and readiness checks."
         actions={
           <>
             <MagneticLink href={deepLinks.desktop} variant="secondary" external>
@@ -40,8 +40,8 @@ export default function LaunchPage() {
             <SpotlightCard>
               <SectionHeading
                 eyebrow="Launch sequence"
-                title="Build the workspace in deliberate stages"
-                description="The site and the product share the same launch model so the experience never shifts tone when the user moves from marketing into product." 
+                title="Build the workspace in controlled stages"
+                description="The launch flow is designed to keep setup, ownership, and readiness checks explicit from the first step." 
               />
               <div className="mt-8 space-y-4">
                 {launchSteps.map((step) => (
@@ -72,8 +72,8 @@ export default function LaunchPage() {
       <MotionSection className="section-shell py-16 sm:py-20" delay={0.08}>
         <SectionHeading
           eyebrow="After signup"
-          title="Continue the experience in the workstation and control tower"
-          description="Use the premium desktop layer to validate readiness, then step into the control tower when the team is ready for live work."
+          title="Move from setup into the workstation and control tower"
+          description="Use the desktop layer for launch readiness, then move into the control tower when the team is ready for live work."
         />
         <div className="mt-10 grid gap-4 lg:grid-cols-3">
           {[

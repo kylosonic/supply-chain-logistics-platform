@@ -17,8 +17,8 @@ export default function PlatformPage() {
     <>
       <PageHero
         eyebrow="Platform"
-        title="A command stack built for premium execution"
-        description="FreightPilot brings route decisions, live exceptions, shipment flow, workspace governance, and rollout choreography into one visually coherent product architecture."
+        title="A platform organized around real logistics work"
+        description="FreightPilot brings route decisions, live exceptions, shipment flow, workspace controls, and rollout tasks into one operating system."
         actions={
           <>
             <MagneticLink href="/launch" variant="primary">
@@ -43,8 +43,8 @@ export default function PlatformPage() {
       <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.06}>
         <SectionHeading
           eyebrow="Product stack"
-          title="Every page of the platform contributes to a single decision surface"
-          description="The architecture is modular in packaging and cinematic in presentation, but it stays grounded in real operator workflows."
+          title="Each part of the product supports the same operating workflow"
+          description="The platform is modular, but teams should still experience it as one connected system for planning, response, and rollout."
         />
         <div className="mt-10 grid gap-4 xl:grid-cols-4">
           {platformStacks.map((feature) => (
@@ -63,8 +63,8 @@ export default function PlatformPage() {
           <div className="glass-panel rounded-[34px] px-6 py-7">
             <SectionHeading
               eyebrow="How it works"
-              title="The system makes route decisions feel legible"
-              description="Each phase of the operating loop has its own visual identity while staying in the same language of glow, glass, motion, and restraint."
+              title="Route decisions stay readable while pressure is high"
+              description="Every stage of the workflow keeps the next action visible without forcing the team to leave the current operating context."
             />
             <div className="mt-10 space-y-4">
               {operatingLoop.map((item) => (
@@ -102,8 +102,8 @@ export default function PlatformPage() {
       <MotionSection className="section-shell py-16 sm:py-20" delay={0.1}>
         <SectionHeading
           eyebrow="Platform outcome"
-          title="The product should feel as advanced as the pitch"
-          description="FreightPilot is designed so the public narrative, the operator console, and the desktop launch workstation all feel like they came from the same future-facing product company."
+          title="The product experience should stay coherent from website to workstation"
+          description="FreightPilot is designed so the marketing site, operator console, and launch workstation all explain the same operating model."
           align="center"
         />
         <div className="mt-10 grid gap-4 md:grid-cols-3">

@@ -18,8 +18,8 @@ export default function PricingPage() {
     <>
       <PageHero
         eyebrow="Pricing"
-        title="Commercial clarity with premium product posture"
-        description="FreightPilot pricing is designed to feel as intentional as the rest of the product: clear entry, room to scale, and a story rooted in real operator economics."
+        title="Clear pricing for rollout, operations, and scale"
+        description="FreightPilot pricing is organized around operating footprint, user count, and launch support so teams can match the product to how they actually deploy it."
         actions={
           <>
             <MagneticLink href="/launch" variant="primary">
@@ -35,8 +35,8 @@ export default function PricingPage() {
       <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.06}>
         <SectionHeading
           eyebrow="Pricing tiers"
-          title="Choose the shape of the operating program"
-          description="Each tier is designed around operator maturity, rollout expectations, and the complexity of the decision surfaces needed by the team."
+          title="Choose a plan that matches the way the team operates"
+          description="Each plan is based on operating scope, rollout needs, and the level of control required by the team."
         />
         <div className="mt-10 grid gap-4 xl:grid-cols-3">
           {pricingTiers.map((tier, index) => (
@@ -73,8 +73,8 @@ export default function PricingPage() {
           <SpotlightCard>
             <SectionHeading
               eyebrow="Value model"
-              title="The premium story is still about economics"
-              description="Route savings, failure reduction, rollout speed, and workspace governance are all part of the business case."
+              title="The business case is operational first"
+              description="Route savings, service stability, rollout speed, and workspace governance all contribute to the value case."
             />
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               {[

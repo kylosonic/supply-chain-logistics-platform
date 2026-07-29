@@ -28,23 +28,23 @@ export default function HomePage() {
             <div className="space-y-5">
               <span className="pill">
                 <Sparkles className="h-4 w-4" />
-                FreightPilot 2026 launch
+                FreightPilot operations platform
               </span>
-              <h1 className="balanced-headline max-w-[11ch] font-display text-[clamp(3rem,6.8vw,6.35rem)] leading-[0.9] tracking-[-0.04em] text-white">
-                The logistics command layer for teams who want the future to feel real.
+              <h1 className="balanced-headline max-w-[9.5ch] font-display text-[clamp(2.7rem,5.6vw,5rem)] leading-[0.94] tracking-[-0.035em] text-white">
+                Plan routes, manage exceptions, and launch operations from one control layer.
               </h1>
-              <p className="max-w-[40rem] text-base leading-8 text-white/66 sm:text-lg">
-                FreightPilot is rebuilt from the ground up as a cinematic, AI-native product experience that feels more
-                like a frontier operating system than a SaaS dashboard.
+              <p className="lede text-base sm:text-lg">
+                FreightPilot gives logistics teams a single workspace for route planning, live issue management,
+                operator launch readiness, and AI-assisted decision support.
               </p>
             </div>
 
             <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center [&>*]:w-full sm:[&>*]:w-auto">
               <MagneticLink href="/launch" variant="primary">
-                Create company workspace
+                Start workspace setup
               </MagneticLink>
               <MagneticLink href={externalLinks.console} variant="secondary" external>
-                Open control tower
+                View control tower
               </MagneticLink>
             </div>
 
@@ -81,9 +81,9 @@ export default function HomePage() {
 
       <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.05}>
         <SectionHeading
-          eyebrow="Why this feels different"
-          title="Premium design as an operating advantage"
-          description="Every surface is intentionally shaped to feel calm, high-context, and expensive. No templates. No default SaaS chrome. Just product theater with operational credibility."
+          eyebrow="What the platform covers"
+          title="Operational control without constant context switching"
+          description="FreightPilot is built for teams that need planning, execution, launch readiness, and provider controls in the same product."
         />
         <div className="mt-10 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
           {flagshipFeatures.map((feature) => (
@@ -99,9 +99,9 @@ export default function HomePage() {
 
       <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.08}>
         <SectionHeading
-          eyebrow="Operating loop"
-          title="Every page reveals a different layer of the system"
-          description="The new site is structured like a product launch journey: first the promise, then the platform, then the AI stack, then the commercial model, then the launch ritual."
+          eyebrow="How teams use it"
+          title="A simple loop for daily operations"
+          description="The core workflow is straightforward: surface issues, choose an action with the right context, and record what changed."
         />
         <div className="mt-10 grid gap-4 lg:grid-cols-3">
           {operatingLoop.map((item) => (
@@ -117,9 +117,9 @@ export default function HomePage() {
       <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.1}>
         <div className="glass-panel rounded-[34px] px-6 py-8 sm:px-8">
           <SectionHeading
-            eyebrow="Platform identity"
-            title="A product story that still maps to real functionality"
-            description="The content is grounded in the actual routing, alerting, planning, launch, and governance workflows already living in FreightPilot."
+            eyebrow="Grounded product information"
+            title="Messaging that maps to actual workflows"
+            description="The product story is tied directly to routing, alert handling, workspace setup, usage controls, and audit history."
           />
           <div className="mt-10 grid gap-4 lg:grid-cols-3">
             {platformNarrative.map((item) => (
@@ -141,9 +141,9 @@ export default function HomePage() {
 
       <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.12}>
         <SectionHeading
-          eyebrow="Page preview"
-          title="The experience keeps unfolding as you move through the stack"
-          description="Each route below is its own scene: product architecture, AI orchestration, pricing clarity, and workspace launch."
+          eyebrow="Browse by workflow"
+          title="Each page answers a different operating question"
+          description="Move through platform structure, provider controls, pricing, and workspace setup without losing the same visual system."
         />
         <div className="mt-10 grid gap-4 lg:grid-cols-4">
           {secondaryFeatures.map((feature) => (
@@ -177,13 +177,12 @@ export default function HomePage() {
         <div className="glass-panel rounded-[38px] px-6 py-8 sm:px-8 sm:py-10">
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div>
-              <p className="kicker">Ready to launch</p>
+              <p className="kicker">Next step</p>
               <h2 className="balanced-headline mt-4 max-w-[12ch] font-display text-[clamp(2rem,5vw,4.5rem)] leading-[0.92] tracking-[-0.03em] text-white">
-                Move from curiosity into a premium launch sequence.
+                Start with a clear rollout plan and one operational workspace.
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-8 text-white/62">
-                Explore the platform page by page or skip ahead and open the workspace launch flow. Everything is
-                designed to feel fast, intelligent, and unforgettable.
+                Review the product by workflow or move directly into workspace setup if the team is ready to begin a pilot.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">

@@ -78,11 +78,11 @@ export const externalLinks = {
 };
 
 export const navigation: NavItem[] = [
-  { label: 'Home', href: '/', description: 'Launch narrative' },
-  { label: 'Platform', href: '/platform', description: 'Command stack' },
-  { label: 'Technology', href: '/technology', description: 'AI systems' },
-  { label: 'Pricing', href: '/pricing', description: 'Commercial model' },
-  { label: 'Launch', href: '/launch', description: 'Workspace onboarding' },
+  { label: 'Home', href: '/', description: 'Product overview' },
+  { label: 'Platform', href: '/platform', description: 'Operational modules' },
+  { label: 'Technology', href: '/technology', description: 'Decision controls' },
+  { label: 'Pricing', href: '/pricing', description: 'Commercial plans' },
+  { label: 'Launch', href: '/launch', description: 'Workspace setup' },
 ];
 
 export const homeStats: StatItem[] = [
@@ -90,52 +90,52 @@ export const homeStats: StatItem[] = [
     value: 48,
     suffix: 'hrs',
     label: 'Faster pilot activation',
-    detail: 'Reduce the time between workspace creation and the first controlled dispatch window.',
+    detail: 'Move from workspace creation to a controlled launch window in two days instead of weeks.',
   },
   {
     value: 87,
     suffix: '%',
-    label: 'Higher decision visibility',
-    detail: 'Routes, exceptions, pricing pressure, and launch readiness sit in one command narrative.',
+    label: 'Decisions with context',
+    detail: 'Route health, workload, launch readiness, and provider settings stay visible in the same workflow.',
   },
   {
     value: 5,
     suffix: 'x',
-    label: 'Cleaner operator context',
-    detail: 'Design every interaction to remove noise and make escalation paths obvious.',
+    label: 'Less interface switching',
+    detail: 'Give operators one place to review exceptions, compare actions, and record decisions.',
   },
   {
     value: 1,
     suffix: 'loop',
-    label: 'Unified operating rhythm',
-    detail: 'Detect, decide, act, and govern without changing mental models between tools.',
+    label: 'Shared operating model',
+    detail: 'Plan, respond, approve, and audit work inside the same control layer.',
   },
 ];
 
 export const flagshipFeatures: FeatureCard[] = [
   {
     icon: Route,
-    title: 'Exception-led route command',
-    description: 'A surface for teams who dispatch under consequence, not just plan routes on a map.',
-    detail: 'Surface route drift, shipment risk, cost variance, and operator action in the same visual field.',
+    title: 'Route planning with live exceptions',
+    description: 'Plan routes and react to service issues from the same operational view.',
+    detail: 'Keep late shipments, capacity risks, and route changes visible while a dispatcher is deciding what to do next.',
   },
   {
     icon: BrainCircuit,
-    title: 'AI orchestration without black boxes',
-    description: 'Bring-your-own models, provider governance, and decision explainability built into the product story.',
-    detail: 'Use provider preferences, workspace controls, and action traces as part of normal operations.',
+    title: 'AI assistance with visible controls',
+    description: 'Support decisions with models without hiding who approved what or which provider was used.',
+    detail: 'Provider selection, workspace policy, and action history remain part of the operating record.',
   },
   {
     icon: Gauge,
-    title: 'Margin-aware execution',
-    description: 'Focus attention on the flows that are actually expensive, not just the flows that are noisy.',
-    detail: 'Tie overage, failed-delivery loss, replenishment risk, and route execution quality together.',
+    title: 'Operational and commercial visibility',
+    description: 'Review service risk, workload pressure, and usage posture together.',
+    detail: 'The product keeps execution quality and platform usage in the same decision context.',
   },
   {
     icon: Command,
-    title: 'Desktop launch readiness',
-    description: 'Make rollout feel like an operating ritual, not a buried implementation checklist.',
-    detail: 'Connection health, role sign-off, and live-go readiness live in a dedicated workstation flow.',
+    title: 'Launch workflows for real teams',
+    description: 'Prepare devices, users, and integrations before the first production shift.',
+    detail: 'Track connection health, role sign-off, and launch readiness with a dedicated workstation flow.',
   },
 ];
 
@@ -143,71 +143,71 @@ export const platformStacks: FeatureCard[] = [
   {
     icon: Layers3,
     title: 'Control Tower',
-    description: 'One visual layer for routes, alerts, shipments, planning, and workspace governance.',
-    detail: 'Give operators a central rhythm instead of forcing them to build one from disconnected screens.',
+    description: 'One workspace for routes, alerts, shipments, planning, and governance.',
+    detail: 'Keep the operator in one system instead of splitting planning and response across separate tools.',
   },
   {
     icon: Workflow,
     title: 'Decision Studio',
-    description: 'Model routing tradeoffs with time, cost, and launch readiness still visible.',
-    detail: 'Treat scenario work as a live operating decision, not a background planning artifact.',
+    description: 'Compare route tradeoffs with time, cost, and execution impact still visible.',
+    detail: 'Scenario work stays close to live operations instead of becoming a disconnected planning exercise.',
   },
   {
     icon: Orbit,
     title: 'Launch Workstation',
-    description: 'Turn onboarding into a controlled launch sequence with explicit milestones.',
-    detail: 'Keep operators, data owners, and security leads aligned before the first production window.',
+    description: 'Run onboarding as a controlled rollout with explicit milestones and owners.',
+    detail: 'Keep operators, data owners, and security leads aligned before the first live production window.',
   },
   {
     icon: TimerReset,
     title: 'Revenue Guard',
-    description: 'Keep task usage, service failure, and cost pressure in the room while decisions are being made.',
-    detail: 'A commercial layer that feels operational instead of feeling bolted onto the product.',
+    description: 'Review task usage, service failures, and platform limits during daily operations.',
+    detail: 'Commercial visibility is built into the workflow instead of treated as a separate reporting task.',
   },
 ];
 
 export const operatingLoop: TimelineItem[] = [
   {
     label: '01',
-    title: 'Detect risk before the customer feels it',
-    detail: 'Use live exception queues, shipment drift, and stock pressure to see the next problem while it is still small.',
+    title: 'Surface issues before they spread',
+    detail: 'Watch live exceptions, shipment drift, and stock pressure while there is still time to respond cleanly.',
   },
   {
     label: '02',
-    title: 'Decide with context still intact',
-    detail: 'Routes, approvals, commercial posture, and launch readiness all stay present during decision moments.',
+    title: 'Make decisions with the full picture in view',
+    detail: 'Route options, workload, approvals, and workspace posture stay visible while the team decides what to do next.',
   },
   {
     label: '03',
-    title: 'Act with a recorded chain of intent',
-    detail: 'Every important workspace move becomes reviewable through audit events and route scenario history.',
+    title: 'Record actions and handoffs clearly',
+    detail: 'Every important workspace action can be reviewed through audit history and route scenario records.',
   },
 ];
 
 export const technologyLayers: FeatureCard[] = [
   {
     icon: Radar,
-    title: 'Signal ingestion',
-    description: 'Live feeds, routing constraints, inventory posture, and workspace usage feed the same product brain.',
-    detail: 'Build decision quality from layered operational signal, not isolated screen state.',
+    title: 'Operational signal layer',
+    description: 'Live feeds, routing constraints, inventory posture, and workspace usage are captured together.',
+    detail: 'Decision quality improves when the product works from shared operational signal instead of isolated screens.',
   },
   {
     icon: Cpu,
-    title: 'AI coordination',
-    description: 'Provider choice, model routing, and automation framing are treated as operator-visible controls.',
-    detail: 'The system feels intelligent without asking the team to trust a hidden chain of decisions.',
+    title: 'AI provider controls',
+    description: 'Provider choice, model routing, and automation settings remain visible to the workspace owner.',
+    detail: 'The system can assist decisions without turning approvals and provider behavior into a black box.',
   },
   {
     icon: ShieldCheck,
     title: 'Governance by default',
-    description: 'Workspace preference changes, provider actions, and route decisions are auditable.',
-    detail: 'Premium software should feel accountable as well as cinematic.',
+    description: 'Workspace changes, provider actions, and route decisions are recorded and reviewable.',
+    detail: 'The platform is designed to support accountable operations, not just fast interaction.',
   },
   {
     icon: Cable,
-    title: 'Composable deployment',
-    description: 'Desktop, product site, and operator console are presented as one orchestrated system.',
-    detail: 'Every layer supports the launch experience rather than fighting it.',
+    title: 'Coordinated rollout',
+    description: 'Desktop, web, and operator surfaces are built to support one launch process.',
+    detail: 'Each layer reinforces the rollout workflow instead of forcing the team to improvise one.',
   },
 ];
 
@@ -215,21 +215,21 @@ export const testimonials: Testimonial[] = [
   {
     company: 'Northstar Distribution',
     quote:
-      'FreightPilot feels like the first control layer that understands dispatch urgency, finance pressure, and rollout discipline at the same time.',
+      'FreightPilot gives the dispatch team one place to review route risk, operator readiness, and workspace controls without hunting across multiple screens.',
     person: 'Amina K.',
     role: 'VP Operations',
   },
   {
     company: 'Contour Fulfillment',
     quote:
-      'The product doesn’t just visualize problems. It changes how the team sequences decisions when the day stops being predictable.',
+      'It keeps planning, exceptions, and approvals close enough together that supervisors can respond quickly without losing context.',
     person: 'Julian R.',
     role: 'Head of Logistics Systems',
   },
   {
     company: 'Helix Commerce Network',
     quote:
-      'The launch workstation alone changed the way we roll out new operator machines. It turned implementation into an actual operating practice.',
+      'The launch workflow is practical. We can track sign-off, environment checks, and rollout readiness before opening a new team to live work.',
     person: 'Marta S.',
     role: 'Program Director',
   },
@@ -239,26 +239,26 @@ export const pricingTiers: PricingTier[] = [
   {
     name: 'Starter',
     price: '$399/mo',
-    eyebrow: 'For emerging regional teams',
-    summary: 'Replace reactive dispatch habits with a premium control layer for one core region.',
+    eyebrow: 'For a single region or pilot team',
+    summary: 'Cover core routing, exception review, and workspace launch for an initial operating footprint.',
     bullets: ['25 active vehicles', '3 workspace users', '2,500 optimized tasks', 'Desktop launch workstation'],
-    cta: 'Model Starter',
+    cta: 'Choose Starter',
   },
   {
     name: 'Scale',
     price: '$1,290/mo',
-    eyebrow: 'For multi-region operations',
-    summary: 'Add deeper exception handling, richer orchestration, and more deliberate operator governance.',
+    eyebrow: 'For growing multi-site operations',
+    summary: 'Add more users, more vehicles, and tighter operational controls across a broader routing network.',
     bullets: ['250 active vehicles', '20 workspace users', '5,000 optimized tasks', 'Priority rollout guidance'],
-    cta: 'Model Scale',
+    cta: 'Choose Scale',
   },
   {
     name: 'Enterprise',
     price: 'Custom',
-    eyebrow: 'For transformation programs',
-    summary: 'Pair premium UI, workspace governance, and tailored launch support with private deployment options.',
+    eyebrow: 'For enterprise rollout programs',
+    summary: 'Add tailored rollout planning, advanced controls, and deployment options for larger operating environments.',
     bullets: ['Unlimited regions', 'Dedicated onboarding pod', 'Custom rollout controls', 'Private deployment patterns'],
-    cta: 'Talk to FreightPilot',
+    cta: 'Talk to sales',
   },
 ];
 
@@ -266,27 +266,27 @@ export const faqItems: FaqItem[] = [
   {
     question: 'Is this a route tool, a control tower, or an AI product?',
     answer:
-      'It is intentionally all three. FreightPilot uses routing, exception surfaces, desktop launch readiness, and model governance as one operating system instead of treating them as separate categories.',
+      'It brings those functions together. FreightPilot combines route planning, live issue handling, launch readiness, and provider controls in one operational workspace.',
   },
   {
     question: 'Can we keep our own provider strategy?',
     answer:
-      'Yes. The workspace can manage provider keys, switch preferred providers, and preserve a BYOK strategy rather than forcing one model vendor.',
+      'Yes. Teams can manage provider keys, select preferred providers, and keep a bring-your-own-key model instead of being forced into a single vendor.',
   },
   {
     question: 'What is different about the desktop experience?',
     answer:
-      'The desktop layer is not a wrapper for the browser. It is designed as a launch workstation and operator entry point with readiness tracking and environment-specific controls.',
+      'The desktop layer supports rollout work directly. It is designed for workstation readiness, controlled sign-off, and operator-specific launch tasks.',
   },
   {
     question: 'How does FreightPilot justify premium positioning?',
     answer:
-      'The product is designed around decision quality, operational clarity, and rollout discipline. The design language is cinematic, but the commercial story stays rooted in margin and execution.',
+      'The product is positioned around operational clarity, controlled rollout, and accountable decision support rather than visual styling alone.',
   },
   {
     question: 'Does the site reflect real product capability?',
     answer:
-      'Yes. The public experience is built around the routing, alerting, planning, subscription, audit, and launch surfaces that already exist in the platform.',
+      'Yes. The website is structured around routing, alerting, launch, usage, and governance workflows that already exist in the product.',
   },
 ];
 
@@ -294,22 +294,22 @@ export const launchSteps: TimelineItem[] = [
   {
     label: '01',
     title: 'Create the company workspace',
-    detail: 'Provision the owner account, set the operating tier, and define the rollout owner.',
+    detail: 'Provision the owner account, choose the operating tier, and assign rollout ownership.',
   },
   {
     label: '02',
-    title: 'Install the launch workstation',
-    detail: 'Give operators a desktop entry point that validates environment setup before first use.',
+    title: 'Prepare the launch workstation',
+    detail: 'Give operators a desktop entry point that validates device and environment setup before first use.',
   },
   {
     label: '03',
-    title: 'Wire data, AI, and people',
-    detail: 'Connect keys, assign roles, and load warehouses, items, fleet, inventory, and order data.',
+    title: 'Connect data, providers, and users',
+    detail: 'Load warehouses, items, fleet, inventory, and orders while assigning roles and provider settings.',
   },
   {
     label: '04',
     title: 'Run the first live window',
-    detail: 'Move through dry-run routing, readiness verification, and controlled production launch.',
+    detail: 'Move through dry-run routing, readiness checks, and a controlled production launch.',
   },
 ];
 
@@ -336,7 +336,7 @@ if (decision.unassignedCount > 0) {
   });
 }`;
 
-export const premiumBadges = ['Apple-grade restraint', 'Linear-class precision', 'Stripe-level clarity', 'OpenAI-style intelligence'];
+export const premiumBadges = ['Route planning', 'Exception monitoring', 'Workspace launch', 'Provider controls'];
 
 export const deepLinks = {
   docs: externalLinks.docs,
@@ -347,27 +347,27 @@ export const deepLinks = {
 export const secondaryFeatures: FeatureCard[] = [
   {
     icon: Sparkles,
-    title: 'Live visual confidence',
-    description: 'Every page is designed to feel like a premium product release, not an admin panel.',
-    detail: 'Lighting, motion, and depth carry the brand without compromising readability.',
+    title: 'Clear operator context',
+    description: 'Pages are structured so important actions and signals can be found quickly.',
+    detail: 'Spacing, contrast, and hierarchy are used to support reading speed and decision quality.',
   },
   {
     icon: Glasses,
-    title: 'Glass-first surfaces',
-    description: 'Subtle blur, layered depth, and cinematic gradients give the product a distinct identity.',
-    detail: 'Use atmosphere to frame information, not to drown it.',
+    title: 'Reduced interface noise',
+    description: 'Visual treatment is present, but it does not compete with the information itself.',
+    detail: 'The site keeps enough atmosphere to feel modern without pushing content into the background.',
   },
   {
     icon: Waypoints,
-    title: 'Launch sequencing',
-    description: 'Make every handoff and rollout state explicit in the product experience.',
-    detail: 'Premium software should reduce uncertainty as much as it adds capability.',
+    title: 'Structured rollout steps',
+    description: 'The launch flow makes responsibilities and milestones explicit from the start.',
+    detail: 'Teams can see what is complete, what is blocked, and what still needs review.',
   },
   {
     icon: Fingerprint,
-    title: 'Governance posture',
-    description: 'Commercial and AI control surfaces are treated like product features, not buried settings.',
-    detail: 'The site and the product tell the same trust story.',
+    title: 'Provider and policy controls',
+    description: 'Governance settings are treated as operational controls instead of buried configuration.',
+    detail: 'The product makes it easier to manage provider access and review changes as the team scales.',
   },
 ];
 
@@ -387,18 +387,18 @@ export const iconLinks = [
 ];
 
 export const benefitStrip = [
-  'Premium cinematic UI',
-  'Route and exception command',
-  'AI-first control surface',
-  'Workspace launch ritual',
+  'Route planning and dispatch review',
+  'Exception monitoring and handoff',
+  'Provider controls and audit history',
+  'Workspace launch and readiness checks',
 ];
 
-export const trustRibbon = ['Audit every action', 'Model every route', 'Launch every workspace deliberately'];
+export const trustRibbon = ['Audit key changes', 'Control provider access', 'Roll out teams in stages'];
 
 export const platformNarrative = [
-  'FreightPilot treats operations, pricing posture, and AI governance as one interface problem.',
-  'The website is intentionally designed to feel like a future-facing product announcement, not a brochure.',
-  'Every page is purpose-built to reveal a different part of the system while staying visually coherent.',
+  'FreightPilot keeps planning, exception response, and workspace governance in one product model.',
+  'The site is organized around real operator tasks instead of generic category messaging.',
+  'Each page explains a different workflow while keeping the information hierarchy consistent.',
 ];
 
 export const pageCards: FeatureCard[] = [
