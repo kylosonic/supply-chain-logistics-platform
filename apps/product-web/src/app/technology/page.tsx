@@ -38,7 +38,7 @@ export default function TechnologyPage() {
         }
       />
 
-      <MotionSection className="section-shell pt-20" delay={0.06}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.06}>
         <SectionHeading
           eyebrow="Technology layers"
           title="A modern system should communicate how it thinks"
@@ -56,7 +56,7 @@ export default function TechnologyPage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell pt-20" delay={0.08}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.08}>
         <div className="grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
           <SpotlightCard className="min-h-[420px]">
             <p className="kicker">Intelligence pattern</p>

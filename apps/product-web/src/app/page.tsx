@@ -22,24 +22,24 @@ import {
 export default function HomePage() {
   return (
     <>
-      <section className="section-shell pt-8 sm:pt-12 lg:pt-16">
-        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-          <MotionSection className="space-y-6" delay={0.05}>
+      <section className="section-shell pt-4 sm:pt-8 lg:pt-10">
+        <div className="grid gap-8 lg:grid-cols-[1.12fr_0.88fr] lg:items-start xl:gap-10">
+          <MotionSection className="space-y-6 sm:space-y-7" delay={0.05}>
             <div className="space-y-5">
               <span className="pill">
                 <Sparkles className="h-4 w-4" />
                 FreightPilot 2026 launch
               </span>
-              <h1 className="max-w-5xl font-display text-[clamp(3.1rem,8vw,7rem)] leading-[0.88] text-white">
+              <h1 className="balanced-headline max-w-[11ch] font-display text-[clamp(3rem,6.8vw,6.35rem)] leading-[0.9] tracking-[-0.04em] text-white">
                 The logistics command layer for teams who want the future to feel real.
               </h1>
-              <p className="max-w-2xl text-base leading-8 text-white/66 sm:text-lg">
+              <p className="max-w-[40rem] text-base leading-8 text-white/66 sm:text-lg">
                 FreightPilot is rebuilt from the ground up as a cinematic, AI-native product experience that feels more
                 like a frontier operating system than a SaaS dashboard.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center [&>*]:w-full sm:[&>*]:w-auto">
               <MagneticLink href="/launch" variant="primary">
                 Create company workspace
               </MagneticLink>
@@ -48,25 +48,11 @@ export default function HomePage() {
               </MagneticLink>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
               {premiumBadges.map((badge) => (
                 <span key={badge} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/56">
                   {badge}
                 </span>
-              ))}
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {homeStats.map((stat, index) => (
-                <SpotlightCard key={stat.label} className="min-h-[188px]">
-                  <p className="kicker">{stat.label}</p>
-                  <p className="mt-4 font-display text-5xl text-white">
-                    <AnimatedCounter value={stat.value} suffix={stat.suffix} />
-                  </p>
-                  <p className="mt-3 text-sm leading-7 text-white/58">{stat.detail}</p>
-                  <div className="mt-4 h-px w-full bg-gradient-to-r from-cyan-300/0 via-cyan-300/50 to-cyan-300/0" />
-                  <span className="mt-4 inline-flex text-xs text-white/42">0{index + 1}</span>
-                </SpotlightCard>
               ))}
             </div>
           </MotionSection>
@@ -77,7 +63,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      <MotionSection className="section-shell pt-20" delay={0.05}>
+      <MotionSection className="section-shell pt-8 sm:pt-10" delay={0.07}>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {homeStats.map((stat, index) => (
+            <SpotlightCard key={stat.label} className="min-h-[188px]">
+              <p className="kicker">{stat.label}</p>
+              <p className="mt-4 font-display text-5xl text-white">
+                <AnimatedCounter value={stat.value} suffix={stat.suffix} />
+              </p>
+              <p className="mt-3 text-sm leading-7 text-white/58">{stat.detail}</p>
+              <div className="mt-4 h-px w-full bg-gradient-to-r from-cyan-300/0 via-cyan-300/50 to-cyan-300/0" />
+              <span className="mt-4 inline-flex text-xs text-white/42">0{index + 1}</span>
+            </SpotlightCard>
+          ))}
+        </div>
+      </MotionSection>
+
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.05}>
         <SectionHeading
           eyebrow="Why this feels different"
           title="Premium design as an operating advantage"
@@ -95,7 +97,7 @@ export default function HomePage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell pt-20" delay={0.08}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.08}>
         <SectionHeading
           eyebrow="Operating loop"
           title="Every page reveals a different layer of the system"
@@ -112,7 +114,7 @@ export default function HomePage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell pt-20" delay={0.1}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.1}>
         <div className="glass-panel rounded-[34px] px-6 py-8 sm:px-8">
           <SectionHeading
             eyebrow="Platform identity"
@@ -137,7 +139,7 @@ export default function HomePage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell pt-20" delay={0.12}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.12}>
         <SectionHeading
           eyebrow="Page preview"
           title="The experience keeps unfolding as you move through the stack"
@@ -155,7 +157,7 @@ export default function HomePage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell pt-20" delay={0.14}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.14}>
         <div className="grid gap-4 lg:grid-cols-3">
           {testimonials.map((item) => (
             <SpotlightCard key={item.company}>
@@ -171,12 +173,12 @@ export default function HomePage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell py-20" delay={0.16}>
+      <MotionSection className="section-shell py-16 sm:py-20" delay={0.16}>
         <div className="glass-panel rounded-[38px] px-6 py-8 sm:px-8 sm:py-10">
           <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div>
               <p className="kicker">Ready to launch</p>
-              <h2 className="mt-4 font-display text-[clamp(2rem,5vw,4.5rem)] leading-[0.92] text-white">
+              <h2 className="balanced-headline mt-4 max-w-[12ch] font-display text-[clamp(2rem,5vw,4.5rem)] leading-[0.92] tracking-[-0.03em] text-white">
                 Move from curiosity into a premium launch sequence.
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-8 text-white/62">

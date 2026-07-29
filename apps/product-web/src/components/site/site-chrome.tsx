@@ -50,11 +50,11 @@ export function SiteChrome({ children }: PropsWithChildren) {
       <div className="pointer-events-none fixed inset-0 z-0 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:36px_36px]" />
       <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.09),transparent_25%),radial-gradient(circle_at_bottom_right,rgba(192,132,252,0.1),transparent_24%)]" />
 
-      <header className="sticky top-0 z-40 px-4 pt-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-6 sm:pt-4 lg:px-8">
         <motion.div
           className={cn(
-            'mx-auto flex max-w-7xl items-center justify-between gap-4 rounded-full border border-white/10 bg-black/35 px-4 py-3 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.32)]',
-            compact ? 'max-w-6xl px-4 py-2.5' : 'max-w-7xl px-5 py-3.5',
+            'mx-auto flex w-full max-w-[1380px] items-center justify-between gap-3 rounded-full border border-white/10 bg-black/35 px-4 py-3 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.32)] sm:gap-4',
+            compact ? 'max-w-[1320px] px-4 py-2.5' : 'sm:px-5 sm:py-3.5',
           )}
           animate={{ scale: compact ? 0.985 : 1 }}
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
@@ -100,7 +100,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/78 lg:hidden"
+            className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white/78 lg:hidden"
             aria-expanded={menuOpen}
             aria-label="Toggle navigation"
           >
@@ -138,7 +138,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -18 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-4 top-24 z-30 rounded-[28px] border border-white/10 bg-black/78 p-5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.38)] lg:hidden"
+            className="fixed inset-x-3 top-20 z-30 rounded-[28px] border border-white/10 bg-black/78 p-5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.38)] sm:inset-x-6 sm:top-24 lg:hidden"
           >
             <div className="grid gap-3">
               {navigation.map((item) => (
@@ -167,10 +167,10 @@ export function SiteChrome({ children }: PropsWithChildren) {
         ) : null}
       </AnimatePresence>
 
-      <main className="relative z-10 pb-24 pt-8">{children}</main>
+      <main className="relative z-10 pb-20 pt-4 sm:pb-24 sm:pt-6 lg:pt-8">{children}</main>
 
-      <footer className="relative z-10 border-t border-white/10 px-4 pb-10 pt-8 sm:px-6 lg:px-8">
-        <div className="section-shell flex flex-col gap-8 rounded-[32px] border border-white/10 bg-white/[0.04] px-6 py-6 backdrop-blur-xl lg:flex-row lg:items-end lg:justify-between">
+      <footer className="relative z-10 border-t border-white/10 px-3 pb-10 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+        <div className="section-shell flex flex-col gap-8 rounded-[32px] border border-white/10 bg-white/[0.04] px-5 py-6 backdrop-blur-xl sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:py-7">
           <div className="max-w-xl space-y-3">
             <p className="kicker">FreightPilot</p>
             <h3 className="font-display text-2xl text-white">The future-facing logistics command layer.</h3>

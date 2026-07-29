@@ -32,7 +32,7 @@ export default function PricingPage() {
         }
       />
 
-      <MotionSection className="section-shell pt-20" delay={0.06}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.06}>
         <SectionHeading
           eyebrow="Pricing tiers"
           title="Choose the shape of the operating program"
@@ -68,7 +68,7 @@ export default function PricingPage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell pt-20" delay={0.08}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.08}>
         <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
           <SpotlightCard>
             <SectionHeading
@@ -102,7 +102,7 @@ export default function PricingPage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell py-20" delay={0.1}>
+      <MotionSection className="section-shell py-16 sm:py-20" delay={0.1}>
         <div className="grid gap-4 lg:grid-cols-3">
           {testimonials.map((item) => (
             <SpotlightCard key={item.company}>

@@ -6,6 +6,7 @@
   color-scheme: dark;
   --spotlight-x: 50%;
   --spotlight-y: 12%;
+  --site-max-width: 1380px;
 }
 
 html {
@@ -53,7 +54,9 @@ textarea {
 
 @layer components {
   .section-shell {
-    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    margin-inline: auto;
+    width: min(100%, var(--site-max-width));
+    padding-inline: clamp(1rem, 1.2vw + 0.75rem, 2rem);
   }
 
   .kicker {
@@ -78,6 +81,10 @@ textarea {
     border: 1px solid rgb(255 255 255 / 0.12);
     background: rgb(255 255 255 / 0.05);
     color: rgb(255 255 255 / 0.6);
+  }
+
+  .balanced-headline {
+    text-wrap: balance;
   }
 }
 

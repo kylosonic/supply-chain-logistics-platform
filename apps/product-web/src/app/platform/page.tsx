@@ -40,7 +40,7 @@ export default function PlatformPage() {
         }
       />
 
-      <MotionSection className="section-shell pt-20" delay={0.06}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.06}>
         <SectionHeading
           eyebrow="Product stack"
           title="Every page of the platform contributes to a single decision surface"
@@ -58,7 +58,7 @@ export default function PlatformPage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell pt-20" delay={0.08}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.08}>
         <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="glass-panel rounded-[34px] px-6 py-7">
             <SectionHeading
@@ -99,7 +99,7 @@ export default function PlatformPage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell py-20" delay={0.1}>
+      <MotionSection className="section-shell py-16 sm:py-20" delay={0.1}>
         <SectionHeading
           eyebrow="Platform outcome"
           title="The product should feel as advanced as the pitch"

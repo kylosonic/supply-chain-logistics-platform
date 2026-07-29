@@ -33,7 +33,7 @@ export default function LaunchPage() {
         }
       />
 
-      <MotionSection className="section-shell pt-20" delay={0.06}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.06}>
         <div className="grid gap-4 lg:grid-cols-[1.02fr_0.98fr]">
           <SignupForm />
           <div className="grid gap-4">
@@ -69,7 +69,7 @@ export default function LaunchPage() {
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell py-20" delay={0.08}>
+      <MotionSection className="section-shell py-16 sm:py-20" delay={0.08}>
         <SectionHeading
           eyebrow="After signup"
           title="Continue the experience in the workstation and control tower"
