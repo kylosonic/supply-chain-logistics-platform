@@ -18,9 +18,11 @@ apps/product-web/.vite/
 
 # Env
 .env
-*.env.local
+.env*.local
 
 # OS/IDE
 .DS_Store
 .vscode/
 .idea/
+
+.vercel/

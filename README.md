@@ -25,7 +25,7 @@ Full-stack logistics platform with an operations console, API backend, and a pro
 
 - Backend: FastAPI, SQLAlchemy, Alembic, Pydantic, psycopg
 - Frontend (ops): React, Recharts, React Router, Tailwind
-- Product web: React, Vite
+- Product web: Next.js, React, Tailwind
 - Database: PostgreSQL
 - Forecasting: scikit-learn and pandas
 
@@ -36,6 +36,44 @@ Full-stack logistics platform with an operations console, API backend, and a pro
 - Backend API (Vercel): https://platform-api-smoky.vercel.app
 - Supabase project ref: `azljjrjatdpkcvjbpztn`
 - Supabase API base: `https://azljjrjatdpkcvjbpztn.supabase.co`
+
+## Vercel monorepo setup
+
+This repository is linked to Vercel as a monorepo with one project per deployable app:
+
+- `apps/product-web` -> `product-web` (Next.js preset, root directory `apps/product-web`)
+- `apps/ops-console` -> `ops-console` (Vite preset, root directory `apps/ops-console`, SPA rewrite in `apps/ops-console/vercel.json`)
+- `apps/platform-api` -> `platform-api` (Python serverless app, root directory `apps/platform-api`, request routing in `apps/platform-api/vercel.json`)
+
+From repo root, relink the repository to the same Vercel projects:
+
+```bash
+npm run vercel:link
+```
+
+Pull production environment variables for all three Vercel projects:
+
+```bash
+npm run vercel:pull
+```
+
+Pull a single project only:
+
+```bash
+npm run vercel:pull:web
+npm run vercel:pull:ops
+npm run vercel:pull:api
+```
+
+Deploy each Vercel-backed section from the monorepo root:
+
+```bash
+npm run vercel:deploy:web
+npm run vercel:deploy:ops
+npm run vercel:deploy:api
+```
+
+Vercel CLI generates local environment files under `.vercel/.env.production.local` when you run `vercel pull`. Those files are machine-local deployment state and should stay uncommitted.
 
 ## Supabase CLI workflow (database + auth)
 
