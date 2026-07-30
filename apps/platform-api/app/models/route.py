@@ -13,6 +13,9 @@ class RouteSchedule(UUIDTimestampMixin, Base):
     route_name: Mapped[str] = mapped_column(String(128), nullable=False)
     schedule_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     start_warehouse_id: Mapped[str] = mapped_column(ForeignKey('warehouses.id', ondelete='RESTRICT'), nullable=False)
+    assigned_asset_id: Mapped[str | None] = mapped_column(ForeignKey('fleet_assets.id', ondelete='SET NULL'), nullable=True)
+    origin_latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    origin_longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     vehicle_capacity_units: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     objective: Mapped[str] = mapped_column(String(32), default='weighted_cost', nullable=False)
     total_distance_km: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
@@ -21,6 +24,7 @@ class RouteSchedule(UUIDTimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(24), default='planned', nullable=False)
 
     stops = relationship('RouteStop', back_populates='route_schedule', cascade='all, delete-orphan')
+    assigned_asset = relationship('FleetAsset', foreign_keys=[assigned_asset_id])
 
 
 class RouteStop(UUIDTimestampMixin, Base):

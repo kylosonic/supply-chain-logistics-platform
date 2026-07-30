@@ -23,6 +23,7 @@ class ShipmentCreate(BaseModel):
     route_schedule_id: str | None = None
     planned_departure: datetime | None = None
     expected_delivery: datetime | None = None
+    scope_3_emissions_kg: float = 0.0
 
 
 class ShipmentStatusUpdate(BaseModel):
@@ -47,3 +48,4 @@ class ShipmentRead(ORMBase):
     last_known_location: str | None
     delay_reason: str | None
     proof_of_delivery_ref: str | None
+    scope_3_emissions_kg: float

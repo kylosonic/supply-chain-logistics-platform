@@ -16,7 +16,7 @@ from app.models.order import HistoricalOrder
 from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.schemas.auth import UserRole
-from app.schemas.ingestion import IngestionResult
+from app.schemas.ingestion import IngestionResult, TelematicsPayload, TelematicsResult
 
 router = APIRouter()
 
@@ -263,3 +263,39 @@ def ingest_orders_csv(
 
     db.commit()
     return IngestionResult(records_processed=processed, records_created=created, records_updated=updated, errors=errors)
+
+
+@router.post('/telematics', response_model=TelematicsResult)
+async def ingest_telematics(
+    payload: TelematicsPayload,
+    db: Session = Depends(get_db),
+):
+    """Ingest a real-time telematics data point for a fleet asset.
+
+    Looks up the asset by its vehicle_code (asset_id), updates its GPS
+    coordinates and telemetry timestamp.  Returns 404 if the asset is
+    not registered.
+    """
+    asset = db.execute(
+        select(FleetAsset).where(FleetAsset.vehicle_code == payload.asset_id)
+    ).scalar_one_or_none()
+
+    if asset is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Fleet asset with asset_id '{payload.asset_id}' not found",
+        )
+
+    asset.latitude = payload.latitude
+    asset.longitude = payload.longitude
+    asset.last_telemetry_at = payload.timestamp
+    db.add(asset)
+    db.commit()
+
+    return TelematicsResult(
+        asset_id=payload.asset_id,
+        status="updated",
+        updated_latitude=payload.latitude,
+        updated_longitude=payload.longitude,
+        telemetry_timestamp=payload.timestamp,
+    )

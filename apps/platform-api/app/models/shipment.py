@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -25,4 +25,5 @@ class Shipment(UUIDTimestampMixin, Base):
     last_known_location: Mapped[str | None] = mapped_column(String(128), nullable=True)
     delay_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     proof_of_delivery_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    scope_3_emissions_kg: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

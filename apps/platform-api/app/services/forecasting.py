@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
+from uuid import UUID
 
 import numpy as np
 import pandas as pd
@@ -9,6 +11,8 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
+
+from app.services.weather import simulated_weather_features
 
 
 @dataclass
@@ -117,3 +121,118 @@ def forecast_weekly_demand(
             })
 
     return ForecastResult(model_name='RandomForestRegressor', predictions=predictions)
+
+
+# ---------------------------------------------------------------------------
+# Predictive ETA Algorithm
+# ---------------------------------------------------------------------------
+
+def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance between two points in miles."""
+    R = 3958.8  # Earth radius in miles
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def calculate_arrival_probability(
+    route_id: UUID,
+    current_lat: float,
+    current_lon: float,
+    historical_runs: list[dict],
+    route_destination: dict[str, float] | None = None,
+) -> dict:
+    """Predict the remaining transit time using a RandomForestRegressor.
+
+    Args:
+        route_id: UUID of the route being tracked.
+        current_lat: Current latitude of the vehicle.
+        current_lon: Current longitude of the vehicle.
+        historical_runs: List of dicts from RouteOptimizationRun rows,
+            each containing at least ``total_distance_km``,
+            ``estimated_duration_min``, ``speed_kmh``, ``stops_count``,
+            and ``schedule_date``.
+        route_destination: Optional dict with ``latitude`` and
+            ``longitude`` of the route destination.  When provided the
+            remaining distance is estimated via Haversine.
+
+    Returns:
+        A dict with ``predicted_eta`` (ISO datetime) and
+        ``confidence_score`` (float 0-1).
+    """
+    now = datetime.now(tz=timezone.utc)
+
+    # ---- Fallback when there is no history ----------------------------------
+    if not historical_runs:
+        return {
+            'predicted_eta': (now + timedelta(minutes=60)).isoformat(),
+            'confidence_score': 0.1,
+        }
+
+    # ---- Build training data from historical optimisation runs ---------------
+    records: list[dict] = []
+    for run in historical_runs:
+        sched_date = run.get('schedule_date', now.date())
+        if isinstance(sched_date, str):
+            sched_date = datetime.fromisoformat(sched_date).date()
+        weather = simulated_weather_features(
+            sched_date,
+            current_lat,
+            current_lon,
+        )
+        records.append({
+            'total_distance_km': float(run.get('total_distance_km', 0)),
+            'speed_kmh': float(run.get('speed_kmh', 50)),
+            'stops_count': int(run.get('stops_count', 1)),
+            'day_of_week': sched_date.weekday(),
+            'weather_disruption_index': weather['weather_disruption_index'],
+            'duration_min': float(run.get('estimated_duration_min', 60)),
+        })
+
+    train_df = pd.DataFrame(records)
+    feature_cols = ['total_distance_km', 'speed_kmh', 'stops_count', 'day_of_week', 'weather_disruption_index']
+
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(train_df[feature_cols], train_df['duration_min'])
+
+    # ---- Build prediction row for current conditions -------------------------
+    remaining_distance_km: float
+    if route_destination:
+        remaining_distance_km = _haversine_miles(
+            current_lat, current_lon,
+            route_destination['latitude'], route_destination['longitude'],
+        ) * 1.60934  # miles → km
+    else:
+        remaining_distance_km = float(train_df['total_distance_km'].mean()) * 0.5
+
+    live_weather = simulated_weather_features(now.date(), current_lat, current_lon)
+    avg_speed = float(train_df['speed_kmh'].mean()) or 50.0
+    avg_stops = int(train_df['stops_count'].mean()) or 1
+
+    pred_input = pd.DataFrame([{
+        'total_distance_km': remaining_distance_km,
+        'speed_kmh': avg_speed,
+        'stops_count': avg_stops,
+        'day_of_week': now.weekday(),
+        'weather_disruption_index': live_weather['weather_disruption_index'],
+    }])
+
+    predicted_minutes = float(model.predict(pred_input)[0])
+    predicted_minutes = max(predicted_minutes, 0.0)
+
+    # ---- Confidence from tree-level variance ---------------------------------
+    tree_preds = np.array([t.predict(pred_input) for t in model.estimators_]).flatten()
+    std_dev = float(np.std(tree_preds))
+    mean_pred = float(np.mean(tree_preds)) or 1.0
+    cv = std_dev / mean_pred  # coefficient of variation
+    confidence = round(max(0.0, min(1.0, 1.0 - cv)), 2)
+
+    predicted_eta = now + timedelta(minutes=predicted_minutes)
+
+    return {
+        'predicted_eta': predicted_eta.isoformat(),
+        'confidence_score': confidence,
+    }
+
