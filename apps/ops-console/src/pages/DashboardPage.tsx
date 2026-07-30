@@ -38,11 +38,25 @@ function severityTone(severity: string) {
   return 'neutral';
 }
 
-function scheduleTone(status: string) {
-  if (status === 'completed' || status === 'delivered') return 'success';
-  if (status === 'delayed' || status === 'failed') return 'danger';
-  if (status === 'active' || status === 'in_progress') return 'warning';
-  return 'neutral';
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={`skeleton ${className ?? ''}`} />;
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <SkeletonBlock className="h-[140px] rounded-[30px]" />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <SkeletonBlock key={i} className="h-[130px] rounded-[24px]" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <SkeletonBlock className="h-[320px] rounded-[28px]" />
+        <SkeletonBlock className="h-[320px] rounded-[28px]" />
+      </div>
+    </div>
+  );
 }
 
 export function DashboardPage() {
@@ -58,6 +72,7 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastLiveUpdate, setLastLiveUpdate] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -128,29 +143,26 @@ export function DashboardPage() {
   const feedSummary = exceptionFeed?.summary;
   const feedItems = exceptionFeed?.items ?? [];
 
+  async function handleRefresh() {
+    setIsRefreshing(true);
+    await loadData();
+    setIsRefreshing(false);
+  }
+
   const refreshButton = (
     <button
-      onClick={loadData}
-      className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+      onClick={handleRefresh}
+      className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
     >
-      Refresh data
+      {isRefreshing ? (
+        <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
+      ) : null}
+      {isRefreshing ? 'Refreshing...' : 'Refresh data'}
     </button>
   );
 
   if (loading) {
-    return (
-      <div className="space-y-5">
-        <PageHeader
-          eyebrow="Control tower"
-          title="Operations command surface"
-          description="Loading current route, shipment, exception, and planning signals for this workspace."
-          actions={refreshButton}
-        />
-        <Panel>
-          <p className="text-sm text-slate-400">Loading dashboard...</p>
-        </Panel>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -162,7 +174,8 @@ export function DashboardPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {lastLiveUpdate ? (
-              <span className="rounded-full border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" style={{ animation: 'pulseRing 2s ease-in-out infinite' }} />
                 Live sync {new Date(lastLiveUpdate).toLocaleTimeString()}
               </span>
             ) : null}
@@ -215,8 +228,8 @@ export function DashboardPage() {
           description="The unified exception feed combines unresolved alerts, pending replenishment approvals, and route runs that still need manual intervention."
         >
           <div className="space-y-3">
-            {feedItems.slice(0, 6).map((item) => (
-              <article key={`${item.source_type}:${item.source_id}`} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+            {feedItems.slice(0, 6).map((item, index) => (
+              <article key={`${item.source_type}:${item.source_id}`} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4" style={{ animationDelay: `${index * 0.06}s` }}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -232,8 +245,9 @@ export function DashboardPage() {
             ))}
 
             {feedItems.length === 0 ? (
-              <div className="rounded-[22px] border border-emerald-500/20 bg-emerald-950/12 p-4 text-sm text-emerald-200">
-                No open alerts. The queue is currently clear.
+              <div className="animate-fade-in rounded-[22px] border border-emerald-500/20 bg-emerald-950/12 p-5 text-center">
+                <p className="font-['Space_Grotesk'] text-lg font-semibold text-emerald-200">Queue clear</p>
+                <p className="mt-1 text-sm text-emerald-300/60">No open alerts requiring operator attention.</p>
               </div>
             ) : null}
           </div>
@@ -246,24 +260,24 @@ export function DashboardPage() {
             description="Keep approval load, capacity posture, and plan usage visible while the team is dispatching."
           >
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-              <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Inventory position</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold text-slate-50">{summary.stock.toLocaleString()}</p>
+                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.stock.toLocaleString()}</p>
                 <p className="mt-2 text-sm text-slate-400">Safety stock total: {summary.safety.toLocaleString()} units</p>
               </div>
-              <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Warehouse utilization</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold text-slate-50">{summary.avgUtil}%</p>
+                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.avgUtil}%</p>
                 <p className="mt-2 text-sm text-slate-400">Average capacity pressure across tracked warehouse locations.</p>
               </div>
-              <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Pending approvals</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold text-slate-50">{summary.pendingPlans.length}</p>
+                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.pendingPlans.length}</p>
                 <p className="mt-2 text-sm text-slate-400">Replenishment plans waiting for admin sign-off.</p>
               </div>
-              <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Saved route schedules</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold text-slate-50">{schedules.length}</p>
+                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{schedules.length}</p>
                 <p className="mt-2 text-sm text-slate-400">Optimization output currently saved in the route schedule store.</p>
               </div>
             </div>
@@ -275,8 +289,8 @@ export function DashboardPage() {
             description="Key operational and governance events are recorded here so the team can review what changed most recently."
           >
             <div className="space-y-3">
-              {auditEvents.slice(0, 4).map((event) => (
-                <article key={event.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              {auditEvents.slice(0, 4).map((event, index) => (
+                <article key={event.id} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4" style={{ animationDelay: `${index * 0.06}s` }}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{event.description}</h3>

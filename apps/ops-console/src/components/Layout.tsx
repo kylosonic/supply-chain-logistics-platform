@@ -21,9 +21,9 @@ export function Layout({ children }: PropsWithChildren) {
       <div className="mx-auto flex max-w-[1520px] gap-5 px-4 py-4 lg:px-6">
         <aside className="hidden w-[310px] shrink-0 lg:block">
           <div className="sticky top-4 flex h-[calc(100vh-2rem)] flex-col gap-4">
-            <div className="rounded-[30px] border border-slate-800/80 bg-slate-950/82 p-5 shadow-[0_24px_80px_rgba(2,12,20,0.34)] backdrop-blur">
-              <Link to="/" className="inline-flex items-start gap-4 no-underline">
-                <span className="inline-grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-sky-300 via-sky-400 to-teal-300 font-['Space_Grotesk'] text-sm font-semibold text-slate-950">
+            <div className="top-highlight rounded-[30px] border border-slate-800/80 bg-slate-950/82 p-5 shadow-[0_24px_80px_rgba(2,12,20,0.34)] backdrop-blur">
+              <Link to="/" className="group inline-flex items-start gap-4 no-underline">
+                <span className="inline-grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-sky-300 via-sky-400 to-teal-300 font-['Space_Grotesk'] text-sm font-semibold text-slate-950 transition group-hover:shadow-[0_0_24px_rgba(56,189,248,0.3)]">
                   FP
                 </span>
                 <span className="grid gap-1">
@@ -33,7 +33,7 @@ export function Layout({ children }: PropsWithChildren) {
               </Link>
             </div>
 
-            <nav className="flex-1 rounded-[30px] border border-slate-800/80 bg-slate-950/78 p-3 shadow-[0_24px_80px_rgba(2,12,20,0.3)] backdrop-blur">
+            <nav className="flex-1 overflow-y-auto rounded-[30px] border border-slate-800/80 bg-slate-950/78 p-3 shadow-[0_24px_80px_rgba(2,12,20,0.3)] backdrop-blur">
               <div className="mb-3 px-3 pt-2 text-xs font-semibold uppercase tracking-[0.24em] text-sky-300/70">
                 Workspace views
               </div>
@@ -42,21 +42,26 @@ export function Layout({ children }: PropsWithChildren) {
                   <NavLink
                     key={item.to}
                     to={item.to}
+                    end={item.to === '/'}
                     className={({ isActive }) =>
-                      `grid grid-cols-[44px_minmax(0,1fr)] items-center gap-3 rounded-[22px] border px-3 py-3 transition ${
+                      `grid grid-cols-[44px_minmax(0,1fr)] items-center gap-3 rounded-[22px] border px-3 py-3 transition-all duration-200 ${
                         isActive
                           ? 'border-sky-400/30 bg-sky-500/12 text-slate-50 shadow-[0_12px_36px_rgba(14,165,233,0.12)]'
                           : 'border-transparent bg-transparent text-slate-300 hover:border-slate-800/80 hover:bg-slate-900/70'
                       }`
                     }
                   >
-                    <span className="inline-grid h-11 w-11 place-items-center rounded-2xl bg-slate-900 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-200">
-                      {item.code}
-                    </span>
-                    <span className="grid">
-                      <span className="text-sm font-semibold">{item.label}</span>
-                      <span className="text-xs text-slate-500">{item.hint}</span>
-                    </span>
+                    {({ isActive }) => (
+                      <>
+                        <span className={`inline-grid h-11 w-11 place-items-center rounded-2xl text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${isActive ? 'bg-sky-500/20 text-sky-200' : 'bg-slate-900 text-slate-200'}`}>
+                          {item.code}
+                        </span>
+                        <span className="grid">
+                          <span className="text-sm font-semibold">{item.label}</span>
+                          <span className="text-xs text-slate-500">{item.hint}</span>
+                        </span>
+                      </>
+                    )}
                   </NavLink>
                 ))}
               </div>
@@ -65,7 +70,7 @@ export function Layout({ children }: PropsWithChildren) {
             <div className="grid gap-4">
               <div className="rounded-[26px] border border-slate-800/80 bg-slate-950/72 p-5 shadow-[0_18px_48px_rgba(2,12,20,0.24)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Operator mode</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{user?.role || 'viewer'}</p>
+                <p className="mt-3 font-['Space_Grotesk'] text-xl font-semibold capitalize text-slate-50">{user?.role || 'viewer'}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-400">Role-aware routing, approvals, and AI preference controls stay visible from the command frame.</p>
               </div>
               <div className="rounded-[26px] border border-slate-800/80 bg-slate-950/72 p-5 shadow-[0_18px_48px_rgba(2,12,20,0.24)]">
@@ -73,7 +78,7 @@ export function Layout({ children }: PropsWithChildren) {
                 <p className="mt-3 break-all text-sm text-slate-200">{user?.email || user?.username}</p>
                 <button
                   onClick={logout}
-                  className="mt-4 inline-flex min-h-10 items-center justify-center rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+                  className="glow-ring mt-4 inline-flex min-h-10 items-center justify-center rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
                 >
                   Logout
                 </button>
@@ -109,15 +114,17 @@ export function Layout({ children }: PropsWithChildren) {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  end={item.to === '/'}
                   className={({ isActive }) =>
-                    `whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${
+                    `flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition ${
                       isActive
                         ? 'border-sky-400/40 bg-sky-500/12 text-slate-50'
                         : 'border-slate-800 bg-slate-900/80 text-slate-300'
                     }`
                   }
                 >
-                  {item.code}
+                  <span className="uppercase tracking-[0.18em]">{item.code}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
                 </NavLink>
               ))}
             </nav>

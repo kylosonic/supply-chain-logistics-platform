@@ -9,6 +9,7 @@ import {
   YAxis,
 } from 'recharts';
 
+import { Panel } from './ui/Panel';
 import type { ForecastPoint } from '../types/api';
 
 type Props = {
@@ -35,20 +36,39 @@ export function ForecastChart({ points }: Props) {
     .sort((a, b) => a.week_start.localeCompare(b.week_start));
 
   return (
-    <div className="rounded-[28px] border border-slate-800/80 bg-slate-950/72 p-5 shadow-[0_24px_80px_rgba(2,12,20,0.3)]">
-      <h3 className="mb-4 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">Predicted Weekly Demand</h3>
+    <Panel
+      eyebrow="Demand intelligence"
+      title="Predicted Weekly Demand"
+      description="Aggregated demand forecast across all tracked SKUs for the planning horizon."
+    >
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <CartesianGrid stroke="rgba(148, 163, 184, 0.12)" strokeDasharray="3 3" />
+            <defs>
+              <linearGradient id="demandGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="rgba(148, 163, 184, 0.08)" strokeDasharray="3 3" />
             <XAxis dataKey="week_start" tick={axisStyle} axisLine={false} tickLine={false} />
             <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: 'rgba(148, 163, 184, 0.18)' }} />
             <Legend wrapperStyle={{ color: '#cbd5e1', fontSize: 12 }} />
-            <Line type="monotone" dataKey="predicted_total_demand" stroke="#ef4444" strokeWidth={3} dot={false} />
+            <Line
+              type="monotone"
+              dataKey="predicted_total_demand"
+              name="Predicted demand"
+              stroke="#38bdf8"
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 5, fill: '#38bdf8', stroke: '#0c4a6e', strokeWidth: 2 }}
+              animationDuration={1200}
+              animationEasing="ease-out"
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </Panel>
   );
 }

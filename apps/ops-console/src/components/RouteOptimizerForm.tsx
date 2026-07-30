@@ -65,7 +65,7 @@ export function RouteOptimizerForm({
   }
 
   const fieldClassName =
-    'min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
   const previousDistanceDelta = previousResult && result ? result.total_distance_km - previousResult.total_distance_km : null;
   const previousCostDelta = previousResult && result ? result.total_cost - previousResult.total_cost : null;
 
@@ -116,8 +116,11 @@ export function RouteOptimizerForm({
 
         <button
           disabled={isSubmitting}
-          className="col-span-1 inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 lg:col-span-2"
+          className="glow-ring col-span-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 lg:col-span-2"
         >
+          {isSubmitting ? (
+            <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
+          ) : null}
           {isSubmitting ? 'Optimizing scenario...' : 'Optimize route'}
         </button>
       </form>
@@ -125,39 +128,34 @@ export function RouteOptimizerForm({
       {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
 
       {result ? (
-        <div className="mt-5 space-y-4 rounded-[24px] border border-slate-800 bg-slate-900/60 p-4">
+        <div className="animate-slide-up mt-5 space-y-4 rounded-[24px] border border-slate-800 bg-slate-900/60 p-4">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={result.objective} tone="info" />
             <StatusBadge label={result.unassigned_deliveries.length === 0 ? 'Fully assigned' : 'Review unassigned'} tone={result.unassigned_deliveries.length === 0 ? 'success' : 'warning'} />
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
-            <div className="rounded-[20px] border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Distance</p>
-              <p className="mt-3 font-['Space_Grotesk'] text-2xl font-semibold text-slate-50">{result.total_distance_km} km</p>
-            </div>
-            <div className="rounded-[20px] border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Cost</p>
-              <p className="mt-3 font-['Space_Grotesk'] text-2xl font-semibold text-slate-50">${result.total_cost}</p>
-            </div>
-            <div className="rounded-[20px] border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Duration</p>
-              <p className="mt-3 font-['Space_Grotesk'] text-2xl font-semibold text-slate-50">{result.estimated_duration_min} min</p>
-            </div>
-            <div className="rounded-[20px] border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Stops</p>
-              <p className="mt-3 font-['Space_Grotesk'] text-2xl font-semibold text-slate-50">{result.stops.length}</p>
-            </div>
+            {[
+              { label: 'Distance', value: `${result.total_distance_km} km` },
+              { label: 'Cost', value: `$${result.total_cost}` },
+              { label: 'Duration', value: `${result.estimated_duration_min} min` },
+              { label: 'Stops', value: String(result.stops.length) },
+            ].map((stat) => (
+              <div key={stat.label} className="hover-lift rounded-[20px] border border-slate-800 bg-slate-950/70 p-4 transition">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{stat.label}</p>
+                <p className="mt-3 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{stat.value}</p>
+              </div>
+            ))}
           </div>
 
           {previousResult ? (
             <div className="rounded-[20px] border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm text-slate-400">
               Compared with the previous scenario:{' '}
-              <span className="font-semibold text-slate-200">
+              <span className={`font-semibold ${previousDistanceDelta != null && previousDistanceDelta < 0 ? 'text-emerald-300' : 'text-slate-200'}`}>
                 {previousDistanceDelta == null ? 'N/A' : `${previousDistanceDelta >= 0 ? '+' : ''}${previousDistanceDelta.toFixed(1)} km`}
               </span>
               {' | '}
-              <span className="font-semibold text-slate-200">
+              <span className={`font-semibold ${previousCostDelta != null && previousCostDelta < 0 ? 'text-emerald-300' : 'text-slate-200'}`}>
                 {previousCostDelta == null ? 'N/A' : `${previousCostDelta >= 0 ? '+' : ''}$${previousCostDelta.toFixed(2)}`}
               </span>
             </div>
@@ -166,9 +164,9 @@ export function RouteOptimizerForm({
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Stop sequence</p>
             <ul className="mt-3 grid gap-2 text-sm text-slate-300">
-              {result.stops.map((stop) => (
-                <li key={stop.sequence} className="rounded-[18px] border border-slate-800 bg-slate-950/70 px-4 py-3">
-                  #{stop.sequence} {stop.warehouse_code} - {stop.demand_units} units - {stop.leg_distance_km} km leg
+              {result.stops.map((stop, index) => (
+                <li key={stop.sequence} className="animate-fade-in rounded-[18px] border border-slate-800 bg-slate-950/70 px-4 py-3" style={{ animationDelay: `${index * 0.05}s` }}>
+                  <span className="font-semibold text-slate-100">#{stop.sequence}</span> {stop.warehouse_code} · {stop.demand_units} units · {stop.leg_distance_km} km leg
                 </li>
               ))}
             </ul>

@@ -19,12 +19,64 @@ function statusTone(status: ReplenishmentPlan['status']) {
   return 'warning';
 }
 
+/* ── Inline rejection reason dialog ────────────────────────── */
+
+function RejectDialog({
+  sku,
+  onConfirm,
+  onCancel,
+}: {
+  sku: string;
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+}) {
+  const [reason, setReason] = useState('Need manual review');
+
+  return (
+    <div className="animate-fade-in fixed inset-0 z-50 grid place-items-center bg-slate-950/70 backdrop-blur-sm">
+      <div className="animate-scale-in w-full max-w-lg rounded-[28px] border border-slate-800/80 bg-slate-950 p-6 shadow-[0_32px_100px_rgba(2,12,20,0.6)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-rose-300/80">Plan rejection</p>
+        <h3 className="mt-2 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">
+          Reject plan for {sku}
+        </h3>
+        <p className="mt-2 text-sm text-slate-400">Provide a rejection reason so the planning team can understand what needs review or correction.</p>
+        <textarea
+          autoFocus
+          className="mt-4 min-h-24 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+          placeholder="Reason for rejection..."
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => reason.trim() && onConfirm(reason.trim())}
+            disabled={!reason.trim()}
+            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-rose-400 to-orange-400 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Reject plan
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlanningPage() {
   const { user } = useAuth();
   const [plans, setPlans] = useState<ReplenishmentPlan[]>([]);
   const [horizon, setHorizon] = useState(4);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [rejectDialog, setRejectDialog] = useState<{ plan: ReplenishmentPlan } | null>(null);
 
   async function loadPlans() {
     try {
@@ -45,10 +97,13 @@ export function PlanningPage() {
   async function onGenerate() {
     try {
       setError(null);
+      setIsGenerating(true);
       await generateReplenishmentPlans(horizon);
       await loadPlans();
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Failed to generate plans');
+    } finally {
+      setIsGenerating(false);
     }
   }
 
@@ -61,14 +116,15 @@ export function PlanningPage() {
     }
   }
 
-  async function onReject(planId: string) {
-    const reason = window.prompt('Reason for rejection', 'Need manual review');
-    if (!reason) return;
+  async function onRejectConfirm(reason: string) {
+    if (!rejectDialog) return;
     try {
-      await rejectReplenishmentPlan(planId, reason);
+      await rejectReplenishmentPlan(rejectDialog.plan.id, reason);
       await loadPlans();
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Failed to reject plan');
+    } finally {
+      setRejectDialog(null);
     }
   }
 
@@ -79,10 +135,18 @@ export function PlanningPage() {
   };
 
   const fieldClassName =
-    'min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
 
   return (
     <div className="space-y-6">
+      {rejectDialog ? (
+        <RejectDialog
+          sku={rejectDialog.plan.sku}
+          onConfirm={onRejectConfirm}
+          onCancel={() => setRejectDialog(null)}
+        />
+      ) : null}
+
       <PageHeader
         eyebrow="Planning"
         title="Generate and approve replenishment actions"
@@ -101,7 +165,7 @@ export function PlanningPage() {
         title="Run replenishment planning"
         description="Generate a fresh suggestion set using the selected horizon and the latest inventory and forecast posture."
       >
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <label className="grid gap-2 text-sm text-slate-300" htmlFor="horizon">
             Horizon (weeks)
             <input
@@ -116,67 +180,91 @@ export function PlanningPage() {
           </label>
           <button
             onClick={onGenerate}
-            className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+            disabled={isGenerating}
+            className="glow-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:opacity-60"
           >
-            Generate replenishment suggestions
+            {isGenerating ? (
+              <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
+            ) : null}
+            {isGenerating ? 'Generating...' : 'Generate replenishment suggestions'}
           </button>
         </div>
       </Panel>
 
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-      {loading ? <p className="text-sm text-slate-400">Loading plans...</p> : null}
+      {error ? (
+        <Panel className="border-rose-500/25 bg-rose-950/12">
+          <p className="text-sm text-rose-200">{error}</p>
+        </Panel>
+      ) : null}
 
-      <Panel
-        eyebrow="Approval board"
-        title="Current replenishment plans"
-        description="Review average demand, suggested quantity, and approval status before committing inventory moves."
-      >
-        <div className="space-y-3">
-          {plans.map((plan) => (
-            <article key={plan.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge label={plan.status} tone={statusTone(plan.status)} />
-                    <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{plan.warehouse_code}</span>
+      {loading ? (
+        <Panel eyebrow="Approval board" title="Current replenishment plans">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="skeleton h-[120px] rounded-[22px]" />
+            ))}
+          </div>
+        </Panel>
+      ) : null}
+
+      {!loading ? (
+        <Panel
+          eyebrow="Approval board"
+          title="Current replenishment plans"
+          description="Review average demand, suggested quantity, and approval status before committing inventory moves."
+        >
+          <div className="space-y-3">
+            {plans.map((plan, index) => (
+              <article key={plan.id} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4" style={{ animationDelay: `${index * 0.04}s` }}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge label={plan.status} tone={statusTone(plan.status)} />
+                      <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{plan.warehouse_code}</span>
+                    </div>
+                    <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{plan.sku}</h3>
                   </div>
-                  <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{plan.sku}</h3>
+                  <div className="grid gap-1 text-right text-sm text-slate-400 sm:grid-cols-3 sm:text-left">
+                    <span>Avg demand: <span className="font-semibold text-slate-200">{plan.avg_weekly_demand.toFixed(2)}</span></span>
+                    <span>Suggested: <span className="font-semibold text-slate-200">{plan.suggested_quantity}</span></span>
+                    <span>Horizon: <span className="font-semibold text-slate-200">{plan.horizon_weeks}w</span></span>
+                  </div>
                 </div>
-                <div className="grid gap-1 text-right text-sm text-slate-400 sm:grid-cols-3 sm:text-left">
-                  <span>Avg demand: {plan.avg_weekly_demand.toFixed(2)}</span>
-                  <span>Suggested: {plan.suggested_quantity}</span>
-                  <span>Horizon: {plan.horizon_weeks} weeks</span>
+
+                <p className="mt-3 text-sm leading-6 text-slate-400">{plan.rationale}</p>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {user?.role === 'admin' && plan.status === 'pending_approval' ? (
+                    <>
+                      <button
+                        onClick={() => onApprove(plan.id)}
+                        className="glow-ring rounded-full border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200 transition hover:border-emerald-400/50 hover:bg-emerald-950/20"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => setRejectDialog({ plan })}
+                        className="glow-ring rounded-full border border-rose-500/30 px-3 py-2 text-xs font-semibold text-rose-200 transition hover:border-rose-400/50 hover:bg-rose-950/20"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-slate-500">{plan.rejection_reason || 'No rejection reason recorded.'}</span>
+                  )}
                 </div>
+              </article>
+            ))}
+
+            {plans.length === 0 ? (
+              <div className="animate-fade-in rounded-[22px] border border-slate-800 bg-slate-900/40 p-6 text-center">
+                <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No plans yet</p>
+                <p className="mt-1 text-sm text-slate-500">Generate replenishment suggestions using the form above.</p>
               </div>
-
-              <p className="mt-3 text-sm leading-6 text-slate-400">{plan.rationale}</p>
-
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                {user?.role === 'admin' && plan.status === 'pending_approval' ? (
-                  <>
-                    <button
-                      onClick={() => onApprove(plan.id)}
-                      className="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => onReject(plan.id)}
-                      className="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950"
-                    >
-                      Reject
-                    </button>
-                  </>
-                ) : (
-                  <span className="text-xs text-slate-500">{plan.rejection_reason || 'No rejection reason recorded.'}</span>
-                )}
-              </div>
-            </article>
-          ))}
-
-          {!loading && plans.length === 0 ? <p className="text-sm text-slate-500">No replenishment plans yet.</p> : null}
-        </div>
-      </Panel>
+            ) : null}
+          </div>
+        </Panel>
+      ) : null}
     </div>
   );
 }

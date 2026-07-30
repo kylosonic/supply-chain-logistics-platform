@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -21,6 +21,42 @@ const DEFAULT_CONFIG = {
 
 let setupWindow = null;
 let consoleWindow = null;
+
+/* ── Window state persistence ───────────────────────────────── */
+
+function getWindowStatePath() {
+  return path.join(app.getPath('userData'), 'freightpilot-window-state.json');
+}
+
+function loadWindowState(defaults) {
+  try {
+    const statePath = getWindowStatePath();
+    if (fs.existsSync(statePath)) {
+      const raw = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+      return {
+        x: typeof raw.x === 'number' ? raw.x : undefined,
+        y: typeof raw.y === 'number' ? raw.y : undefined,
+        width: typeof raw.width === 'number' && raw.width >= 800 ? raw.width : defaults.width,
+        height: typeof raw.height === 'number' && raw.height >= 600 ? raw.height : defaults.height,
+      };
+    }
+  } catch {
+    // Ignore errors - use defaults
+  }
+  return defaults;
+}
+
+function saveWindowState(win) {
+  if (!win || win.isDestroyed()) return;
+  try {
+    const bounds = win.getBounds();
+    fs.writeFileSync(getWindowStatePath(), JSON.stringify(bounds, null, 2), 'utf8');
+  } catch {
+    // Ignore write errors
+  }
+}
+
+/* ── Config management ──────────────────────────────────────── */
 
 function getConfigPath() {
   return path.join(app.getPath('userData'), 'freightpilot-desktop-config.json');
@@ -122,20 +158,107 @@ function attachExternalLinkPolicy(win) {
   });
 }
 
+/* ── Application menu ───────────────────────────────────────── */
+
+function buildAppMenu() {
+  const isMac = process.platform === 'darwin';
+
+  const template = [
+    ...(isMac
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { role: 'about' },
+              { type: 'separator' },
+              { role: 'hide' },
+              { role: 'hideOthers' },
+              { role: 'unhide' },
+              { type: 'separator' },
+              { role: 'quit' },
+            ],
+          },
+        ]
+      : []),
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Open Control Tower',
+          accelerator: 'CmdOrCtrl+Shift+O',
+          click: () => {
+            createConsoleWindow(readConfig().opsConsoleUrl);
+          },
+        },
+        { type: 'separator' },
+        isMac ? { role: 'close' } : { role: 'quit' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        ...(isMac ? [{ role: 'zoom' }] : []),
+        { type: 'separator' },
+        {
+          label: 'Show Setup Window',
+          accelerator: 'CmdOrCtrl+1',
+          click: () => {
+            createSetupWindow();
+          },
+        },
+      ],
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Open Documentation',
+          accelerator: 'F1',
+          click: () => {
+            shell.openExternal(readConfig().docsUrl);
+          },
+        },
+      ],
+    },
+  ];
+
+  return Menu.buildFromTemplate(template);
+}
+
+/* ── Window creation ────────────────────────────────────────── */
+
 function createSetupWindow() {
   if (setupWindow && !setupWindow.isDestroyed()) {
     setupWindow.focus();
     return setupWindow;
   }
 
+  const defaultBounds = { width: 1340, height: 900 };
+  const restored = loadWindowState(defaultBounds);
+
   setupWindow = new BrowserWindow({
-    width: 1340,
-    height: 900,
+    ...restored,
     minWidth: 1080,
     minHeight: 760,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     title: 'FreightPilot Desktop Setup',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#040c12',
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 16 } } : {}),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -146,6 +269,11 @@ function createSetupWindow() {
 
   attachExternalLinkPolicy(setupWindow);
   setupWindow.loadFile(path.join(__dirname, 'onboarding.html'));
+
+  setupWindow.on('close', () => {
+    saveWindowState(setupWindow);
+  });
+
   setupWindow.on('closed', () => {
     setupWindow = null;
   });
@@ -167,8 +295,10 @@ function createConsoleWindow(url) {
     height: 960,
     minWidth: 1100,
     minHeight: 720,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     title: 'FreightPilot Control Tower',
+    backgroundColor: '#050b12',
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 16 } } : {}),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -184,6 +314,8 @@ function createConsoleWindow(url) {
 
   return consoleWindow;
 }
+
+/* ── IPC handlers ───────────────────────────────────────────── */
 
 ipcMain.handle('desktop:get-config', async () => readConfig());
 ipcMain.handle('desktop:save-config', async (_, partial) => writeConfig(partial));
@@ -201,7 +333,10 @@ ipcMain.handle('desktop:launch-console', async (_, url) => {
   return true;
 });
 
+/* ── App lifecycle ──────────────────────────────────────────── */
+
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(buildAppMenu());
   createSetupWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

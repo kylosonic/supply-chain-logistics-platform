@@ -28,7 +28,7 @@ export function RouteSchedulesTable({ schedules }: Props) {
         </thead>
         <tbody className="divide-y divide-slate-800 bg-transparent">
           {schedules.map((route) => (
-            <tr key={route.id}>
+            <tr key={route.id} className="transition-colors hover:bg-slate-800/30">
               <td className="px-4 py-3 text-slate-100">{route.route_name}</td>
               <td className="px-4 py-3 text-slate-300">{route.schedule_date}</td>
               <td className="px-4 py-3 text-slate-300">{route.total_distance_km}</td>

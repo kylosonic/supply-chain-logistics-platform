@@ -20,11 +20,69 @@ function statusTone(status: AlertStatus) {
   return 'warning';
 }
 
+const severityBorderAccent: Record<string, string> = {
+  critical: 'border-l-rose-500/60',
+  high: 'border-l-amber-500/60',
+  medium: 'border-l-sky-500/40',
+  low: 'border-l-slate-700',
+};
+
+/* ── Inline resolution note dialog ─────────────────────────── */
+
+function ResolveDialog({
+  alertTitle,
+  onConfirm,
+  onCancel,
+}: {
+  alertTitle: string;
+  onConfirm: (note: string | undefined) => void;
+  onCancel: () => void;
+}) {
+  const [note, setNote] = useState('');
+
+  return (
+    <div className="animate-fade-in fixed inset-0 z-50 grid place-items-center bg-slate-950/70 backdrop-blur-sm">
+      <div className="animate-scale-in w-full max-w-lg rounded-[28px] border border-slate-800/80 bg-slate-950 p-6 shadow-[0_32px_100px_rgba(2,12,20,0.6)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300/80">Resolution</p>
+        <h3 className="mt-2 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">
+          Resolve: {alertTitle}
+        </h3>
+        <p className="mt-2 text-sm text-slate-400">Optionally provide a resolution note to document how this alert was handled.</p>
+        <textarea
+          autoFocus
+          className="mt-4 min-h-24 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+          placeholder="Resolution note (optional)..."
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(note.trim() || undefined)}
+            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+          >
+            Resolve alert
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [statusFilter, setStatusFilter] = useState<AlertStatus | 'all'>('open');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
+  const [resolveDialog, setResolveDialog] = useState<{ alert: Alert } | null>(null);
   const [form, setForm] = useState({ title: '', message: '', severity: 'medium' as AlertSeverity });
 
   async function loadAlerts(filter = statusFilter) {
@@ -57,10 +115,13 @@ export function AlertsPage() {
   async function onScan() {
     try {
       setError(null);
+      setIsScanning(true);
       await scanAlerts();
       await loadAlerts();
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Failed to scan for alerts');
+    } finally {
+      setIsScanning(false);
     }
   }
 
@@ -73,13 +134,15 @@ export function AlertsPage() {
     }
   }
 
-  async function onResolve(alertId: string) {
-    const note = window.prompt('Resolution note (optional)', '');
+  async function onResolveConfirm(note: string | undefined) {
+    if (!resolveDialog) return;
     try {
-      await resolveAlert(alertId, note || undefined);
+      await resolveAlert(resolveDialog.alert.id, note);
       await loadAlerts();
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Failed to resolve alert');
+    } finally {
+      setResolveDialog(null);
     }
   }
 
@@ -91,10 +154,18 @@ export function AlertsPage() {
   };
 
   const fieldClassName =
-    'min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
 
   return (
     <div className="space-y-6">
+      {resolveDialog ? (
+        <ResolveDialog
+          alertTitle={resolveDialog.alert.title}
+          onConfirm={onResolveConfirm}
+          onCancel={() => setResolveDialog(null)}
+        />
+      ) : null}
+
       <PageHeader
         eyebrow="Exception center"
         title="Triage, assign, and close operational risk quickly"
@@ -102,9 +173,13 @@ export function AlertsPage() {
         actions={
           <button
             onClick={onScan}
-            className="inline-flex min-h-10 items-center justify-center rounded-full bg-emerald-500 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+            disabled={isScanning}
+            className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:opacity-60"
           >
-            Scan for exceptions
+            {isScanning ? (
+              <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
+            ) : null}
+            {isScanning ? 'Scanning...' : 'Scan for exceptions'}
           </button>
         }
       />
@@ -131,7 +206,7 @@ export function AlertsPage() {
               required
             />
             <textarea
-              className="min-h-32 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+              className="glow-ring min-h-32 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
               placeholder="Message"
               value={form.message}
               onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))}
@@ -148,7 +223,7 @@ export function AlertsPage() {
                 <option value="high">high</option>
                 <option value="critical">critical</option>
               </select>
-              <button className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105">
+              <button className="glow-ring inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105">
                 Create alert
               </button>
             </div>
@@ -177,11 +252,21 @@ export function AlertsPage() {
           }
         >
           {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-          {loading ? <p className="text-sm text-slate-400">Loading alerts...</p> : null}
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="skeleton h-[100px] rounded-[22px]" />
+              ))}
+            </div>
+          ) : null}
 
           <div className="space-y-3">
-            {alerts.map((alert) => (
-              <article key={alert.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+            {alerts.map((alert, index) => (
+              <article
+                key={alert.id}
+                className={`animate-fade-in hover-lift rounded-[22px] border border-l-[3px] border-slate-800 bg-slate-900/70 p-4 ${severityBorderAccent[alert.severity] ?? ''}`}
+                style={{ animationDelay: `${index * 0.04}s` }}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -197,14 +282,14 @@ export function AlertsPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     onClick={() => onAcknowledge(alert.id)}
-                    className="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="glow-ring rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={alert.status === 'resolved' || alert.status === 'acknowledged'}
                   >
                     Acknowledge
                   </button>
                   <button
-                    onClick={() => onResolve(alert.id)}
-                    className="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => setResolveDialog({ alert })}
+                    className="glow-ring rounded-full border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200 transition hover:border-emerald-400/50 hover:bg-emerald-950/20 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={alert.status === 'resolved'}
                   >
                     Resolve
@@ -213,7 +298,12 @@ export function AlertsPage() {
               </article>
             ))}
 
-            {!loading && alerts.length === 0 ? <p className="text-sm text-slate-500">No alerts for the selected filter.</p> : null}
+            {!loading && alerts.length === 0 ? (
+              <div className="animate-fade-in rounded-[22px] border border-slate-800 bg-slate-900/40 p-6 text-center">
+                <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No alerts</p>
+                <p className="mt-1 text-sm text-slate-500">No alerts for the selected filter.</p>
+              </div>
+            ) : null}
           </div>
         </Panel>
       </div>

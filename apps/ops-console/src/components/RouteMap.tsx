@@ -6,6 +6,7 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
+import { Panel } from './ui/Panel';
 import type { RouteStop } from '../types/api';
 
 type Props = {
@@ -29,17 +30,24 @@ export function RouteMap({ stops }: Props) {
   );
   const polyline: LatLngExpression[] = validStops.map((s) => [s.latitude as number, s.longitude as number]);
 
-  return (
-    <div className="overflow-hidden rounded-[28px] border border-slate-800/80 bg-slate-950/72 p-5 shadow-[0_24px_80px_rgba(2,12,20,0.3)]">
-      <div className="mb-4 space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-300/80">Route map</p>
-        <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">Spatial route review</h3>
-      </div>
+  const totalDistance = validStops.reduce((sum, s) => sum + (s.leg_distance_km ?? 0), 0);
+  const totalDemand = validStops.reduce((sum, s) => sum + (s.demand_units ?? 0), 0);
 
+  return (
+    <Panel
+      eyebrow="Route map"
+      title="Spatial route review"
+      description="Visual map of the optimized route path with stop markers and distance segments."
+    >
       <div className="relative h-[420px] overflow-hidden rounded-[20px] border border-slate-800">
         {validStops.length === 0 ? (
           <div className="absolute inset-0 z-[500] grid place-items-center bg-slate-950/88 text-center text-sm text-slate-400">
-            <div className="max-w-xs space-y-2 px-4">
+            <div className="max-w-xs space-y-3 px-4">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-slate-800 bg-slate-900/60">
+                <svg className="h-7 w-7 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                </svg>
+              </div>
               <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">No mapped stops yet</p>
               <p>Run a route scenario with geocoded warehouse data to preview the path here.</p>
             </div>
@@ -67,6 +75,20 @@ export function RouteMap({ stops }: Props) {
           {polyline.length >= 2 ? <Polyline positions={polyline} color="#38bdf8" weight={4} /> : null}
         </MapContainer>
       </div>
-    </div>
+
+      {validStops.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-4">
+          <div className="rounded-full border border-slate-800 bg-slate-900/70 px-3 py-1.5 text-xs text-slate-300">
+            <span className="font-semibold text-slate-100">{validStops.length}</span> stops
+          </div>
+          <div className="rounded-full border border-slate-800 bg-slate-900/70 px-3 py-1.5 text-xs text-slate-300">
+            <span className="font-semibold text-slate-100">{totalDistance.toFixed(1)}</span> km total
+          </div>
+          <div className="rounded-full border border-slate-800 bg-slate-900/70 px-3 py-1.5 text-xs text-slate-300">
+            <span className="font-semibold text-slate-100">{totalDemand.toLocaleString()}</span> units demand
+          </div>
+        </div>
+      ) : null}
+    </Panel>
   );
 }

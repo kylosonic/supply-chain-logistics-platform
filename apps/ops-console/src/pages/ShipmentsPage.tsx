@@ -16,11 +16,68 @@ function statusTone(status: ShipmentStatus) {
   return 'neutral';
 }
 
+/* ── Inline delay reason dialog ─────────────────────────────── */
+
+function DelayReasonDialog({
+  shipmentNo,
+  defaultReason,
+  onConfirm,
+  onCancel,
+}: {
+  shipmentNo: string;
+  defaultReason: string;
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+}) {
+  const [reason, setReason] = useState(defaultReason);
+
+  return (
+    <div className="animate-fade-in fixed inset-0 z-50 grid place-items-center bg-slate-950/70 backdrop-blur-sm">
+      <div className="animate-scale-in w-full max-w-lg rounded-[28px] border border-slate-800/80 bg-slate-950 p-6 shadow-[0_32px_100px_rgba(2,12,20,0.6)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300/80">Delay reason</p>
+        <h3 className="mt-2 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">
+          Mark {shipmentNo} as delayed
+        </h3>
+        <p className="mt-2 text-sm text-slate-400">Provide a reason for the delay so the team can track root causes and take corrective action.</p>
+        <textarea
+          autoFocus
+          className="mt-4 min-h-24 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+          placeholder="Describe the delay reason..."
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(reason)}
+            disabled={!reason.trim()}
+            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Confirm delay
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={`skeleton ${className ?? ''}`} />;
+}
+
 export function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [delayDialog, setDelayDialog] = useState<{ shipment: Shipment } | null>(null);
   const [form, setForm] = useState({
     shipment_no: '',
     origin_warehouse_code: '',
@@ -67,18 +124,30 @@ export function ShipmentsPage() {
   }
 
   async function onStatusUpdate(shipment: Shipment, status: ShipmentStatus) {
-    const payload: { status: ShipmentStatus; delay_reason?: string } = { status };
     if (status === 'delayed') {
-      const reason = window.prompt('Provide delay reason', shipment.delay_reason || 'Traffic delay');
-      if (!reason) return;
-      payload.delay_reason = reason;
+      setDelayDialog({ shipment });
+      return;
     }
+    const payload: { status: ShipmentStatus; delay_reason?: string } = { status };
     try {
       setError(null);
       await updateShipmentStatus(shipment.id, payload);
       await loadShipments();
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Failed to update shipment status');
+    }
+  }
+
+  async function onDelayConfirm(reason: string) {
+    if (!delayDialog) return;
+    try {
+      setError(null);
+      await updateShipmentStatus(delayDialog.shipment.id, { status: 'delayed', delay_reason: reason });
+      await loadShipments();
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || 'Failed to update shipment status');
+    } finally {
+      setDelayDialog(null);
     }
   }
 
@@ -90,10 +159,19 @@ export function ShipmentsPage() {
   };
 
   const fieldClassName =
-    'min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
 
   return (
     <div className="space-y-6">
+      {delayDialog ? (
+        <DelayReasonDialog
+          shipmentNo={delayDialog.shipment.shipment_no}
+          defaultReason={delayDialog.shipment.delay_reason || 'Traffic delay'}
+          onConfirm={onDelayConfirm}
+          onCancel={() => setDelayDialog(null)}
+        />
+      ) : null}
+
       <PageHeader
         eyebrow="Shipment board"
         title="Track movement health across every lane"
@@ -122,8 +200,11 @@ export function ShipmentsPage() {
             <button
               type="submit"
               disabled={creating}
-              className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+              className="glow-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
             >
+              {creating ? (
+                <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
+              ) : null}
               {creating ? 'Creating...' : 'Create'}
             </button>
           </div>
@@ -136,11 +217,17 @@ export function ShipmentsPage() {
         description="Keep each lane visible and progress status deliberately when a movement changes state."
       >
         {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-        {loading ? <p className="text-sm text-slate-400">Loading shipments...</p> : null}
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <SkeletonBlock key={i} className="h-[120px] rounded-[22px]" />
+            ))}
+          </div>
+        ) : null}
 
         <div className="space-y-3">
-          {shipments.map((shipment) => (
-            <article key={shipment.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+          {shipments.map((shipment, index) => (
+            <article key={shipment.id} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4" style={{ animationDelay: `${index * 0.04}s` }}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -150,8 +237,8 @@ export function ShipmentsPage() {
                   <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{shipment.shipment_no}</h3>
                 </div>
                 <div className="text-right text-sm text-slate-400">
-                  <p>{shipment.origin_warehouse_code} to {shipment.destination_warehouse_code}</p>
-                  <p>{shipment.sku} - {shipment.quantity_units} units</p>
+                  <p>{shipment.origin_warehouse_code} → {shipment.destination_warehouse_code}</p>
+                  <p>{shipment.sku} · {shipment.quantity_units} units</p>
                 </div>
               </div>
 
@@ -163,18 +250,23 @@ export function ShipmentsPage() {
                 {statusTransitions.map((status) => (
                   <button
                     key={status}
-                    className="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="glow-ring rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={() => onStatusUpdate(shipment, status)}
                     disabled={shipment.status === status}
                   >
-                    Mark {status}
+                    Mark {status.replace('_', ' ')}
                   </button>
                 ))}
               </div>
             </article>
           ))}
 
-          {!loading && shipments.length === 0 ? <p className="text-sm text-slate-500">No shipments yet.</p> : null}
+          {!loading && shipments.length === 0 ? (
+            <div className="animate-fade-in rounded-[22px] border border-slate-800 bg-slate-900/40 p-6 text-center">
+              <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No shipments yet</p>
+              <p className="mt-1 text-sm text-slate-500">Create your first shipment using the form above.</p>
+            </div>
+          ) : null}
         </div>
       </Panel>
     </div>

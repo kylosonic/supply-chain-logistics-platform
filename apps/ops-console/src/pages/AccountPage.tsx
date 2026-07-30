@@ -173,19 +173,21 @@ export function AccountPage() {
   const activeKeyCount = useMemo(() => keys.filter((key) => key.status === 'active').length, [keys]);
 
   const fieldClassName =
-    'min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
 
   if (loading) {
     return (
       <div className="space-y-5">
-        <PageHeader
-          eyebrow="Workspace controls"
-          title="Billing, quota, and AI provider governance"
-          description="Loading subscription state, usage posture, and workspace provider settings."
-        />
-        <Panel>
-          <p className="text-sm text-slate-400">Loading account settings...</p>
-        </Panel>
+        <div className="skeleton h-[140px] rounded-[30px]" />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton h-[130px] rounded-[24px]" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <div className="skeleton h-[400px] rounded-[28px]" />
+          <div className="skeleton h-[400px] rounded-[28px]" />
+        </div>
       </div>
     );
   }
@@ -287,7 +289,7 @@ export function AccountPage() {
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {plans.map((plan) => (
-              <div key={plan.tier} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <div key={plan.tier} className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{plan.title}</h2>
@@ -354,7 +356,7 @@ export function AccountPage() {
 
           <div className="mt-4 space-y-3">
             {keys.map((key) => (
-              <article key={key.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <article key={key.id} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -398,7 +400,7 @@ export function AccountPage() {
       >
         <div className="space-y-3">
           {auditEvents.slice(0, 8).map((event) => (
-            <article key={event.id} className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+            <article key={event.id} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">

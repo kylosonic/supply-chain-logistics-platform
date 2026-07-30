@@ -76,9 +76,9 @@
           </div>
 
           <div class="btn-row">
-            <button id="saveBtn" class="btn-primary" type="button">Save setup</button>
-            <button id="testBtn" class="btn-secondary" type="button">Test console connection</button>
-            <button id="launchBtn" class="btn-accent" type="button">Open control tower</button>
+            <button id="saveBtn" class="btn-primary" type="button" title="Save workspace configuration">Save setup</button>
+            <button id="testBtn" class="btn-secondary" type="button" title="Verify console endpoint is reachable">Test console connection</button>
+            <button id="launchBtn" class="btn-accent" type="button" title="Open the ops console in a new window">Open control tower</button>
           </div>
 
           <p id="status" class="status" aria-live="polite"></p>
@@ -181,8 +181,13 @@
         </section>
 
         <div class="link-grid">
-          <a href="#" id="openSignup" class="quick-link">Open company signup</a>
-          <a href="#" id="openDocs" class="quick-link">Open implementation docs</a>
+          <a href="#" id="openSignup" class="quick-link">Open company signup →</a>
+          <a href="#" id="openDocs" class="quick-link">Open implementation docs →</a>
+        </div>
+
+        <div id="celebrationBanner" class="celebration-banner" style="display: none;" aria-label="Launch complete">
+          <h3>🚀 Launch-ready!</h3>
+          <p>All onboarding steps are complete. Your workspace is ready for live operations.</p>
         </div>
 
         <section class="surface-panel tip-panel" aria-label="Rollout note">
@@ -193,6 +198,8 @@
         </section>
       </aside>
     </div>
+
+    <div class="version-footer" aria-label="Version">FreightPilot Desktop v0.1.0</div>
 
     <script>
       const bridge = window.freightPilotDesktop;
@@ -265,6 +272,7 @@
         roleDispatcher: document.getElementById('roleDispatcher'),
         roleData: document.getElementById('roleData'),
         roleSecurity: document.getElementById('roleSecurity'),
+        celebrationBanner: document.getElementById('celebrationBanner'),
       };
 
       const onboardingDefaults = {
@@ -398,6 +406,13 @@
         elements.progressLabel.textContent = `${completed} / ${total} complete`;
         elements.progressTrack.setAttribute('aria-valuenow', String(pct));
         renderReadiness();
+
+        // Show celebration banner when all steps are done
+        if (completed === total) {
+          elements.celebrationBanner.style.display = 'block';
+        } else {
+          elements.celebrationBanner.style.display = 'none';
+        }
       }
 
       function isStepBlocked(index) {
