@@ -10,6 +10,7 @@ class AlertType(StrEnum):
     LOW_STOCK = 'low_stock'
     DELAYED_SHIPMENT = 'delayed_shipment'
     PLANNING_EXCEPTION = 'planning_exception'
+    TEMPERATURE_EXCURSION = 'temperature_excursion'
     MANUAL = 'manual'
 
 

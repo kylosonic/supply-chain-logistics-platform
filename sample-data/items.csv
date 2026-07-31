@@ -1,4 +1,4 @@
-sku,name,category,unit_cost,reorder_level
-SKU-001,Industrial Bearings,Mechanical,35.5,120
-SKU-002,Hydraulic Pumps,Mechanical,120.0,80
-SKU-003,Electrical Relays,Electrical,8.75,300
+sku,name,category,unit_cost,reorder_level,temperature_threshold
+SKU-001,Industrial Bearings,Mechanical,35.5,120,25.0
+SKU-002,Hydraulic Pumps,Mechanical,120.0,80,15.0
+SKU-003,Electrical Relays,Electrical,8.75,300,30.0

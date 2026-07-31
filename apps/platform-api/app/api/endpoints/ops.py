@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc, select, text
 from sqlalchemy.orm import Session
@@ -16,7 +17,9 @@ from app.models.route_history import RouteOptimizationRun
 from app.models.shipment import Shipment
 from app.models.user import User
 from app.models.warehouse import Warehouse
+from app.models.dock_appointment import DockAppointment
 from app.schemas.auth import UserRole
+from app.schemas.dock_appointment import DockAppointmentPayload, DockAppointmentResponse
 from app.schemas.ops_insights import AuditEventRead, ExceptionFeedItem, ExceptionFeedResponse, ExceptionFeedSummary
 
 router = APIRouter()
@@ -118,7 +121,7 @@ def exception_feed(
             severity='medium' if run.unassigned_count == 1 else 'high',
             status='requires_review',
             title=f'Route run {run.route_name} left deliveries unassigned',
-            message=f'{run.unassigned_count} deliver{'' if run.unassigned_count == 1 else 'ies'} need manual review.',
+            message=f'{run.unassigned_count} deliver{"" if run.unassigned_count == 1 else "ies"} need manual review.',
             entity_type='route_optimization_run',
             entity_id=run.id,
             created_at=run.created_at,
@@ -144,3 +147,50 @@ def exception_feed(
         ),
         items=items[:limit],
     )
+
+
+@router.post('/live-eta', response_model=DockAppointmentResponse)
+def update_live_eta(
+    payload: DockAppointmentPayload,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+):
+    appointment = db.execute(
+        select(DockAppointment).where(
+            DockAppointment.warehouse_id == payload.warehouse_id,
+            DockAppointment.truck_id == payload.truck_id,
+            DockAppointment.status.in_(['scheduled', 'rescheduled'])
+        )
+    ).scalar_one_or_none()
+
+    if not appointment:
+        appointment = DockAppointment(
+            warehouse_id=payload.warehouse_id,
+            truck_id=payload.truck_id,
+            status='scheduled',
+            scheduled_time=payload.expected_time,
+            expected_time=payload.expected_time,
+        )
+        db.add(appointment)
+    else:
+        appointment.expected_time = payload.expected_time
+        
+        time_slip = payload.expected_time - appointment.scheduled_time
+        if time_slip > timedelta(minutes=45):
+            appointment.scheduled_time = payload.expected_time
+            appointment.status = 'rescheduled'
+
+        db.add(appointment)
+        
+    db.commit()
+    db.refresh(appointment)
+    return appointment
+
+
+@router.get('/dock-appointments', response_model=list[DockAppointmentResponse])
+def get_dock_appointments(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+):
+    rows = db.execute(select(DockAppointment).order_by(DockAppointment.scheduled_time)).scalars().all()
+    return rows

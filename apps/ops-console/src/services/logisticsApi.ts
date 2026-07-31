@@ -17,8 +17,48 @@ import type {
   WeatherRiskZone,
 } from '../types/api';
 
+export interface DockAppointment {
+  id: string;
+  warehouse_id: string;
+  truck_id: string;
+  status: string;
+  scheduled_time: string;
+  expected_time: string;
+}
+
+export interface FreightInvoice {
+  id: string;
+  order_id: string;
+  carrier_id: string;
+  quoted_rate: number;
+  actual_rate: number;
+  variance: number;
+  status: string;
+}
+
 export async function getWeatherRiskZones(): Promise<WeatherRiskZone[]> {
   const { data } = await api.get<WeatherRiskZone[]>('/weather/risk-zones');
+  return data;
+}
+
+export async function getDockAppointments(): Promise<DockAppointment[]> {
+  const { data } = await api.get<DockAppointment[]>('/ops/dock-appointments');
+  return data;
+}
+
+export async function getInvoices(): Promise<FreightInvoice[]> {
+  const { data } = await api.get<FreightInvoice[]>('/invoices');
+  return data;
+}
+
+export async function uploadInvoices(file: File): Promise<FreightInvoice[]> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await api.post<FreightInvoice[]>('/invoices/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return data;
 }
 

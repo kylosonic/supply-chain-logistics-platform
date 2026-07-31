@@ -9,14 +9,22 @@ from sqlalchemy.orm import Session
 
 from app.api.security import require_roles
 from app.db.session import get_db
+from app.models.alert import Alert
 from app.models.fleet_asset import FleetAsset
 from app.models.inventory import Inventory
 from app.models.item import Item
 from app.models.order import HistoricalOrder
 from app.models.user import User
 from app.models.warehouse import Warehouse
+from app.schemas.alert import AlertSeverity, AlertStatus, AlertType
 from app.schemas.auth import UserRole
-from app.schemas.ingestion import IngestionResult, TelematicsPayload, TelematicsResult
+from app.schemas.ingestion import (
+    IngestionResult,
+    IoTColdChainPayload,
+    IoTResult,
+    TelematicsPayload,
+    TelematicsResult,
+)
 
 router = APIRouter()
 
@@ -298,4 +306,39 @@ async def ingest_telematics(
         updated_latitude=payload.latitude,
         updated_longitude=payload.longitude,
         telemetry_timestamp=payload.timestamp,
+    )
+
+
+@router.post('/iot-telemetry', response_model=IoTResult)
+async def ingest_iot_telemetry(
+    payload: IoTColdChainPayload,
+    db: Session = Depends(get_db),
+):
+    item = db.execute(select(Item).where(Item.sku == payload.sku)).scalar_one_or_none()
+
+    if not item:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Item with SKU '{payload.sku}' not found",
+        )
+
+    alert_triggered = False
+    if item.temperature_threshold is not None and payload.temperature_c > item.temperature_threshold:
+        alert = Alert(
+            alert_type=AlertType.TEMPERATURE_EXCURSION,
+            severity=AlertSeverity.HIGH,
+            status=AlertStatus.OPEN,
+            title=f'Temperature threshold exceeded for {payload.sku}',
+            message=f'Reported temperature {payload.temperature_c}°C exceeds threshold of {item.temperature_threshold}°C.',
+            related_entity_type='item',
+            related_entity_id=item.id,
+        )
+        db.add(alert)
+        db.commit()
+        alert_triggered = True
+
+    return IoTResult(
+        sku=payload.sku,
+        status='processed',
+        alert_triggered=alert_triggered,
     )

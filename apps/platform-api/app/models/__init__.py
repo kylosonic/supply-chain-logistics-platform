@@ -14,3 +14,5 @@ from app.models.fleet_asset import FleetAsset
 from app.models.usage_meter import OrganizationUsageCounter
 from app.models.audit_event import AuditEvent
 from app.models.route_history import RouteOptimizationRun
+from app.models.dock_appointment import DockAppointment
+from app.models.freight_invoice import FreightInvoice

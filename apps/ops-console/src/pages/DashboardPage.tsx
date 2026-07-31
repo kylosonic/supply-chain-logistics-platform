@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ForecastChart } from '../components/ForecastChart';
 import { InventoryCharts } from '../components/InventoryCharts';
+import { DockGanttChart } from '../components/DockGanttChart';
+import { FreightReconciliationPanel } from '../components/FreightReconciliationPanel';
 import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
@@ -13,8 +15,10 @@ import {
   getAuditTimeline,
   getExceptionFeed,
   getForecast,
+  getInventoryOverview,
   getRouteSchedules,
   getWeatherRiskZones,
+  getDockAppointments,
   listReplenishmentPlans,
   listShipments,
 } from '../services/logisticsApi';
@@ -29,6 +33,7 @@ import type {
   UsageSummary,
   WeatherRiskZone,
 } from '../types/api';
+import type { DockAppointment } from '../services/logisticsApi';
 
 const POLL_INTERVAL_MS = 30000;
 
@@ -75,11 +80,12 @@ export function DashboardPage() {
   const [lastLiveUpdate, setLastLiveUpdate] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [riskZones, setRiskZones] = useState<WeatherRiskZone[]>([]);
+  const [appointments, setAppointments] = useState<DockAppointment[]>([]);
 
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [inventoryData, forecastData, scheduleData, shipmentData, planData, usageData, feedData, auditData, riskData] = await Promise.all([
+      const [inventoryData, forecastData, scheduleData, shipmentData, planData, usageData, feedData, auditData, riskData, appointmentData] = await Promise.all([
         getInventoryOverview(),
         getForecast(4),
         getRouteSchedules(),
@@ -89,6 +95,7 @@ export function DashboardPage() {
         getExceptionFeed().catch(() => null),
         getAuditTimeline().catch(() => []),
         getWeatherRiskZones().catch(() => []),
+        getDockAppointments().catch(() => []),
       ]);
       setInventory(inventoryData);
       setForecast(forecastData.points);
@@ -98,6 +105,8 @@ export function DashboardPage() {
       setUsage(usageData);
       setExceptionFeed(feedData);
       setAuditEvents(auditData);
+      setRiskZones(riskData);
+      setAppointments(appointmentData);
       setRiskZones(riskData);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || 'Failed to load dashboard data');
@@ -111,6 +120,8 @@ export function DashboardPage() {
     const timer = setInterval(loadData, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [loadData]);
+
+
 
   useLiveUpdates({
     token,
@@ -319,6 +330,20 @@ export function DashboardPage() {
             </div>
           </Panel>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <Panel eyebrow="Dock Management" title="Live Capacity Setup">
+          <div className="h-[400px]">
+            <DockGanttChart appointments={appointments} />
+          </div>
+        </Panel>
+        
+        <Panel eyebrow="Finance" title="Freight Invoice Reconciliation">
+          <div className="h-[400px]">
+            <FreightReconciliationPanel />
+          </div>
+        </Panel>
       </div>
 
       <InventoryCharts data={inventory} />

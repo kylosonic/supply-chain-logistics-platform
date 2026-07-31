@@ -25,3 +25,17 @@ class TelematicsResult(BaseModel):
     updated_latitude: float
     updated_longitude: float
     telemetry_timestamp: datetime
+
+
+class IoTColdChainPayload(BaseModel):
+    sku: str
+    latitude: float
+    longitude: float
+    temperature_c: float
+    timestamp: datetime
+
+
+class IoTResult(BaseModel):
+    sku: str
+    status: str
+    alert_triggered: bool

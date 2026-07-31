@@ -1,0 +1,18 @@
+from sqlalchemy import Float, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base import Base
+from app.models.common import UUIDTimestampMixin
+
+
+class FreightInvoice(UUIDTimestampMixin, Base):
+    __tablename__ = 'freight_invoices'
+
+    order_id: Mapped[str] = mapped_column(ForeignKey('historical_orders.id', ondelete='CASCADE'), index=True, nullable=False)
+    carrier_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    quoted_rate: Mapped[float] = mapped_column(Float, nullable=False)
+    actual_rate: Mapped[float] = mapped_column(Float, nullable=False)
+    variance: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String(64), default='matched', nullable=False)
+
+    order = relationship('HistoricalOrder')

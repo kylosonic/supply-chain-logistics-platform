@@ -13,6 +13,7 @@ class Item(UUIDTimestampMixin, Base):
     category: Mapped[str] = mapped_column(String(64), nullable=False)
     unit_cost: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     reorder_level: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    temperature_threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     inventory_records = relationship('Inventory', back_populates='item', cascade='all, delete-orphan')
     orders = relationship('HistoricalOrder', back_populates='item')
