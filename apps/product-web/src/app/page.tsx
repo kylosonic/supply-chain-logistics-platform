@@ -27,7 +27,7 @@ export default function HomePage() {
   return (
     <>
       <section className="section-shell pt-4 sm:pt-8 lg:pt-10">
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start xl:gap-10">
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-center xl:grid-cols-[1.1fr_0.9fr] xl:items-start xl:gap-10">
           <div className="space-y-6 sm:space-y-7">
             <div className="space-y-5">
               <span className="pill">
@@ -195,7 +195,7 @@ export default function HomePage() {
 
       <MotionSection className="section-shell pb-8 pt-14 sm:pb-10 sm:pt-18" delay={0.06}>
         <div className="glass-panel rounded-[38px] px-6 py-8 sm:px-8 sm:py-10">
-          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+          <div className="grid gap-8 lg:grid-cols-2 xl:grid-cols-[1.08fr_0.92fr] lg:items-end">
             <div>
               <p className="kicker">Next step</p>
               <h2 className="balanced-headline mt-4 max-w-[14ch] font-display text-[clamp(2rem,5vw,4.5rem)] leading-[0.92] tracking-[-0.03em] text-white">

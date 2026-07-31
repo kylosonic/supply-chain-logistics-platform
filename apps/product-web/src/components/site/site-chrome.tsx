@@ -8,7 +8,7 @@ import { AnimatePresence, motion, useScroll } from 'framer-motion';
 import { ArrowUp, ArrowUpRight, Dot, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
-import { externalLinks, navigation } from '@/lib/site-content';
+import { externalLinks, footerNavigation, navigation } from '@/lib/site-content';
 
 import { MagneticLink } from './magnetic-link';
 
@@ -57,8 +57,6 @@ export function SiteChrome({ children }: PropsWithChildren) {
       document.body.style.overflow = '';
     };
   }, [menuOpen]);
-
-  const footerLinks = useMemo(() => navigation.filter((item) => item.href !== '/'), []);
 
   const currentYear = new Date().getFullYear();
 
@@ -200,35 +198,88 @@ export function SiteChrome({ children }: PropsWithChildren) {
 
       <main id="main-content" className="relative z-10 pb-20 pt-4 sm:pb-24 sm:pt-6 lg:pt-8">{children}</main>
 
-      <footer className="relative z-10 border-t border-white/10 px-3 pb-10 pt-2 sm:px-6 sm:pt-4 lg:px-8">
-        <div className="section-shell flex flex-col gap-8 rounded-[32px] border border-white/10 bg-white/[0.04] px-5 py-6 backdrop-blur-xl sm:px-6 lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)_auto] lg:items-end lg:gap-8 lg:px-8 lg:py-7">
-          <div className="max-w-xl space-y-3">
-            <p className="kicker">FreightPilot</p>
-            <h3 className="font-display text-2xl text-white">A workspace for route planning, response, and rollout.</h3>
+      <footer className="relative z-10 mt-12 border-t border-white/10 px-3 pb-10 pt-10 sm:px-6 sm:pt-16 lg:px-8">
+        <div className="section-shell grid gap-12 lg:grid-cols-[1.5fr_2fr] lg:gap-8">
+          <div className="max-w-md space-y-6">
+            <Link href="/" className="inline-flex items-center gap-3 no-underline">
+              <span className="inline-grid h-8 w-8 place-items-center rounded-[14px] border border-white/15 bg-white/[0.08] font-display text-sm font-semibold text-white shadow-[0_12px_40px_rgba(96,165,250,0.15)] sm:h-10 sm:w-10 sm:rounded-[16px]">
+                FP
+              </span>
+              <span className="grid">
+                <strong className="font-display text-sm text-white">FreightPilot</strong>
+                <span className="text-xs text-white/50">Logistics operations workspace</span>
+              </span>
+            </Link>
             <p className="text-sm leading-7 text-white/60">
-              Built to give operators one place to plan routes, handle exceptions, manage provider controls, and launch new workspaces.
+              Built to give operators one place to plan routes, handle exceptions, manage provider controls, and launch new workspaces securely and reliably.
             </p>
+            <div className="flex gap-4 pt-2">
+              <MagneticLink href="/contact" variant="primary">
+                Contact Sales
+              </MagneticLink>
+            </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
-            {footerLinks.map((item) => (
-              <Link key={item.href} href={item.href} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/70 no-underline transition hover:border-white/20 hover:text-white">
-                <span className="block font-medium text-white">{item.label}</span>
-                <span className="mt-1 block text-white/50">{item.description}</span>
-              </Link>
-            ))}
+          
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+            <div className="space-y-4">
+              <h4 className="font-display text-sm text-white">Platform</h4>
+              <ul className="space-y-3">
+                {footerNavigation.platform.map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="text-sm text-white/60 transition hover:text-white">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h4 className="font-display text-sm text-white">Resources</h4>
+              <ul className="space-y-3">
+                {footerNavigation.resources.map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="text-sm text-white/60 transition hover:text-white" {...(item.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h4 className="font-display text-sm text-white">Company</h4>
+              <ul className="space-y-3">
+                {footerNavigation.company.map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="text-sm text-white/60 transition hover:text-white">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h4 className="font-display text-sm text-white">Legal</h4>
+              <ul className="space-y-3">
+                {footerNavigation.legal.map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="text-sm text-white/60 transition hover:text-white">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <MagneticLink href={externalLinks.desktop} variant="secondary" external className="lg:self-end">
-            Download desktop
-          </MagneticLink>
         </div>
 
         {/* Legal footer row */}
-        <div className="section-shell mt-6 flex flex-col items-center gap-4 text-xs text-white/40 sm:flex-row sm:justify-between">
+        <div className="section-shell mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-xs text-white/40 sm:flex-row">
           <p>© {currentYear} FreightPilot. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="transition hover:text-white/70">Privacy Policy</Link>
-            <Link href="/terms" className="transition hover:text-white/70">Terms of Service</Link>
-            <Link href={externalLinks.docs} className="transition hover:text-white/70" target="_blank" rel="noopener noreferrer">Documentation</Link>
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+              All systems operational
+            </span>
           </div>
         </div>
       </footer>

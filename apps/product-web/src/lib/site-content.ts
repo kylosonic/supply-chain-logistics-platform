@@ -84,7 +84,34 @@ export const navigation: NavItem[] = [
   { label: 'Technology', href: '/technology', description: 'Decision controls' },
   { label: 'Pricing', href: '/pricing', description: 'Commercial plans' },
   { label: 'Launch', href: '/launch', description: 'Workspace setup' },
+  { label: 'Contact', href: '/contact', description: 'Get in touch' },
 ];
+
+export const footerNavigation = {
+  platform: [
+    { label: 'Control Tower', href: '/platform#control-tower' },
+    { label: 'Decision Studio', href: '/platform#decision-studio' },
+    { label: 'Launch Workstation', href: '/platform#launch-workstation' },
+    { label: 'Revenue Guard', href: '/platform#revenue-guard' },
+  ],
+  resources: [
+    { label: 'Documentation', href: externalLinks.docs },
+    { label: 'API Reference', href: externalLinks.docs + '/api' },
+    { label: 'Desktop App', href: externalLinks.desktop },
+    { label: 'Community', href: '#' },
+  ],
+  company: [
+    { label: 'About', href: '#' },
+    { label: 'Blog', href: '#' },
+    { label: 'Careers', href: '#' },
+    { label: 'Contact', href: '/contact' },
+  ],
+  legal: [
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Terms of Service', href: '/terms' },
+    { label: 'Security', href: '/security' },
+  ],
+};
 
 export const homeStats: StatItem[] = [
   {
