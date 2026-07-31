@@ -14,7 +14,13 @@ import type {
   RouteScheduleSummary,
   Shipment,
   ShipmentStatus,
+  WeatherRiskZone,
 } from '../types/api';
+
+export async function getWeatherRiskZones(): Promise<WeatherRiskZone[]> {
+  const { data } = await api.get<WeatherRiskZone[]>('/weather/risk-zones');
+  return data;
+}
 
 export async function getInventoryOverview(): Promise<InventoryOverviewRow[]> {
   const { data } = await api.get<InventoryOverviewRow[]>('/inventory/overview');

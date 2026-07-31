@@ -13,8 +13,8 @@ import {
   getAuditTimeline,
   getExceptionFeed,
   getForecast,
-  getInventoryOverview,
   getRouteSchedules,
+  getWeatherRiskZones,
   listReplenishmentPlans,
   listShipments,
 } from '../services/logisticsApi';
@@ -27,6 +27,7 @@ import type {
   RouteScheduleSummary,
   Shipment,
   UsageSummary,
+  WeatherRiskZone,
 } from '../types/api';
 
 const POLL_INTERVAL_MS = 30000;
@@ -73,11 +74,12 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastLiveUpdate, setLastLiveUpdate] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [riskZones, setRiskZones] = useState<WeatherRiskZone[]>([]);
 
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [inventoryData, forecastData, scheduleData, shipmentData, planData, usageData, feedData, auditData] = await Promise.all([
+      const [inventoryData, forecastData, scheduleData, shipmentData, planData, usageData, feedData, auditData, riskData] = await Promise.all([
         getInventoryOverview(),
         getForecast(4),
         getRouteSchedules(),
@@ -86,6 +88,7 @@ export function DashboardPage() {
         getCurrentUsage().catch(() => null),
         getExceptionFeed().catch(() => null),
         getAuditTimeline().catch(() => []),
+        getWeatherRiskZones().catch(() => []),
       ]);
       setInventory(inventoryData);
       setForecast(forecastData.points);
@@ -95,6 +98,7 @@ export function DashboardPage() {
       setUsage(usageData);
       setExceptionFeed(feedData);
       setAuditEvents(auditData);
+      setRiskZones(riskData);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || 'Failed to load dashboard data');
     } finally {
@@ -128,6 +132,9 @@ export function DashboardPage() {
     const inTransitShipments = shipments.filter((shipment) => shipment.status === 'in_transit');
     const pendingPlans = plans.filter((plan) => plan.status === 'pending_approval');
     const forecastDemand = forecast.reduce((sum, point) => sum + point.predicted_demand, 0);
+    const maxRiskScore = riskZones.length > 0 && schedules.length > 0
+      ? Math.max(...riskZones.map((z) => z.severity_score))
+      : 0;
     return {
       stock,
       safety,
@@ -137,8 +144,9 @@ export function DashboardPage() {
       pendingPlans,
       forecastDemand,
       usagePercent: usage?.utilization_percent ?? null,
+      maxRiskScore,
     };
-  }, [forecast, inventory, plans, shipments, usage]);
+  }, [forecast, inventory, plans, shipments, usage, riskZones, schedules]);
 
   const feedSummary = exceptionFeed?.summary;
   const feedItems = exceptionFeed?.items ?? [];
@@ -184,7 +192,7 @@ export function DashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
         <MetricTile
           title="Open exceptions"
           value={feedSummary?.open_alerts ?? 0}
@@ -202,6 +210,12 @@ export function DashboardPage() {
           value={summary.forecastDemand.toLocaleString()}
           detail="Projected demand volume aggregated from the current four-week forecast horizon."
           tone="neutral"
+        />
+        <MetricTile
+          title="Fleet weather risk"
+          value={summary.maxRiskScore > 0 ? `${summary.maxRiskScore}/10` : 'None'}
+          detail="Maximum weather disruption risk across active routes intersecting storm zones."
+          tone={summary.maxRiskScore >= 8 ? 'danger' : summary.maxRiskScore >= 5 ? 'warning' : 'success'}
         />
         <MetricTile
           title="Usage posture"

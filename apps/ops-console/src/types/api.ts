@@ -280,3 +280,9 @@ export type IngestionResult = {
   records_updated: number;
   errors: string[];
 };
+
+export type WeatherRiskZone = {
+  id: string;
+  severity_score: number;
+  polygon: [number, number][];
+};

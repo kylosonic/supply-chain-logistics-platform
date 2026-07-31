@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.endpoints import alerts, auth, forecast, ingestion, inventory, items, live, ops, orders, planning, providers, routes, shipments, subscriptions, warehouses
+from app.api.endpoints import alerts, auth, forecast, ingestion, inventory, items, live, ops, orders, planning, providers, routes, shipments, subscriptions, warehouses, weather
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix='/auth', tags=['auth'])
@@ -18,3 +18,4 @@ api_router.include_router(alerts.router, prefix='/alerts', tags=['alerts'])
 api_router.include_router(planning.router, prefix='/planning', tags=['planning'])
 api_router.include_router(subscriptions.router, prefix='/subscriptions', tags=['subscriptions'])
 api_router.include_router(providers.router, prefix='/providers', tags=['providers'])
+api_router.include_router(weather.router, prefix='/weather', tags=['weather'])

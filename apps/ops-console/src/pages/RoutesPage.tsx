@@ -8,13 +8,14 @@ import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
-import { getRouteOptimizationHistory, getRouteSchedules } from '../services/logisticsApi';
-import type { RouteOptimizationRunSummary, RouteOptimizeResponse, RouteScheduleSummary, RouteStop } from '../types/api';
+import { getRouteOptimizationHistory, getRouteSchedules, getWeatherRiskZones } from '../services/logisticsApi';
+import type { RouteOptimizationRunSummary, RouteOptimizeResponse, RouteScheduleSummary, RouteStop, WeatherRiskZone } from '../types/api';
 
 export function RoutesPage() {
   const { token } = useAuth();
   const [schedules, setSchedules] = useState<RouteScheduleSummary[]>([]);
   const [history, setHistory] = useState<RouteOptimizationRunSummary[]>([]);
+  const [riskZones, setRiskZones] = useState<WeatherRiskZone[]>([]);
   const [latestRouteStops, setLatestRouteStops] = useState<RouteStop[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -22,9 +23,14 @@ export function RoutesPage() {
   async function loadSchedules() {
     try {
       setError(null);
-      const [scheduleData, historyData] = await Promise.all([getRouteSchedules(), getRouteOptimizationHistory()]);
+      const [scheduleData, historyData, riskData] = await Promise.all([
+        getRouteSchedules(),
+        getRouteOptimizationHistory(),
+        getWeatherRiskZones().catch(() => [])
+      ]);
       setSchedules(scheduleData);
       setHistory(historyData);
+      setRiskZones(riskData);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || 'Failed to load route schedules');
     }
@@ -79,7 +85,7 @@ export function RoutesPage() {
             loadSchedules();
           }}
         />
-        <RouteMap stops={latestRouteStops} />
+        <RouteMap stops={latestRouteStops} riskZones={riskZones} />
       </div>
 
       <Panel

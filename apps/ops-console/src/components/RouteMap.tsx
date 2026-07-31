@@ -1,16 +1,17 @@
 import L, { type LatLngExpression } from 'leaflet';
 import { useMemo } from 'react';
-import { MapContainer, Marker, Polyline, Popup, TileLayer } from 'react-leaflet';
+import { MapContainer, Marker, Polygon, Polyline, Popup, TileLayer } from 'react-leaflet';
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 import { Panel } from './ui/Panel';
-import type { RouteStop } from '../types/api';
+import type { RouteStop, WeatherRiskZone } from '../types/api';
 
 type Props = {
   stops: RouteStop[];
+  riskZones?: WeatherRiskZone[];
 };
 
 const ADDIS_CENTER: LatLngExpression = [8.9806, 38.7578];
@@ -23,7 +24,7 @@ const defaultIcon = L.icon({
   iconAnchor: [12, 41],
 });
 
-export function RouteMap({ stops }: Props) {
+export function RouteMap({ stops, riskZones = [] }: Props) {
   const validStops = useMemo(
     () => stops.filter((s) => typeof s.latitude === 'number' && typeof s.longitude === 'number'),
     [stops],
@@ -71,6 +72,18 @@ export function RouteMap({ stops }: Props) {
                 </div>
               </Popup>
             </Marker>
+          ))}
+          {riskZones.map((zone) => (
+            <Polygon
+              key={zone.id}
+              positions={zone.polygon as LatLngExpression[]}
+              pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.3 }}
+            >
+              <Popup>
+                <div className="font-semibold">Weather Risk Zone</div>
+                <div className="text-sm">Severity: {zone.severity_score}/10</div>
+              </Popup>
+            </Polygon>
           ))}
           {polyline.length >= 2 ? <Polyline positions={polyline} color="#38bdf8" weight={4} /> : null}
         </MapContainer>
