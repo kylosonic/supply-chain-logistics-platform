@@ -50,6 +50,7 @@ export type RouteOptimizeResponse = {
   capacity_used: number;
   unassigned_deliveries: { warehouse_code: string; demand_units: number }[];
   stops: RouteStop[];
+  co2_saved_kg?: number | null;
 };
 
 export type RouteOptimizePayload = {
@@ -62,6 +63,7 @@ export type RouteOptimizePayload = {
   speed_kmh: number;
   cost_per_km: number;
   persist_schedule: boolean;
+  minimize_carbon_footprint: boolean;
 };
 
 export type RouteOptimizationRunSummary = {

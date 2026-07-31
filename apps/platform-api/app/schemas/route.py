@@ -27,6 +27,7 @@ class RouteOptimizeRequest(BaseModel):
     cost_per_km: float = Field(default=1.5, gt=0)
     weights: RouteWeights = RouteWeights()
     persist_schedule: bool = True
+    minimize_carbon_footprint: bool = False
 
 
 class RouteStopOut(BaseModel):
@@ -50,6 +51,7 @@ class RouteOptimizeResponse(BaseModel):
     capacity_used: int
     unassigned_deliveries: list[DeliveryDemand]
     stops: list[RouteStopOut]
+    co2_saved_kg: float | None = None
 
 
 class RouteScheduleSummary(BaseModel):
@@ -80,6 +82,8 @@ class RouteOptimizationRunSummary(ORMBase):
     unassigned_count: int
     persist_requested: bool
     persisted_schedule_id: str | None
+    minimize_carbon_footprint: bool
+    co2_saved_kg: float | None
 
 
 class RouteOptimizationRunDetail(RouteOptimizationRunSummary):

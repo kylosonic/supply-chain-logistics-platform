@@ -34,3 +34,5 @@ class RouteOptimizationRun(UUIDTimestampMixin, Base):
     weights_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     stops_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
     unassigned_deliveries_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    minimize_carbon_footprint: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    co2_saved_kg: Mapped[float | None] = mapped_column(Float, nullable=True)

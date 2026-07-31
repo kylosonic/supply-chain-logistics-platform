@@ -21,6 +21,7 @@ export function RouteOptimizerForm({
     speed_kmh: 45,
     cost_per_km: 1.5,
     persist_schedule: true,
+    minimize_carbon_footprint: false,
   });
   const [result, setResult] = useState<RouteOptimizeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export function RouteOptimizerForm({
         speed_kmh: Number(payload.speed_kmh),
         cost_per_km: Number(payload.cost_per_km),
         persist_schedule: payload.persist_schedule,
+        minimize_carbon_footprint: payload.minimize_carbon_footprint,
       });
 
       setPreviousResult(result);
@@ -109,9 +111,14 @@ export function RouteOptimizerForm({
           <input className={fieldClassName} type="number" step="0.1" value={payload.cost_per_km} onChange={(e) => setPayload({ ...payload, cost_per_km: Number(e.target.value) })} />
         </label>
 
-        <label className="col-span-1 flex items-center gap-3 rounded-[22px] border border-slate-800 bg-slate-900/60 px-4 py-4 text-sm text-slate-300 lg:col-span-2">
+        <label className="col-span-1 flex items-center gap-3 rounded-[22px] border border-slate-800 bg-slate-900/60 px-4 py-4 text-sm text-slate-300">
           <input type="checkbox" checked={payload.persist_schedule} onChange={(e) => setPayload({ ...payload, persist_schedule: e.target.checked })} />
           Persist the optimized route as a saved schedule for the wider team.
+        </label>
+        
+        <label className="col-span-1 flex items-center gap-3 rounded-[22px] border border-slate-800 bg-slate-900/60 px-4 py-4 text-sm text-slate-300">
+          <input type="checkbox" checked={payload.minimize_carbon_footprint} onChange={(e) => setPayload({ ...payload, minimize_carbon_footprint: e.target.checked })} />
+          Minimize Carbon Footprint
         </label>
 
         <button
@@ -132,6 +139,9 @@ export function RouteOptimizerForm({
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={result.objective} tone="info" />
             <StatusBadge label={result.unassigned_deliveries.length === 0 ? 'Fully assigned' : 'Review unassigned'} tone={result.unassigned_deliveries.length === 0 ? 'success' : 'warning'} />
+            {result.co2_saved_kg && result.co2_saved_kg > 0 ? (
+              <StatusBadge label={`${result.co2_saved_kg} kg CO2 Saved`} tone="success" />
+            ) : null}
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">

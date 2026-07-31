@@ -47,6 +47,9 @@ def optimize_routes(
         raise HTTPException(status_code=404, detail='start_warehouse_code not found')
 
     deliveries = [Delivery(warehouse_code=d.warehouse_code, demand_units=d.demand_units) for d in payload.deliveries]
+    
+    from app.utils.emissions import calculate_trip_emissions
+    
     result = optimize_route_greedy(
         nodes=nodes,
         start_code=payload.start_warehouse_code,
@@ -57,6 +60,29 @@ def optimize_routes(
         cost_per_km=payload.cost_per_km,
         weights=payload.weights.model_dump(),
     )
+    
+    co2_saved_kg = None
+    
+    if payload.minimize_carbon_footprint:
+        eco_result = optimize_route_greedy(
+            nodes=nodes,
+            start_code=payload.start_warehouse_code,
+            deliveries=deliveries,
+            vehicle_capacity_units=payload.vehicle_capacity_units,
+            max_stops=payload.max_stops,
+            speed_kmh=payload.speed_kmh,
+            cost_per_km=payload.cost_per_km,
+            weights={'distance': 1.0, 'time': 0.0, 'cost': 0.0},
+        )
+        
+        co2_standard = calculate_trip_emissions(result['total_distance_km'] / 1.60934, 'heavy_duty')
+        co2_eco = calculate_trip_emissions(eco_result['total_distance_km'] / 1.60934, 'heavy_duty')
+        
+        if co2_eco < co2_standard:
+            result = eco_result
+            co2_saved_kg = round(co2_standard - co2_eco, 2)
+        else:
+            co2_saved_kg = 0.0
 
     usage_recorded = record_usage_for_user_membership(
         db,
@@ -90,6 +116,8 @@ def optimize_routes(
         weights_json=payload.weights.model_dump(mode='json'),
         stops_json=serialized_stops,
         unassigned_deliveries_json=[DeliveryDemand(**delivery).model_dump(mode='json') for delivery in result['unassigned_deliveries']],
+        minimize_carbon_footprint=payload.minimize_carbon_footprint,
+        co2_saved_kg=co2_saved_kg,
     )
     db.add(history_run)
 
@@ -156,6 +184,7 @@ def optimize_routes(
         capacity_used=result['capacity_used'],
         unassigned_deliveries=result['unassigned_deliveries'],
         stops=[RouteStopOut(**s) for s in result['stops']],
+        co2_saved_kg=co2_saved_kg,
     )
 
 
@@ -256,4 +285,6 @@ def route_optimization_history_detail(
         deliveries=[DeliveryDemand(**delivery) for delivery in run.deliveries_json],
         stops=[RouteStopOut(**stop) for stop in run.stops_json],
         unassigned_deliveries=[DeliveryDemand(**delivery) for delivery in run.unassigned_deliveries_json],
+        minimize_carbon_footprint=run.minimize_carbon_footprint,
+        co2_saved_kg=run.co2_saved_kg,
     )
