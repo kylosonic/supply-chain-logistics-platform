@@ -79,7 +79,7 @@ function AnchorShell({
 
   if (external) {
     return (
-      <motion.a href={href} target="_blank" rel="noreferrer" {...motionProps}>
+      <motion.a href={href} target="_blank" rel="noopener noreferrer" {...motionProps}>
         {content}
       </motion.a>
     );

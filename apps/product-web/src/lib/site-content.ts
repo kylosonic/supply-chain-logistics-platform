@@ -64,6 +64,7 @@ export type Testimonial = {
   quote: string;
   person: string;
   role: string;
+  avatarColor: string;
 };
 
 export type FaqItem = {
@@ -106,9 +107,9 @@ export const homeStats: StatItem[] = [
   },
   {
     value: 1,
-    suffix: 'loop',
+    suffix: ' unified workflow',
     label: 'Shared operating model',
-    detail: 'Plan, respond, approve, and audit work inside the same control layer.',
+    detail: 'Plan, respond, approve, and audit work inside a single connected control layer.',
   },
 ];
 
@@ -218,6 +219,7 @@ export const testimonials: Testimonial[] = [
       'FreightPilot gives the dispatch team one place to review route risk, operator readiness, and workspace controls without hunting across multiple screens.',
     person: 'Amina K.',
     role: 'VP Operations',
+    avatarColor: 'from-cyan-400 to-blue-500',
   },
   {
     company: 'Contour Fulfillment',
@@ -225,6 +227,7 @@ export const testimonials: Testimonial[] = [
       'It keeps planning, exceptions, and approvals close enough together that supervisors can respond quickly without losing context.',
     person: 'Julian R.',
     role: 'Head of Logistics Systems',
+    avatarColor: 'from-violet-400 to-purple-500',
   },
   {
     company: 'Helix Commerce Network',
@@ -232,6 +235,7 @@ export const testimonials: Testimonial[] = [
       'The launch workflow is practical. We can track sign-off, environment checks, and rollout readiness before opening a new team to live work.',
     person: 'Marta S.',
     role: 'Program Director',
+    avatarColor: 'from-amber-400 to-orange-500',
   },
 ];
 

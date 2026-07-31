@@ -1,7 +1,7 @@
 'use client';
 
 import type { PropsWithChildren } from 'react';
-import { useMemo, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import { cn } from '@/lib/cn';
@@ -12,38 +12,57 @@ type SpotlightCardProps = PropsWithChildren<{
 
 export function SpotlightCard({ children, className }: SpotlightCardProps) {
   const reduceMotion = useReducedMotion();
-  const [state, setState] = useState({ x: 50, y: 50, rx: 0, ry: 0 });
+  const cardRef = useRef<HTMLDivElement>(null);
+  const spotlightRef = useRef<HTMLDivElement>(null);
 
-  const style = useMemo(
-    () => ({
-      background: `radial-gradient(420px circle at ${state.x}% ${state.y}%, rgba(96,165,250,0.18), transparent 42%)`,
-    }),
-    [state.x, state.y],
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      if (reduceMotion) return;
+      const card = cardRef.current;
+      const spotlight = spotlightRef.current;
+      if (!card || !spotlight) return;
+
+      const rect = card.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 100;
+      const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+      // Use CSS custom properties directly instead of React state to avoid re-renders
+      spotlight.style.background = `radial-gradient(420px circle at ${x}% ${y}%, rgba(96,165,250,0.18), transparent 42%)`;
+      spotlight.style.opacity = '1';
+
+      const rx = (0.5 - (event.clientY - rect.top) / rect.height) * 10;
+      const ry = ((event.clientX - rect.left) / rect.width - 0.5) * 10;
+      card.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    },
+    [reduceMotion],
   );
 
+  const handleMouseLeave = useCallback(() => {
+    const card = cardRef.current;
+    const spotlight = spotlightRef.current;
+    if (!card || !spotlight) return;
+
+    spotlight.style.opacity = '0';
+    card.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg)';
+  }, []);
+
   return (
-    <motion.article
+    <article
+      ref={cardRef}
       className={cn(
         'group relative min-w-0 overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.05] p-5 backdrop-blur-2xl shadow-luxe transition duration-300 sm:p-6',
         className,
       )}
-      animate={reduceMotion ? {} : { rotateX: state.rx, rotateY: state.ry }}
-      transition={{ type: 'spring', stiffness: 180, damping: 20, mass: 0.5 }}
-      onMouseMove={(event) => {
-        if (reduceMotion) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        const x = ((event.clientX - rect.left) / rect.width) * 100;
-        const y = ((event.clientY - rect.top) / rect.height) * 100;
-        const rx = (0.5 - (event.clientY - rect.top) / rect.height) * 10;
-        const ry = (((event.clientX - rect.left) / rect.width) - 0.5) * 10;
-        setState({ x, y, rx, ry });
-      }}
-      onMouseLeave={() => setState({ x: 50, y: 50, rx: 0, ry: 0 })}
-      style={{ transformStyle: 'preserve-3d' }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}
     >
-      <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100" style={style} />
+      <div
+        ref={spotlightRef}
+        className="pointer-events-none absolute inset-0 opacity-0 transition duration-300"
+      />
       <div className="pointer-events-none absolute inset-0 rounded-[30px] border border-white/10 [mask-image:linear-gradient(180deg,black,transparent)]" />
       <div className="relative z-10">{children}</div>
-    </motion.article>
+    </article>
   );
 }

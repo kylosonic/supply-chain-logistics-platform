@@ -26,7 +26,7 @@ const launchOptions: Array<{ value: SignupTier; label: string; detail: string }>
 ];
 
 const fieldClassName =
-  'peer min-h-14 w-full rounded-[22px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-base text-white outline-none transition placeholder:text-transparent focus:border-cyan-300/50 sm:text-sm';
+  'peer min-h-14 w-full rounded-[22px] border border-white/10 bg-black/35 px-4 pb-3 pt-6 text-base text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50 sm:text-sm';
 
 export function SignupForm() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);

@@ -10,7 +10,11 @@ import { externalLinks, operatingLoop, platformStacks } from '@/lib/site-content
 
 export const metadata: Metadata = {
   title: 'Platform',
+  description:
+    'Explore how FreightPilot organizes route decisions, live exceptions, shipment flow, workspace controls, and rollout tasks into one operating system for logistics teams.',
 };
+
+const stackIconColors = ['text-cyan-200', 'text-violet-300', 'text-amber-200', 'text-emerald-200'];
 
 export default function PlatformPage() {
   return (
@@ -34,7 +38,7 @@ export default function PlatformPage() {
             <SpotlightCard>
               <Layers3 className="h-6 w-6 text-cyan-200" />
               <p className="mt-5 font-display text-2xl text-white">Four product families. One operating rhythm.</p>
-              <p className="mt-3 text-sm leading-7 text-white/58">Control Tower, Decision Studio, Launch Workstation, and Revenue Guard are presented as one ecosystem instead of fragmented modules.</p>
+              <p className="mt-3 text-sm leading-7 text-white/60">Control Tower, Decision Studio, Launch Workstation, and Revenue Guard are presented as one ecosystem instead of fragmented modules.</p>
             </SpotlightCard>
           </div>
         }
@@ -47,18 +51,18 @@ export default function PlatformPage() {
           description="The platform is modular, but teams should still experience it as one connected system for planning, response, and rollout."
         />
         <div className="mt-10 grid gap-4 xl:grid-cols-4">
-          {platformStacks.map((feature) => (
+          {platformStacks.map((feature, index) => (
             <SpotlightCard key={feature.title}>
-              <feature.icon className="h-6 w-6 text-cyan-200" />
+              <feature.icon className={`h-6 w-6 ${stackIconColors[index % stackIconColors.length]}`} />
               <h3 className="mt-5 font-display text-2xl text-white">{feature.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-white/58">{feature.description}</p>
-              <p className="mt-5 text-sm leading-7 text-white/42">{feature.detail}</p>
+              <p className="mt-3 text-sm leading-7 text-white/60">{feature.description}</p>
+              <p className="mt-5 text-sm leading-7 text-white/50">{feature.detail}</p>
             </SpotlightCard>
           ))}
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.08}>
+      <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.06}>
         <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="glass-panel rounded-[34px] px-6 py-7">
             <SectionHeading
@@ -81,7 +85,7 @@ export default function PlatformPage() {
             <SpotlightCard>
               <Route className="h-6 w-6 text-cyan-200" />
               <h3 className="mt-5 font-display text-2xl text-white">Route Studio</h3>
-              <p className="mt-3 text-sm leading-7 text-white/58">Optimize, compare, and persist route scenarios with unassigned demand history visible after the run.</p>
+              <p className="mt-3 text-sm leading-7 text-white/60">Optimize, compare, and persist route scenarios with unassigned demand history visible after the run.</p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {['Scenario history', 'Map review', 'Saved schedules', 'Operator handoff'].map((item) => (
                   <div key={item} className="rounded-[18px] border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/62">
@@ -91,15 +95,15 @@ export default function PlatformPage() {
               </div>
             </SpotlightCard>
             <SpotlightCard>
-              <Gauge className="h-6 w-6 text-violet-200" />
+              <Gauge className="h-6 w-6 text-violet-300" />
               <h3 className="mt-5 font-display text-2xl text-white">Workspace commercial posture</h3>
-              <p className="mt-3 text-sm leading-7 text-white/58">Usage metering, provider preference, and subscription posture belong in the same premium story as dispatch and routing.</p>
+              <p className="mt-3 text-sm leading-7 text-white/60">Usage metering, provider preference, and subscription posture belong in the same premium story as dispatch and routing.</p>
             </SpotlightCard>
           </div>
         </div>
       </MotionSection>
 
-      <MotionSection className="section-shell py-16 sm:py-20" delay={0.1}>
+      <MotionSection className="section-shell py-16 sm:py-20" delay={0.06}>
         <SectionHeading
           eyebrow="Platform outcome"
           title="The product experience should stay coherent from website to workstation"
@@ -108,14 +112,14 @@ export default function PlatformPage() {
         />
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           {[
-            { icon: Workflow, title: 'Operational coherence', detail: 'Routes, alerts, and launch state tell one story.' },
-            { icon: Sparkles, title: 'Premium interaction design', detail: 'Glass layers, animated borders, and deep lighting make the product memorable.' },
-            { icon: BadgeCheck, title: 'Credible trust posture', detail: 'Audit trails and workspace governance keep the cinematic experience honest.' },
+            { icon: Workflow, title: 'Operational coherence', detail: 'Routes, alerts, and launch state tell one story.', color: 'text-cyan-200' },
+            { icon: Sparkles, title: 'Premium interaction design', detail: 'Glass layers, animated borders, and deep lighting make the product memorable.', color: 'text-violet-300' },
+            { icon: BadgeCheck, title: 'Credible trust posture', detail: 'Audit trails and workspace governance keep the cinematic experience honest.', color: 'text-emerald-200' },
           ].map((item) => (
             <SpotlightCard key={item.title}>
-              <item.icon className="h-6 w-6 text-cyan-200" />
+              <item.icon className={`h-6 w-6 ${item.color}`} />
               <h3 className="mt-5 font-display text-2xl text-white">{item.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-white/58">{item.detail}</p>
+              <p className="mt-3 text-sm leading-7 text-white/60">{item.detail}</p>
             </SpotlightCard>
           ))}
         </div>

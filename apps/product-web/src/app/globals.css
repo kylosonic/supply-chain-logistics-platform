@@ -8,6 +8,12 @@
   --spotlight-x: 50%;
   --spotlight-y: 12%;
   --site-max-width: 1380px;
+
+  /* Accent palette — used to diversify icon and highlight colors. */
+  --accent-cyan: 165 243 252;
+  --accent-violet: 196 181 253;
+  --accent-amber: 253 224 151;
+  --accent-emerald: 167 243 208;
 }
 
 html {
@@ -28,17 +34,9 @@ body {
   overflow-x: hidden;
 }
 
-body::before {
-  content: '';
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.05;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0.7px, transparent 0.8px);
-  background-size: 16px 16px;
-  mix-blend-mode: soft-light;
-}
+/* Removed redundant body::before dot-pattern overlay.
+   The site-chrome component already renders 3 fixed background layers;
+   stacking a 4th pseudo-element created 7 GPU-composite layers total. */
 
 a,
 button,
@@ -94,6 +92,34 @@ textarea {
     color: rgb(255 255 255 / 0.68);
     line-height: 1.9;
     text-wrap: pretty;
+  }
+
+  /* ── WCAG-compliant text utilities ── */
+  /* Minimum white/60 for body text to meet 4.5:1 contrast on #050505. */
+  .text-muted {
+    color: rgb(255 255 255 / 0.68);
+  }
+  .text-subtle {
+    color: rgb(255 255 255 / 0.60);
+  }
+  .text-faint {
+    color: rgb(255 255 255 / 0.52);
+  }
+
+  /* ── Section divider ── */
+  .divider-glow {
+    @apply mx-auto h-px w-full max-w-3xl;
+    background: linear-gradient(to right, transparent, rgb(96 165 250 / 0.35), rgb(168 85 247 / 0.25), transparent);
+  }
+
+  /* ── Skip to content ── */
+  .skip-to-content {
+    @apply fixed left-4 top-4 z-[100] -translate-y-20 rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg transition focus:translate-y-0;
+  }
+
+  /* ── Back-to-top button ── */
+  .back-to-top {
+    @apply fixed bottom-6 right-6 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white/70 shadow-luxe backdrop-blur-xl transition hover:border-white/25 hover:text-white;
   }
 }
 

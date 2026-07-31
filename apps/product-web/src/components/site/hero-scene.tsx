@@ -40,123 +40,27 @@ export function HeroScene() {
           style={{ left: particle.left, top: particle.top }}
           animate={{ y: [0, -18, 0], opacity: [0.3, 1, 0.4] }}
           transition={{ duration: particle.duration, repeat: Infinity, ease: 'easeInOut', delay: particle.delay }}
+          aria-hidden="true"
         />
       ))}
 
-      <div className="relative z-10 lg:hidden">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-white/70">
-              <Sparkles className="h-4 w-4" />
-              Live workspace overview
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100">
-              <ShieldCheck className="h-4 w-4" />
-              Governance enabled
-            </div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 18, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-            className="glass-panel overflow-hidden rounded-[28px] border border-white/10 px-4 py-4"
-          >
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">Operations summary</p>
-                  <h3 className="balanced-headline mt-3 max-w-[8ch] font-display text-[clamp(2rem,10vw,2.7rem)] leading-[0.95] text-white">
-                    Control overview
-                  </h3>
-                </div>
-                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-2 text-xs text-violet-100">
-                  <BrainCircuit className="h-4 w-4" />
-                  Assisted decisions
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                {commandStats.map(([title, value, detail]) => (
-                  <div key={title} className="rounded-[20px] border border-white/10 bg-black/30 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">{title}</p>
-                    <p className="mt-2 font-display text-[clamp(1.8rem,6vw,2.4rem)] leading-none text-white">{value}</p>
-                    <p className="mt-2 text-sm leading-6 text-white/55">{detail}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="rounded-[24px] border border-white/10 bg-black/35 p-4">
-                <div className="flex items-center justify-between text-white/65">
-                  <span className="text-xs uppercase tracking-[0.18em]">Recommended actions</span>
-                  <ArrowUpRight className="h-4 w-4" />
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {rhythmSteps.map((item, index) => (
-                    <div key={item} className="rounded-[18px] border border-white/10 bg-white/[0.03] p-3">
-                      <span className="text-xs text-cyan-200/80">0{index + 1}</span>
-                      <p className="mt-2 text-sm text-white">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          <div className="grid gap-4">
-            <SpotlightCard className="min-h-0">
-              <div className="flex items-center justify-between gap-3 text-white/75">
-                <span className="text-xs uppercase tracking-[0.2em]">Live alerts</span>
-                <ChartNoAxesCombined className="h-4 w-4" />
-              </div>
-              <div className="mt-4 space-y-3">
-                {liveFeedItems.slice(0, 2).map(([title, detail]) => (
-                  <div key={title} className="rounded-[18px] border border-white/10 bg-black/30 px-4 py-3">
-                    <p className="text-sm font-semibold text-white">{title}</p>
-                    <p className="mt-1 text-xs text-white/55">{detail}</p>
-                  </div>
-                ))}
-              </div>
-            </SpotlightCard>
-
-            <SpotlightCard className="min-h-0">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/45">Workspace controls</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="balanced-headline max-w-[7ch] font-display text-[clamp(1.7rem,8vw,2.1rem)] leading-[1] text-white">
-                    Launch checklist
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-white/60">
-                    Confirm users, devices, and integrations before opening the team to live work.
-                  </p>
-                </div>
-                <div>
-                  <p className="balanced-headline max-w-[7ch] font-display text-[clamp(1.7rem,8vw,2.1rem)] leading-[1] text-white">
-                    Provider controls
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-white/60">
-                    Choose approved providers and keep key ownership inside the workspace.
-                  </p>
-                </div>
-              </div>
-            </SpotlightCard>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative z-10 hidden h-full gap-4 sm:gap-5 lg:grid lg:grid-rows-[auto_1fr_auto]">
+      {/* Unified responsive layout — single markup serves both mobile and desktop */}
+      <div className="relative z-10 grid h-full gap-4 sm:gap-5 lg:grid-rows-[auto_1fr_auto]">
+        {/* Header badges */}
         <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs uppercase tracking-[0.22em] text-white/70">
-            <Sparkles className="h-4 w-4" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-white/70">
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
             Live workspace overview
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-100">
-            <ShieldCheck className="h-4 w-4" />
+            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
             Governance enabled
           </div>
         </div>
 
+        {/* Main content grid */}
         <div className="grid gap-4 xl:grid-cols-[0.94fr_1.06fr]">
+          {/* Control overview panel */}
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -165,20 +69,20 @@ export function HeroScene() {
           >
             <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Operations summary</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Operations summary</p>
                 <h3 className="balanced-headline mt-3 max-w-[9ch] font-display text-[clamp(1.9rem,2.6vw,2.25rem)] leading-[0.98] text-white">Control overview</h3>
               </div>
               <div className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-2 text-xs text-violet-100">
-                <BrainCircuit className="h-4 w-4" />
+                <BrainCircuit className="h-4 w-4" aria-hidden="true" />
                 Assisted decisions
               </div>
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3 [&>*:last-child]:sm:col-span-2 [&>*:last-child]:2xl:col-span-1">
               {commandStats.map(([title, value, detail]) => (
-                <div key={title} className="rounded-[22px] border border-white/10 bg-black/30 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/45">{title}</p>
-                  <p className="mt-3 font-display text-3xl text-white">{value}</p>
+                <div key={title} className="rounded-[22px] border border-white/10 bg-black/30 p-3 sm:p-4">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/50">{title}</p>
+                  <p className="mt-2 font-display text-[clamp(1.8rem,6vw,2.4rem)] leading-none text-white sm:mt-3 sm:text-3xl">{value}</p>
                   <p className="mt-2 text-sm text-white/55">{detail}</p>
                 </div>
               ))}
@@ -187,9 +91,9 @@ export function HeroScene() {
             <div className="mt-5 rounded-[24px] border border-white/10 bg-black/35 p-4">
               <div className="flex items-center justify-between text-white/65">
                 <span className="text-xs uppercase tracking-[0.18em]">Recommended actions</span>
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 [&>*:last-child]:sm:col-span-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 [&>*:last-child]:sm:col-span-2 lg:[&>*:last-child]:sm:col-span-1 xl:grid-cols-3 xl:[&>*:last-child]:col-span-1">
                 {rhythmSteps.map((item, index) => (
                   <div key={item} className="rounded-[18px] border border-white/10 bg-white/[0.03] p-3">
                     <span className="text-xs text-cyan-200/80">0{index + 1}</span>
@@ -200,16 +104,17 @@ export function HeroScene() {
             </div>
           </motion.div>
 
+          {/* Right column: alerts + workspace controls */}
           <div className="grid gap-4">
             <motion.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15 }}
             >
-              <SpotlightCard className="min-h-[210px]">
+              <SpotlightCard className="min-h-0 lg:min-h-[210px]">
                 <div className="flex items-center justify-between gap-3 text-white/75">
                   <span className="text-xs uppercase tracking-[0.2em]">Live alerts</span>
-                  <ChartNoAxesCombined className="h-4 w-4" />
+                  <ChartNoAxesCombined className="h-4 w-4" aria-hidden="true" />
                 </div>
                 <div className="mt-4 space-y-3">
                   {liveFeedItems.map(([title, detail]) => (
@@ -229,12 +134,12 @@ export function HeroScene() {
               className="grid gap-4 2xl:grid-cols-2"
             >
               <SpotlightCard>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Launch workspace</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Launch workspace</p>
                 <p className="balanced-headline mt-4 max-w-[10ch] font-display text-[clamp(1.55rem,2.2vw,1.9rem)] leading-[1.02] text-white">Launch checklist</p>
                 <p className="mt-2 text-sm leading-7 text-white/60">Track approvals, environment checks, and go-live readiness in one flow.</p>
               </SpotlightCard>
               <SpotlightCard>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/45">Provider controls</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Provider controls</p>
                 <p className="balanced-headline mt-4 max-w-[10ch] font-display text-[clamp(1.55rem,2.2vw,1.9rem)] leading-[1.02] text-white">Approved models</p>
                 <p className="mt-2 text-sm leading-7 text-white/60">Choose preferred providers without giving up workspace policy and audit history.</p>
               </SpotlightCard>
@@ -242,9 +147,10 @@ export function HeroScene() {
           </div>
         </div>
 
+        {/* Bottom bar */}
         <div className="flex flex-col items-start gap-2 rounded-[24px] border border-white/10 bg-black/30 px-4 py-4 text-sm text-white/65 sm:flex-row sm:items-center sm:justify-between">
           <span>Explore how the platform handles planning, response, launch, and governance.</span>
-          <motion.span animate={{ y: [0, 8, 0] }} transition={{ duration: 1.8, repeat: Infinity }}>
+          <motion.span animate={{ y: [0, 8, 0] }} transition={{ duration: 1.8, repeat: Infinity }} aria-hidden="true">
             ↓
           </motion.span>
         </div>

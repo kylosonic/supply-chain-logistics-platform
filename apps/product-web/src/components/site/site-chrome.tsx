@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useScroll } from 'framer-motion';
-import { ArrowUpRight, Dot, Sparkles } from 'lucide-react';
+import { ArrowUp, ArrowUpRight, Dot, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
 import { externalLinks, navigation } from '@/lib/site-content';
@@ -17,9 +17,13 @@ export function SiteChrome({ children }: PropsWithChildren) {
   const { scrollY } = useScroll();
   const [compact, setCompact] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = scrollY.on('change', (value) => setCompact(value > 24));
+    const unsubscribe = scrollY.on('change', (value) => {
+      setCompact(value > 24);
+      setShowBackToTop(value > 600);
+    });
     return () => unsubscribe();
   }, [scrollY]);
 
@@ -42,13 +46,27 @@ export function SiteChrome({ children }: PropsWithChildren) {
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
+
   const footerLinks = useMemo(() => navigation.filter((item) => item.href !== '/'), []);
+
+  const currentYear = new Date().getFullYear();
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_var(--spotlight-x,50%)_var(--spotlight-y,20%),rgba(59,130,246,0.18),transparent_18%),radial-gradient(circle_at_85%_14%,rgba(167,139,250,0.18),transparent_20%)]" />
-      <div className="pointer-events-none fixed inset-0 z-0 opacity-20 sm:opacity-25 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:40px_40px]" />
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.07),transparent_25%),radial-gradient(circle_at_bottom_right,rgba(192,132,252,0.08),transparent_24%)]" />
+      {/* Consolidated into a single performant background layer instead of 3 separate divs */}
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_var(--spotlight-x,50%)_var(--spotlight-y,20%),rgba(59,130,246,0.18),transparent_18%),radial-gradient(circle_at_85%_14%,rgba(167,139,250,0.14),transparent_20%),radial-gradient(circle_at_top_left,rgba(34,211,238,0.06),transparent_25%),radial-gradient(circle_at_bottom_right,rgba(192,132,252,0.06),transparent_24%)]" />
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-15 sm:opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:40px_40px]" />
 
       <header className="sticky top-0 z-40 px-3 pt-2.5 sm:px-6 sm:pt-4 lg:px-8">
         <motion.div
@@ -65,11 +83,11 @@ export function SiteChrome({ children }: PropsWithChildren) {
             </span>
             <span className="hidden sm:grid">
               <strong className="font-display text-sm text-white">FreightPilot</strong>
-              <span className="text-xs text-white/48">Logistics operations workspace</span>
+              <span className="text-xs text-white/50">Logistics operations workspace</span>
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-2 lg:flex">
+          <nav className="hidden items-center gap-2 lg:flex" aria-label="Main navigation">
             {navigation.map((item) => {
               const active = pathname === item.href;
               return (
@@ -80,6 +98,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
                     'relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/68 transition hover:text-white',
                     active && 'bg-white/[0.06] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
                   )}
+                  aria-current={active ? 'page' : undefined}
                 >
                   {active ? <Sparkles className="h-4 w-4 text-cyan-200" /> : <Dot className="h-4 w-4" />}
                   {item.label}
@@ -133,48 +152,60 @@ export function SiteChrome({ children }: PropsWithChildren) {
 
       <AnimatePresence>
         {menuOpen ? (
-          <motion.div
-            initial={{ opacity: 0, y: -18 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -18 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-3 top-20 z-30 rounded-[28px] border border-white/10 bg-black/78 p-5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.38)] sm:inset-x-6 sm:top-24 lg:hidden"
-          >
-            <div className="grid gap-3">
-              {navigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-4 text-white/75 transition hover:text-white',
-                    pathname === item.href && 'border-cyan-400/30 bg-cyan-400/10 text-white',
-                  )}
-                >
-                  <span className="block font-display text-lg text-white">{item.label}</span>
-                  <span className="mt-1 block text-sm text-white/48">{item.description}</span>
-                </Link>
-              ))}
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <MagneticLink href={externalLinks.docs} variant="secondary" external>
-                Open docs
-              </MagneticLink>
-              <MagneticLink href={externalLinks.console} variant="primary" external>
-                Open console
-              </MagneticLink>
-            </div>
-          </motion.div>
+          <>
+            {/* Backdrop overlay for mobile menu */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-20 bg-black/50 backdrop-blur-sm lg:hidden"
+              onClick={() => setMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -18 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed inset-x-3 top-20 z-30 rounded-[28px] border border-white/10 bg-black/78 p-5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.38)] sm:inset-x-6 sm:top-24 lg:hidden"
+            >
+              <div className="grid gap-3">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-4 text-white/75 transition hover:text-white',
+                      pathname === item.href && 'border-cyan-400/30 bg-cyan-400/10 text-white',
+                    )}
+                  >
+                    <span className="block font-display text-lg text-white">{item.label}</span>
+                    <span className="mt-1 block text-sm text-white/50">{item.description}</span>
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <MagneticLink href={externalLinks.docs} variant="secondary" external>
+                  Open docs
+                </MagneticLink>
+                <MagneticLink href={externalLinks.console} variant="primary" external>
+                  Open console
+                </MagneticLink>
+              </div>
+            </motion.div>
+          </>
         ) : null}
       </AnimatePresence>
 
-      <main className="relative z-10 pb-20 pt-4 sm:pb-24 sm:pt-6 lg:pt-8">{children}</main>
+      <main id="main-content" className="relative z-10 pb-20 pt-4 sm:pb-24 sm:pt-6 lg:pt-8">{children}</main>
 
       <footer className="relative z-10 border-t border-white/10 px-3 pb-10 pt-2 sm:px-6 sm:pt-4 lg:px-8">
         <div className="section-shell flex flex-col gap-8 rounded-[32px] border border-white/10 bg-white/[0.04] px-5 py-6 backdrop-blur-xl sm:px-6 lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)_auto] lg:items-end lg:gap-8 lg:px-8 lg:py-7">
           <div className="max-w-xl space-y-3">
             <p className="kicker">FreightPilot</p>
             <h3 className="font-display text-2xl text-white">A workspace for route planning, response, and rollout.</h3>
-            <p className="text-sm leading-7 text-white/56">
+            <p className="text-sm leading-7 text-white/60">
               Built to give operators one place to plan routes, handle exceptions, manage provider controls, and launch new workspaces.
             </p>
           </div>
@@ -182,7 +213,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
             {footerLinks.map((item) => (
               <Link key={item.href} href={item.href} className="rounded-[20px] border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/70 no-underline transition hover:border-white/20 hover:text-white">
                 <span className="block font-medium text-white">{item.label}</span>
-                <span className="mt-1 block text-white/44">{item.description}</span>
+                <span className="mt-1 block text-white/50">{item.description}</span>
               </Link>
             ))}
           </div>
@@ -190,7 +221,35 @@ export function SiteChrome({ children }: PropsWithChildren) {
             Download desktop
           </MagneticLink>
         </div>
+
+        {/* Legal footer row */}
+        <div className="section-shell mt-6 flex flex-col items-center gap-4 text-xs text-white/40 sm:flex-row sm:justify-between">
+          <p>© {currentYear} FreightPilot. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <Link href="/privacy" className="transition hover:text-white/70">Privacy Policy</Link>
+            <Link href="/terms" className="transition hover:text-white/70">Terms of Service</Link>
+            <Link href={externalLinks.docs} className="transition hover:text-white/70" target="_blank" rel="noopener noreferrer">Documentation</Link>
+          </div>
+        </div>
       </footer>
+
+      {/* Back-to-top button */}
+      <AnimatePresence>
+        {showBackToTop ? (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.25 }}
+            type="button"
+            className="back-to-top"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="Back to top"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
