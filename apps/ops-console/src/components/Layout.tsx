@@ -11,6 +11,7 @@ const navItems = [
   { to: '/planning', label: 'Planning', code: 'PL', hint: 'Replenishment rhythm' },
   { to: '/upload', label: 'Data Intake', code: 'DI', hint: 'CSV onboarding' },
   { to: '/account', label: 'Workspace', code: 'WS', hint: 'Billing and AI keys' },
+  { to: '/providers', label: 'Integrations', code: 'IN', hint: 'Carrier API keys' },
 ];
 
 export function Layout({ children }: PropsWithChildren) {

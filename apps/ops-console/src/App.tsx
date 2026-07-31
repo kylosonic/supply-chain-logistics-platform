@@ -13,6 +13,7 @@ const AccountPage = lazy(() => import('./pages/AccountPage').then((module) => ({
 const PlanningPage = lazy(() => import('./pages/PlanningPage').then((module) => ({ default: module.PlanningPage })));
 const UnauthorizedPage = lazy(() => import('./pages/UnauthorizedPage').then((module) => ({ default: module.UnauthorizedPage })));
 const UploadPage = lazy(() => import('./pages/UploadPage').then((module) => ({ default: module.UploadPage })));
+const ProvidersPage = lazy(() => import('./pages/ProvidersPage').then((module) => ({ default: module.ProvidersPage })));
 
 function RouteFallback() {
   return (
@@ -101,6 +102,17 @@ export default function App() {
             <ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}>
               <Layout>
                 <AccountPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/providers"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'owner', 'operator']}>
+              <Layout>
+                <ProvidersPage />
               </Layout>
             </ProtectedRoute>
           }

@@ -200,3 +200,23 @@ export async function rejectReplenishmentPlan(planId: string, reason: string) {
   const { data } = await api.post<ReplenishmentPlan>(`/planning/replenishment/${planId}/reject`, { reason });
   return data;
 }
+
+export async function listProviderKeys(): Promise<import('../types/api').ProviderKey[]> {
+  const { data } = await api.get<import('../types/api').ProviderKey[]>('/providers/keys');
+  return data;
+}
+
+export async function createProviderKey(payload: { provider_name: string; key_name: string; api_key: string }) {
+  const { data } = await api.post<import('../types/api').ProviderKey>('/providers/keys', payload);
+  return data;
+}
+
+export async function testProviderKey(keyId: string) {
+  const { data } = await api.post<import('../types/api').ProviderKeyTestResult>(`/providers/keys/${keyId}/test`);
+  return data;
+}
+
+export async function revokeProviderKey(keyId: string) {
+  const { data } = await api.post<import('../types/api').ProviderKey>(`/providers/keys/${keyId}/revoke`, {});
+  return data;
+}
