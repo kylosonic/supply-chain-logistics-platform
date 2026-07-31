@@ -16,3 +16,5 @@ from app.models.audit_event import AuditEvent
 from app.models.route_history import RouteOptimizationRun
 from app.models.dock_appointment import DockAppointment
 from app.models.freight_invoice import FreightInvoice
+from app.models.feedback import Feedback
+from app.models.metered_event import MeteredEvent

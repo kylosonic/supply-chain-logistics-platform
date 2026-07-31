@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ForecastChart } from '../components/ForecastChart';
 import { InventoryCharts } from '../components/InventoryCharts';
 import { DockGanttChart } from '../components/DockGanttChart';
+import { FeedbackForm } from '../components/FeedbackForm';
 import { FreightReconciliationPanel } from '../components/FreightReconciliationPanel';
 import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -346,8 +347,15 @@ export function DashboardPage() {
         </Panel>
       </div>
 
-      <InventoryCharts data={inventory} />
-      <ForecastChart points={forecast} />
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="xl:col-span-1">
+          <FeedbackForm />
+        </div>
+        <div className="xl:col-span-2 space-y-5">
+          <InventoryCharts data={inventory} />
+          <ForecastChart points={forecast} />
+        </div>
+      </div>
     </div>
   );
 }

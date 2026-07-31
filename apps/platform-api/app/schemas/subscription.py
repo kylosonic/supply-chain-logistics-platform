@@ -34,6 +34,7 @@ class SubscriptionRead(BaseModel):
 
 class UsageMetric(StrEnum):
     DELIVERY_TASKS = 'delivery_tasks'
+    ROUTE_OPTIMIZATIONS = 'route_optimizations'
 
 
 class ThresholdLevel(StrEnum):

@@ -26,10 +26,19 @@ from app.services.metering import current_usage_window
 
 router = APIRouter()
 
-PLAN_QUOTAS: dict[str, tuple[int | None, float | None]] = {
-    'starter': (2500, 0.2),
-    'scale': (5000, 0.16),
-    'enterprise': (None, None),
+PLAN_QUOTAS: dict[str, dict[str, tuple[int | None, float | None]]] = {
+    'starter': {
+        UsageMetric.DELIVERY_TASKS: (2500, 0.2),
+        UsageMetric.ROUTE_OPTIMIZATIONS: (50, 1.5),
+    },
+    'scale': {
+        UsageMetric.DELIVERY_TASKS: (5000, 0.16),
+        UsageMetric.ROUTE_OPTIMIZATIONS: (250, 1.0),
+    },
+    'enterprise': {
+        UsageMetric.DELIVERY_TASKS: (None, None),
+        UsageMetric.ROUTE_OPTIMIZATIONS: (None, None),
+    },
 }
 
 PLANS: list[PlanRead] = [
@@ -39,8 +48,8 @@ PLANS: list[PlanRead] = [
         monthly_price_usd=399,
         seat_limit=3,
         vehicle_limit=25,
-        included_tasks_per_month=PLAN_QUOTAS['starter'][0],
-        overage_unit_price_usd=PLAN_QUOTAS['starter'][1],
+        included_tasks_per_month=PLAN_QUOTAS['starter'][UsageMetric.DELIVERY_TASKS][0],
+        overage_unit_price_usd=PLAN_QUOTAS['starter'][UsageMetric.DELIVERY_TASKS][1],
         includes_sso=False,
         includes_priority_support=False,
     ),
@@ -50,8 +59,8 @@ PLANS: list[PlanRead] = [
         monthly_price_usd=1290,
         seat_limit=20,
         vehicle_limit=250,
-        included_tasks_per_month=PLAN_QUOTAS['scale'][0],
-        overage_unit_price_usd=PLAN_QUOTAS['scale'][1],
+        included_tasks_per_month=PLAN_QUOTAS['scale'][UsageMetric.DELIVERY_TASKS][0],
+        overage_unit_price_usd=PLAN_QUOTAS['scale'][UsageMetric.DELIVERY_TASKS][1],
         includes_sso=True,
         includes_priority_support=True,
     ),
@@ -61,8 +70,8 @@ PLANS: list[PlanRead] = [
         monthly_price_usd=None,
         seat_limit=None,
         vehicle_limit=None,
-        included_tasks_per_month=PLAN_QUOTAS['enterprise'][0],
-        overage_unit_price_usd=PLAN_QUOTAS['enterprise'][1],
+        included_tasks_per_month=PLAN_QUOTAS['enterprise'][UsageMetric.DELIVERY_TASKS][0],
+        overage_unit_price_usd=PLAN_QUOTAS['enterprise'][UsageMetric.DELIVERY_TASKS][1],
         includes_sso=True,
         includes_priority_support=True,
     ),
@@ -163,8 +172,8 @@ def _build_threshold_events(
     return events
 
 
-def _plan_quota_for_tier(tier: str) -> tuple[int | None, float | None]:
-    return PLAN_QUOTAS.get(tier, (None, None))
+def _plan_quota_for_tier(tier: str, metric: str) -> tuple[int | None, float | None]:
+    return PLAN_QUOTAS.get(tier, {}).get(metric, (None, None))
 
 
 @router.get('/plans', response_model=list[PlanRead])
@@ -220,7 +229,7 @@ def get_my_usage(
             used_units=0,
         )
 
-    included_units, overage_rate = _plan_quota_for_tier(organization.subscription_tier)
+    included_units, overage_rate = _plan_quota_for_tier(organization.subscription_tier, metric)
     return _usage_read(counter, included_units, overage_rate)
 
 
@@ -275,7 +284,7 @@ def record_usage(
     db.commit()
     db.refresh(counter)
 
-    included_units, overage_rate = _plan_quota_for_tier(organization.subscription_tier)
+    included_units, overage_rate = _plan_quota_for_tier(organization.subscription_tier, payload.metric)
     events = _build_threshold_events(
         metric=payload.metric,
         tier=organization.subscription_tier,

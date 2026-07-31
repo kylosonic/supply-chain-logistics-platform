@@ -260,3 +260,8 @@ export async function revokeProviderKey(keyId: string) {
   const { data } = await api.post<import('../types/api').ProviderKey>(`/providers/keys/${keyId}/revoke`, {});
   return data;
 }
+
+export async function submitFeedback(payload: { category: string; message: string; user_email?: string }) {
+  const { data } = await api.post('/feedback', payload);
+  return data;
+}
