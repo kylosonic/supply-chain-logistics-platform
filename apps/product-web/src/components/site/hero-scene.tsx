@@ -93,7 +93,7 @@ export function HeroScene() {
                 <span className="text-xs uppercase tracking-[0.18em]">Recommended actions</span>
                 <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 [&>*:last-child]:sm:col-span-2 lg:[&>*:last-child]:sm:col-span-1 xl:grid-cols-3 xl:[&>*:last-child]:col-span-1">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3 [&>*:last-child]:sm:col-span-2 [&>*:last-child]:2xl:col-span-1">
                 {rhythmSteps.map((item, index) => (
                   <div key={item} className="rounded-[18px] border border-white/10 bg-white/[0.03] p-3">
                     <span className="text-xs text-cyan-200/80">0{index + 1}</span>
