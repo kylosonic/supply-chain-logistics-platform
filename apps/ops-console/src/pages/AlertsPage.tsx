@@ -4,7 +4,7 @@ import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { acknowledgeAlert, createAlert, listAlerts, resolveAlert, scanAlerts } from '../services/logisticsApi';
+import { acknowledgeAlert, autoResolveAlert, createAlert, listAlerts, resolveAlert, scanAlerts } from '../services/logisticsApi';
 import type { Alert, AlertStatus, AlertSeverity } from '../types/api';
 
 function severityTone(severity: AlertSeverity) {
@@ -143,6 +143,15 @@ export function AlertsPage() {
       setError(err?.response?.data?.detail || err?.message || 'Failed to resolve alert');
     } finally {
       setResolveDialog(null);
+    }
+  }
+
+  async function onAutoResolve(alertId: string) {
+    try {
+      await autoResolveAlert(alertId);
+      await loadAlerts();
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || 'Failed to auto-resolve alert');
     }
   }
 
@@ -294,6 +303,15 @@ export function AlertsPage() {
                   >
                     Resolve
                   </button>
+                  {alert.payload?.rerouting_plan ? (
+                    <button
+                      onClick={() => onAutoResolve(alert.id)}
+                      className="glow-ring rounded-full border border-violet-500/30 px-3 py-2 text-xs font-semibold text-violet-200 transition hover:border-violet-400/50 hover:bg-violet-950/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={alert.status === 'resolved'}
+                    >
+                      Auto-Resolve
+                    </button>
+                  ) : null}
                 </div>
               </article>
             ))}

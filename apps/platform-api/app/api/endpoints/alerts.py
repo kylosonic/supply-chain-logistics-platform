@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
@@ -17,6 +17,7 @@ from app.models.warehouse import Warehouse
 from app.schemas.alert import AlertAction, AlertCreate, AlertRead, AlertSeverity, AlertStatus, AlertType
 from app.schemas.auth import UserRole
 from app.services.audit import record_audit_event, resolve_actor_organization_id
+from app.services.rerouting import generate_rerouting_plan
 
 router = APIRouter()
 
@@ -67,6 +68,7 @@ def create_alert(
 
 @router.post('/scan', response_model=list[AlertRead])
 def scan_alerts(
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
 ):
@@ -104,6 +106,9 @@ def scan_alerts(
         )
 
     delayed_shipments = db.execute(select(Shipment).where(Shipment.status == 'delayed')).scalars().all()
+    now = datetime.now(UTC)
+    tasks_to_queue = []
+    
     for shipment in delayed_shipments:
         exists = db.execute(
             select(Alert).where(
@@ -115,17 +120,22 @@ def scan_alerts(
         ).scalar_one_or_none()
         if exists:
             continue
-        generated.append(
-            Alert(
-                alert_type=AlertType.DELAYED_SHIPMENT,
-                severity=AlertSeverity.CRITICAL,
-                status=AlertStatus.OPEN,
-                title=f'Delayed shipment: {shipment.shipment_no}',
-                message=shipment.delay_reason or 'Shipment is delayed',
-                related_entity_type='shipment',
-                related_entity_id=shipment.id,
-            )
+            
+        alert = Alert(
+            alert_type=AlertType.DELAYED_SHIPMENT,
+            severity=AlertSeverity.CRITICAL,
+            status=AlertStatus.OPEN,
+            title=f'Delayed shipment: {shipment.shipment_no}',
+            message=shipment.delay_reason or 'Shipment is delayed',
+            related_entity_type='shipment',
+            related_entity_id=shipment.id,
         )
+        generated.append(alert)
+        
+        if shipment.expected_delivery:
+            delay = now - shipment.expected_delivery
+            if delay.total_seconds() > 30 * 60:
+                tasks_to_queue.append((alert, shipment.id))
 
     for alert in generated:
         db.add(alert)
@@ -143,6 +153,10 @@ def scan_alerts(
     db.commit()
     for alert in generated:
         db.refresh(alert)
+        
+    for alert, shipment_id in tasks_to_queue:
+        background_tasks.add_task(generate_rerouting_plan, db, alert.id, shipment_id)
+        
     return generated
 
 
@@ -213,6 +227,54 @@ def resolve_alert(
         actor=user,
         description=f'Resolved alert {alert.title}',
         payload={'status': alert.status, 'note': payload.note},
+    )
+    db.commit()
+    db.refresh(alert)
+    return alert
+
+
+@router.post('/{alert_id}/auto-resolve', response_model=AlertRead)
+def auto_resolve_alert(
+    alert_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
+        raise HTTPException(status_code=403, detail='Insufficient role')
+    alert = db.get(Alert, alert_id)
+    if not alert:
+        raise HTTPException(status_code=404, detail='Alert not found')
+
+    if alert.status == AlertStatus.RESOLVED:
+        raise HTTPException(status_code=400, detail='Alert already resolved')
+        
+    if not alert.payload or 'rerouting_plan' not in alert.payload:
+        raise HTTPException(status_code=400, detail='No auto-resolve plan available')
+        
+    plan = alert.payload['rerouting_plan']
+    
+    if alert.related_entity_type == 'shipment' and alert.related_entity_id:
+        shipment = db.get(Shipment, alert.related_entity_id)
+        if shipment:
+            shipment.route_schedule_id = plan.get('proposed_route_id')
+            shipment.status = 'in_transit'
+            shipment.delay_reason = None
+            db.add(shipment)
+            
+    alert.status = AlertStatus.RESOLVED
+    alert.resolved_by_user_id = user.id
+    alert.resolved_at = datetime.now(UTC)
+    alert.resolution_note = f"Auto-resolved with reroute to {plan.get('carrier')}."
+    db.add(alert)
+    
+    record_audit_event(
+        db,
+        event_type='alert.auto_resolved',
+        entity_type='alert',
+        entity_id=alert.id,
+        actor=user,
+        description=f'Auto-resolved alert {alert.title}',
+        payload={'status': alert.status, 'note': alert.resolution_note, 'plan': plan},
     )
     db.commit()
     db.refresh(alert)

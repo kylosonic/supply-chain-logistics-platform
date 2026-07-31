@@ -33,6 +33,7 @@ class AlertCreate(BaseModel):
     message: str = Field(min_length=3, max_length=500)
     related_entity_type: str | None = Field(default=None, max_length=64)
     related_entity_id: str | None = Field(default=None, max_length=64)
+    payload: dict | None = None
 
 
 class AlertAction(BaseModel):
@@ -52,3 +53,4 @@ class AlertRead(ORMBase):
     resolved_by_user_id: str | None
     resolved_at: datetime | None
     resolution_note: str | None
+    payload: dict | None

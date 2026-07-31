@@ -138,6 +138,7 @@ export type Alert = {
   resolved_by_user_id: string | null;
   resolved_at: string | null;
   resolution_note: string | null;
+  payload?: { rerouting_plan?: any; [key: string]: any } | null;
 };
 
 export type ReplenishmentPlanStatus = 'pending_approval' | 'approved' | 'rejected';

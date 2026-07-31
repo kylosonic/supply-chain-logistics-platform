@@ -155,6 +155,11 @@ export async function resolveAlert(alertId: string, note?: string) {
   return data;
 }
 
+export async function autoResolveAlert(alertId: string) {
+  const { data } = await api.post<Alert>(`/alerts/${alertId}/auto-resolve`);
+  return data;
+}
+
 export async function getExceptionFeed(): Promise<ExceptionFeedResponse> {
   const { data } = await api.get<ExceptionFeedResponse>('/ops/exception-feed');
   return data;
