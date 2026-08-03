@@ -11,11 +11,11 @@ export async function register(username: string, password: string, role: 'admin'
   return data;
 }
 
-export async function me(token: string): Promise<UserRead> {
-  const { data } = await api.get<UserRead>('/auth/me', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export async function me(): Promise<UserRead> {
+  const { data } = await api.get<UserRead>('/auth/me');
   return data;
+}
+
+export async function logout(): Promise<void> {
+  await api.post('/auth/logout');
 }

@@ -3,6 +3,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from uuid import UUID
+from app.db.custom_types import UUIDType
 
 
 class User(UUIDTimestampMixin, Base):

@@ -1,6 +1,7 @@
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ProviderKeyCreateRequest(BaseModel):
@@ -20,6 +21,11 @@ class ProviderKeyRead(BaseModel):
 
     model_config = {'from_attributes': True}
 
+    @field_validator('id', mode='before')
+    @classmethod
+    def _coerce_id(cls, v):
+        return str(v) if isinstance(v, UUID) else v
+
 
 class ProviderKeyRevokeRequest(BaseModel):
     reason: str | None = Field(default=None, max_length=255)
@@ -31,6 +37,11 @@ class ProviderKeyTestResponse(BaseModel):
     ok: bool
     message: str
 
+    @field_validator('key_id', mode='before')
+    @classmethod
+    def _coerce_key_id(cls, v):
+        return str(v) if isinstance(v, UUID) else v
+
 
 class ProviderPreferenceRequest(BaseModel):
     key_id: str
@@ -40,3 +51,12 @@ class ProviderPreferenceRead(BaseModel):
     organization_id: str
     provider_name: str | None
     key_id: str | None
+
+    model_config = {'from_attributes': True}
+
+    @field_validator('organization_id', 'key_id', mode='before')
+    @classmethod
+    def _coerce_ids(cls, v):
+        if v is None:
+            return v
+        return str(v) if isinstance(v, UUID) else v

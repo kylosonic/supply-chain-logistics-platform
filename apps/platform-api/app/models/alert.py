@@ -6,6 +6,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from uuid import UUID
+from app.db.custom_types import UUIDType
 
 
 class Alert(UUIDTimestampMixin, Base):
@@ -18,9 +20,9 @@ class Alert(UUIDTimestampMixin, Base):
     message: Mapped[str] = mapped_column(String(500), nullable=False)
     related_entity_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
     related_entity_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
-    acknowledged_by_user_id: Mapped[str | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    acknowledged_by_user_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    resolved_by_user_id: Mapped[str | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    resolved_by_user_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolution_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
     payload: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(JSON, nullable=True)

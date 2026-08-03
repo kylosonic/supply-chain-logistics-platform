@@ -3,6 +3,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from uuid import UUID
+from app.db.custom_types import UUIDType
 
 
 class Warehouse(UUIDTimestampMixin, Base):
@@ -17,7 +19,7 @@ class Warehouse(UUIDTimestampMixin, Base):
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
     capacity_units: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    organization_id: Mapped[str | None] = mapped_column(ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True)
+    organization_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True)
 
     inventory_items = relationship('Inventory', back_populates='warehouse', cascade='all, delete-orphan')
     orders = relationship('HistoricalOrder', back_populates='warehouse')

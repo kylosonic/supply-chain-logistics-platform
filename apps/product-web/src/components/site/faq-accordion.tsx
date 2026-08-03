@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { Minus, Plus } from 'lucide-react';
 
 import type { FaqItem } from '@/lib/site-content';
@@ -37,7 +37,7 @@ export function FaqAccordion({ items }: FaqAccordionProps) {
             </h4>
             <AnimatePresence initial={false}>
               {open ? (
-                <motion.div
+                <m.div
                   id={answerId}
                   role="region"
                   initial={{ height: 0, opacity: 0 }}
@@ -46,7 +46,7 @@ export function FaqAccordion({ items }: FaqAccordionProps) {
                   transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 >
                   <p className="px-5 pb-5 text-sm leading-7 text-white/68">{item.answer}</p>
-                </motion.div>
+                </m.div>
               ) : null}
             </AnimatePresence>
           </article>

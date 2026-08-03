@@ -8,10 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.api.security import require_roles
 from app.db.session import get_db
-from app.models.route_history import RouteOptimizationRun
 from app.models.route import RouteSchedule, RouteStop
+from app.models.route_history import RouteOptimizationRun
 from app.models.user import User
 from app.models.warehouse import Warehouse
+from app.repositories import RouteOptimizationRunRepository, RouteScheduleRepository, WarehouseRepository
 from app.schemas.auth import UserRole
 from app.schemas.route import (
     DeliveryDemand,
@@ -193,8 +194,7 @@ def list_route_schedules(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    rows = db.execute(select(RouteSchedule).order_by(asc(RouteSchedule.schedule_date), asc(RouteSchedule.route_name))).scalars().all()
-    return rows
+    return RouteScheduleRepository(db).list_all_sorted()
 
 
 @router.get('/schedules/{schedule_id}', response_model=RouteScheduleDetail)
@@ -203,7 +203,7 @@ def route_schedule_detail(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    schedule = db.get(RouteSchedule, schedule_id)
+    schedule = RouteScheduleRepository(db).get_by_id(schedule_id)
     if not schedule:
         raise HTTPException(status_code=404, detail='Route schedule not found')
 
@@ -245,8 +245,7 @@ def list_route_optimization_history(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    runs = db.execute(select(RouteOptimizationRun).order_by(desc(RouteOptimizationRun.created_at))).scalars().all()
-    return runs
+    return RouteOptimizationRunRepository(db).list_all_desc()
 
 
 @router.get('/history/{run_id}', response_model=RouteOptimizationRunDetail)
@@ -255,7 +254,7 @@ def route_optimization_history_detail(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    run = db.get(RouteOptimizationRun, run_id)
+    run = RouteOptimizationRunRepository(db).get_by_id(run_id)
     if not run:
         raise HTTPException(status_code=404, detail='Route optimization run not found')
 

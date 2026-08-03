@@ -14,6 +14,26 @@
   --accent-violet: 196 181 253;
   --accent-amber: 253 224 151;
   --accent-emerald: 167 243 208;
+
+  /* Design tokens — aligned with the FreightPilot design system. */
+  --fp-black: #050505;
+  --fp-surface: #020C14;
+  --fp-elevated: #0F172A;
+  --fp-border: #1E293B;
+  --fp-muted: #475569;
+  --fp-secondary: #94A3B8;
+  --fp-primary: #E2E8F0;
+  --fp-accent: #3B82F6;
+  --fp-accent-hover: #60A5FA;
+
+  --fp-radius-sm: 6px;
+  --fp-radius-md: 12px;
+  --fp-radius-lg: 18px;
+  --fp-radius-xl: 24px;
+  --fp-radius-2xl: 28px;
+  --fp-radius-3xl: 30px;
+
+  --fp-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html {
@@ -121,6 +141,13 @@ textarea {
   .back-to-top {
     @apply fixed bottom-6 right-6 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white/70 shadow-luxe backdrop-blur-xl transition hover:border-white/25 hover:text-white;
   }
+}
+
+/* ── Visible focus ring for keyboard users ── */
+:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.7);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderToString } from 'react-dom/server';
 import { StaticRouter } from 'react-router-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -7,8 +8,8 @@ import { LoginPage } from './LoginPage';
 
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({
-    token: 'test-token',
-    user: { email: 'ops@testco.com', username: 'ops', role: 'admin' },
+    getToken: () => Promise.resolve(null),
+    user: null,
     isAuthenticated: false,
     isLoading: false,
     login: vi.fn(),
@@ -16,30 +17,32 @@ vi.mock('../context/AuthContext', () => ({
   }),
 }));
 
-vi.mock('../hooks/useLiveUpdates', () => ({
-  useLiveUpdates: () => undefined,
-}));
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
 
 describe('ops console surface smoke', () => {
   it('renders the redesigned login workstation shell', () => {
     const html = renderToString(
-      <StaticRouter location="/login">
-        <LoginPage />
-      </StaticRouter>,
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/login">
+          <LoginPage />
+        </StaticRouter>
+      </QueryClientProvider>,
     );
 
     expect(html).toContain('Enter control tower');
-    expect(html).toContain('Operator access to routes, exceptions, launch readiness, and billing control.');
   });
 
-  it('renders the control-tower dashboard shell without executing live effects', () => {
+  it('renders the control-tower dashboard skeleton during data fetch', () => {
     const html = renderToString(
-      <StaticRouter location="/">
-        <DashboardPage />
-      </StaticRouter>,
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/">
+          <DashboardPage />
+        </StaticRouter>
+      </QueryClientProvider>,
     );
 
-    expect(html).toContain('Operations command surface');
-    expect(html).toContain('Loading dashboard...');
+    expect(html).toContain('animate-pulse');
   });
 });

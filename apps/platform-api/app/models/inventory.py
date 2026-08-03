@@ -5,15 +5,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from uuid import UUID
+from app.db.custom_types import UUIDType
 
 
 class Inventory(UUIDTimestampMixin, Base):
     __tablename__ = 'inventory'
     __table_args__ = (UniqueConstraint('warehouse_id', 'item_id', name='uq_inventory_warehouse_item'),)
 
-    warehouse_id: Mapped[str] = mapped_column(ForeignKey('warehouses.id', ondelete='CASCADE'), nullable=False, index=True)
-    item_id: Mapped[str] = mapped_column(ForeignKey('items.id', ondelete='CASCADE'), nullable=False, index=True)
-    organization_id: Mapped[str | None] = mapped_column(ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True)
+    warehouse_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('warehouses.id', ondelete='CASCADE'), nullable=False, index=True)
+    item_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('items.id', ondelete='CASCADE'), nullable=False, index=True)
+    organization_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True)
     quantity_on_hand: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     safety_stock: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

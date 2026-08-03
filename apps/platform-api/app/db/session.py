@@ -1,7 +1,12 @@
-from sqlalchemy import create_engine
+import sqlite3
+from uuid import UUID
+
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
+
+sqlite3.register_adapter(UUID, lambda u: str(u))
 
 _engine_kwargs = {
     'pool_pre_ping': True,
@@ -16,6 +21,14 @@ if settings.effective_database_url.startswith('postgresql'):
     })
 
 engine = create_engine(settings.effective_database_url, **_engine_kwargs)
+
+
+@event.listens_for(engine, 'connect')
+def _set_sqlite_pragma(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        dbapi_connection.execute('PRAGMA foreign_keys=ON')
+
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 

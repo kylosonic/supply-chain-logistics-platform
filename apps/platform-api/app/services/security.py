@@ -40,7 +40,7 @@ def create_access_token(subject: str, role: UserRole, expires_delta: timedelta |
     now = datetime.now(UTC)
     expire = now + (expires_delta or timedelta(minutes=settings.jwt_access_token_expire_minutes))
     payload = {
-        'sub': subject,
+        'sub': str(subject),
         'role': role,
         'iat': int(now.timestamp()),
         'exp': int(expire.timestamp()),
@@ -57,9 +57,9 @@ def create_access_token_for_org(
     now = datetime.now(UTC)
     expire = now + (expires_delta or timedelta(minutes=settings.jwt_access_token_expire_minutes))
     payload = {
-        'sub': subject,
+        'sub': str(subject),
         'role': role,
-        'org_id': organization_id,
+        'org_id': str(organization_id),
         'iat': int(now.timestamp()),
         'exp': int(expire.timestamp()),
     }

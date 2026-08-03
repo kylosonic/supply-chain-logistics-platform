@@ -5,12 +5,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from uuid import UUID
+from app.db.custom_types import UUIDType
 
 
 class OrganizationUsageCounter(UUIDTimestampMixin, Base):
     __tablename__ = 'organization_usage_counters'
 
-    organization_id: Mapped[str] = mapped_column(ForeignKey('organizations.id', ondelete='CASCADE'), index=True, nullable=False)
+    organization_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('organizations.id', ondelete='CASCADE'), index=True, nullable=False)
     metric: Mapped[str] = mapped_column(String(48), index=True, nullable=False)
     period_start: Mapped[date] = mapped_column(Date(), nullable=False)
     period_end: Mapped[date] = mapped_column(Date(), nullable=False)

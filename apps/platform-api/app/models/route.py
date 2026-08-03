@@ -5,6 +5,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from uuid import UUID
+from app.db.custom_types import UUIDType
 
 
 class RouteSchedule(UUIDTimestampMixin, Base):
@@ -12,8 +14,8 @@ class RouteSchedule(UUIDTimestampMixin, Base):
 
     route_name: Mapped[str] = mapped_column(String(128), nullable=False)
     schedule_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
-    start_warehouse_id: Mapped[str] = mapped_column(ForeignKey('warehouses.id', ondelete='RESTRICT'), nullable=False)
-    assigned_asset_id: Mapped[str | None] = mapped_column(ForeignKey('fleet_assets.id', ondelete='SET NULL'), nullable=True)
+    start_warehouse_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('warehouses.id', ondelete='RESTRICT'), nullable=False)
+    assigned_asset_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('fleet_assets.id', ondelete='SET NULL'), nullable=True)
     origin_latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     origin_longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     vehicle_capacity_units: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -30,9 +32,9 @@ class RouteSchedule(UUIDTimestampMixin, Base):
 class RouteStop(UUIDTimestampMixin, Base):
     __tablename__ = 'route_stops'
 
-    route_schedule_id: Mapped[str] = mapped_column(ForeignKey('route_schedules.id', ondelete='CASCADE'), nullable=False, index=True)
+    route_schedule_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('route_schedules.id', ondelete='CASCADE'), nullable=False, index=True)
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
-    warehouse_id: Mapped[str] = mapped_column(ForeignKey('warehouses.id', ondelete='RESTRICT'), nullable=False)
+    warehouse_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('warehouses.id', ondelete='RESTRICT'), nullable=False)
     planned_arrival: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     planned_departure: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     load_units: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

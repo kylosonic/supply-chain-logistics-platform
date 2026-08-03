@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /launch
+Disallow: /api/
+
+Sitemap: https://freightpilot.com/sitemap.xml

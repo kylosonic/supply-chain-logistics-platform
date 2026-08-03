@@ -12,7 +12,7 @@ import { getRouteOptimizationHistory, getRouteSchedules, getWeatherRiskZones } f
 import type { RouteOptimizationRunSummary, RouteOptimizeResponse, RouteScheduleSummary, RouteStop, WeatherRiskZone } from '../types/api';
 
 export function RoutesPage() {
-  const { token } = useAuth();
+  const { getToken, user } = useAuth();
   const [schedules, setSchedules] = useState<RouteScheduleSummary[]>([]);
   const [history, setHistory] = useState<RouteOptimizationRunSummary[]>([]);
   const [riskZones, setRiskZones] = useState<WeatherRiskZone[]>([]);
@@ -40,12 +40,9 @@ export function RoutesPage() {
     loadSchedules();
   }, []);
 
-  useLiveUpdates({
-    token,
-    onMessage: (payload) => {
-      setSchedules(payload.route_summaries);
-    },
-  });
+  useLiveUpdates({ getToken, enabled: Boolean(user), onMessage: (payload) => {
+    setSchedules(payload.route_summaries);
+  }});
 
   async function handleRefresh() {
     setIsRefreshing(true);

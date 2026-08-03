@@ -1,14 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.api.security import get_current_membership, require_roles
 from app.db.session import get_db
-from app.models.item import Item
 from app.models.membership import OrganizationMembership
 from app.models.order import HistoricalOrder
 from app.models.user import User
-from app.models.warehouse import Warehouse
+from app.repositories import ItemRepository, OrderRepository, WarehouseRepository
 from app.schemas.auth import UserRole
 from app.schemas.order import HistoricalOrderCreate, HistoricalOrderRead
 
@@ -23,14 +21,8 @@ def list_orders(
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
     membership: OrganizationMembership = Depends(get_current_membership),
 ):
-    rows = db.execute(
-        select(HistoricalOrder)
-        .where(HistoricalOrder.organization_id == membership.organization_id)
-        .order_by(desc(HistoricalOrder.order_date))
-        .offset(skip)
-        .limit(limit)
-    ).scalars().all()
-    return rows
+    repo = OrderRepository(db)
+    return repo.list_by_org(membership.organization_id, skip=skip, limit=limit)
 
 
 @router.post('', response_model=HistoricalOrderRead, status_code=201)
@@ -40,21 +32,15 @@ def create_order(
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     membership: OrganizationMembership = Depends(get_current_membership),
 ):
-    warehouse = db.execute(
-        select(Warehouse).where(
-            Warehouse.code == payload.warehouse_code,
-            Warehouse.organization_id == membership.organization_id,
-        )
-    ).scalar_one_or_none()
+    warehouse_repo = WarehouseRepository(db)
+    item_repo = ItemRepository(db)
+    order_repo = OrderRepository(db)
+
+    warehouse = warehouse_repo.get_by_code(payload.warehouse_code, membership.organization_id)
     if not warehouse:
         raise HTTPException(status_code=404, detail='Warehouse code not found')
 
-    item = db.execute(
-        select(Item).where(
-            Item.sku == payload.sku,
-            Item.organization_id == membership.organization_id,
-        )
-    ).scalar_one_or_none()
+    item = item_repo.get_by_sku(payload.sku, membership.organization_id)
     if not item:
         raise HTTPException(status_code=404, detail='SKU not found')
 
@@ -70,7 +56,7 @@ def create_order(
         weather_precip_mm=payload.weather_precip_mm,
         weather_disruption_index=payload.weather_disruption_index,
     )
-    db.add(order)
-    db.commit()
-    db.refresh(order)
+    order_repo.add(order)
+    order_repo.commit()
+    order_repo.refresh(order)
     return order

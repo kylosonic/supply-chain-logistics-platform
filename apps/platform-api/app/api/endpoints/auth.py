@@ -2,7 +2,7 @@ from datetime import timedelta
 import re
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -40,6 +40,25 @@ if settings.app_env in ('development', 'test'):
     _RATE_LOGIN = '10000/minute'
     _RATE_REGISTER = '10000/minute'
     _RATE_SIGNUP = '10000/minute'
+
+_COOKIE_NAME = 'supply_chain_token'
+
+
+def _set_auth_cookie(response: Response, token: str) -> None:
+    secure = settings.app_env not in ('development', 'test')
+    response.set_cookie(
+        key=_COOKIE_NAME,
+        value=token,
+        max_age=settings.jwt_access_token_expire_minutes * 60,
+        httponly=True,
+        secure=secure,
+        samesite='strict',
+        path='/',
+    )
+
+
+def _clear_auth_cookie(response: Response) -> None:
+    response.delete_cookie(key=_COOKIE_NAME, path='/')
 
 
 def _slugify(name: str) -> str:
@@ -119,7 +138,7 @@ def register_user(
 
 @router.post('/company-signup', response_model=CompanySignupResponse, status_code=201)
 @limiter.limit(_RATE_SIGNUP)
-def company_signup(payload: CompanySignupRequest, request: Request, db: Session = Depends(get_db)):
+def company_signup(payload: CompanySignupRequest, request: Request, response: Response, db: Session = Depends(get_db)):
     normalized_email = payload.company_email.strip().lower()
     domain = _extract_domain(normalized_email)
     _ensure_not_public_email(domain)
@@ -190,6 +209,8 @@ def company_signup(payload: CompanySignupRequest, request: Request, db: Session 
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
     )
 
+    _set_auth_cookie(response, token)
+
     return CompanySignupResponse(
         access_token=token,
         expires_in_seconds=settings.jwt_access_token_expire_minutes * 60,
@@ -200,7 +221,7 @@ def company_signup(payload: CompanySignupRequest, request: Request, db: Session 
 
 @router.post('/login', response_model=TokenResponse)
 @limiter.limit(_RATE_LOGIN)
-def login_user(payload: UserLogin, request: Request, db: Session = Depends(get_db)):
+def login_user(payload: UserLogin, request: Request, response: Response, db: Session = Depends(get_db)):
     identifier = (payload.identifier or payload.username or '').strip().lower()
     user = db.execute(
         select(User).where(
@@ -219,6 +240,8 @@ def login_user(payload: UserLogin, request: Request, db: Session = Depends(get_d
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
     )
 
+    _set_auth_cookie(response, token)
+
     return TokenResponse(
         access_token=token,
         expires_in_seconds=settings.jwt_access_token_expire_minutes * 60,
@@ -236,3 +259,22 @@ def list_users(
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     return db.execute(select(User).order_by(User.username)).scalars().all()
+
+
+@router.post('/logout')
+def logout(response: Response):
+    _clear_auth_cookie(response)
+    return {'detail': 'Logged out'}
+
+
+@router.get('/token', response_model=TokenResponse)
+def get_token_for_ws(current_user: User = Depends(get_current_user)):
+    token = create_access_token(
+        subject=current_user.id,
+        role=UserRole(current_user.role),
+        expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
+    )
+    return TokenResponse(
+        access_token=token,
+        expires_in_seconds=settings.jwt_access_token_expire_minutes * 60,
+    )

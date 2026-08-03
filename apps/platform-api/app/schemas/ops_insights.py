@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from typing import Any
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.schemas.common import ORMBase
 
@@ -27,6 +28,13 @@ class ExceptionFeedItem(BaseModel):
     entity_id: str | None = None
     created_at: datetime
     metadata: dict[str, Any] | None = None
+
+    @field_validator('source_id', 'entity_id', mode='before')
+    @classmethod
+    def _coerce_ids(cls, v):
+        if v is None:
+            return v
+        return str(v) if isinstance(v, UUID) else v
 
 
 class ExceptionFeedSummary(BaseModel):

@@ -1,7 +1,7 @@
 'use client';
 
 import type { PropsWithChildren } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 
 import { cn } from '@/lib/cn';
 
@@ -18,7 +18,7 @@ export function MotionSection({ children, className, delay = 0 }: MotionSectionP
   }
 
   return (
-    <motion.section
+    <m.section
       className={cn(className)}
       initial={{ opacity: 0, y: 28, filter: 'blur(18px)' }}
       whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -26,6 +26,6 @@ export function MotionSection({ children, className, delay = 0 }: MotionSectionP
       transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1], delay }}
     >
       {children}
-    </motion.section>
+    </m.section>
   );
 }

@@ -5,18 +5,20 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from uuid import UUID
+from app.db.custom_types import UUIDType
 
 
 class Shipment(UUIDTimestampMixin, Base):
     __tablename__ = 'shipments'
 
     shipment_no: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
-    route_schedule_id: Mapped[str | None] = mapped_column(ForeignKey('route_schedules.id', ondelete='SET NULL'), nullable=True)
-    origin_warehouse_id: Mapped[str] = mapped_column(ForeignKey('warehouses.id', ondelete='RESTRICT'), nullable=False, index=True)
+    route_schedule_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('route_schedules.id', ondelete='SET NULL'), nullable=True)
+    origin_warehouse_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('warehouses.id', ondelete='RESTRICT'), nullable=False, index=True)
     destination_warehouse_id: Mapped[str] = mapped_column(
         ForeignKey('warehouses.id', ondelete='RESTRICT'), nullable=False, index=True
     )
-    item_id: Mapped[str] = mapped_column(ForeignKey('items.id', ondelete='RESTRICT'), nullable=False, index=True)
+    item_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('items.id', ondelete='RESTRICT'), nullable=False, index=True)
     quantity_units: Mapped[int] = mapped_column(Integer, nullable=False)
     planned_departure: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     expected_delivery: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import type { PropsWithChildren } from 'react';
 
+import { MotionProvider } from '@/components/site/motion-provider';
 import { SiteChrome } from '@/components/site/site-chrome';
 
 import './globals.css';
@@ -66,7 +67,7 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     apple: '/apple-touch-icon.png',
   },
 };
@@ -84,7 +85,9 @@ export default function RootLayout({ children }: PropsWithChildren) {
         <a href="#main-content" className="skip-to-content">
           Skip to content
         </a>
-        <SiteChrome>{children}</SiteChrome>
+        <MotionProvider>
+          <SiteChrome>{children}</SiteChrome>
+        </MotionProvider>
       </body>
     </html>
   );

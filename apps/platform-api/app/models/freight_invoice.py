@@ -3,12 +3,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from uuid import UUID
+from app.db.custom_types import UUIDType
 
 
 class FreightInvoice(UUIDTimestampMixin, Base):
     __tablename__ = 'freight_invoices'
 
-    order_id: Mapped[str] = mapped_column(ForeignKey('historical_orders.id', ondelete='CASCADE'), index=True, nullable=False)
+    order_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('historical_orders.id', ondelete='CASCADE'), index=True, nullable=False)
     carrier_id: Mapped[str] = mapped_column(String(128), nullable=False)
     quoted_rate: Mapped[float] = mapped_column(Float, nullable=False)
     actual_rate: Mapped[float] = mapped_column(Float, nullable=False)

@@ -1,38 +1,47 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { login as loginApi, me as meApi } from '../services/authApi';
+import { login as loginApi, logout as logoutApi, me as meApi } from '../services/authApi';
 import { getCurrentSubscription } from '../services/billingApi';
-import { clearAuthStorage, getStoredOrgId, getStoredToken, setStoredOrgId, setStoredToken } from '../services/api';
+import { clearAuthStorage, getStoredOrgId, setStoredOrgId } from '../services/api';
 import type { UserRead } from '../types/auth';
 
 type AuthContextValue = {
-  token: string | null;
   user: UserRead | null;
   orgId: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (identifier: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  getToken: () => Promise<string | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+let _cachedToken: string | null = null;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(getStoredToken());
   const [user, setUser] = useState<UserRead | null>(null);
   const [orgId, setOrgId] = useState<string | null>(getStoredOrgId());
   const [isLoading, setIsLoading] = useState(true);
 
+  const getToken = useCallback(async (): Promise<string | null> => {
+    if (_cachedToken) return _cachedToken;
+    try {
+      const { data } = await import('../services/api').then((m) =>
+        m.api.get<{ access_token: string }>('/auth/token'),
+      );
+      _cachedToken = data.access_token;
+      return data.access_token;
+    } catch {
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     async function bootstrap() {
-      const currentToken = getStoredToken();
-      if (!currentToken) {
-        setIsLoading(false);
-        return;
-      }
       try {
-        const current = await meApi(currentToken);
+        const current = await meApi();
         if (cancelled) return;
         setUser(current);
 
@@ -43,11 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setStoredOrgId(sub.organization_id);
           }
         } catch {
-          // subscription endpoint may be unavailable; org_id from stored value is fine
+          // org_id from stored value is fine
         }
       } catch {
-        clearAuthStorage();
-        setToken(null);
+        // not authenticated — no cookie present
         setUser(null);
         setOrgId(null);
       } finally {
@@ -56,13 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     bootstrap();
     return () => { cancelled = true; };
-  }, [token]);
+  }, []);
 
   const login = useCallback(async (identifier: string, password: string) => {
-    const data = await loginApi(identifier, password);
-    setStoredToken(data.access_token);
-    setToken(data.access_token);
-    const current = await meApi(data.access_token);
+    await loginApi(identifier, password);
+    const current = await meApi();
     setUser(current);
     try {
       const sub = await getCurrentSubscription();
@@ -73,24 +79,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await logoutApi();
+    } catch {
+      // cookie might already be gone
+    }
     clearAuthStorage();
-    setToken(null);
     setUser(null);
     setOrgId(null);
   }, []);
 
   const value = useMemo(
     () => ({
-      token,
       user,
       orgId,
-      isAuthenticated: Boolean(token && user),
+      isAuthenticated: Boolean(user),
       isLoading,
       login,
       logout,
+      getToken,
     }),
-    [token, user, orgId, isLoading, login, logout],
+    [user, orgId, isLoading, login, logout, getToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

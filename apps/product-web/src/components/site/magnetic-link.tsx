@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { PropsWithChildren } from 'react';
 import { useMemo, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
@@ -79,15 +79,15 @@ function AnchorShell({
 
   if (external) {
     return (
-      <motion.a href={href} target="_blank" rel="noopener noreferrer" {...motionProps}>
+      <m.a href={href} target="_blank" rel="noopener noreferrer" {...motionProps}>
         {content}
-      </motion.a>
+      </m.a>
     );
   }
 
   return (
     <Link href={href} className="inline-flex">
-      <motion.span {...motionProps}>{content}</motion.span>
+      <m.span {...motionProps}>{content}</m.span>
     </Link>
   );
 }

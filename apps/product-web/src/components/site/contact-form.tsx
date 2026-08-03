@@ -5,6 +5,9 @@ import { CheckCircle2, Loader2, Send } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
 
+const CONTACT_ENDPOINT =
+  process.env.NEXT_PUBLIC_CONTACT_FORM_ENDPOINT || 'https://formsubmit.co/ajax/nahomgwmichael@gmail.com';
+
 export function ContactForm() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
@@ -20,7 +23,7 @@ export function ContactForm() {
     formData.append('_captcha', 'false');
 
     try {
-      const response = await fetch('https://formsubmit.co/ajax/nahomgwmichael@gmail.com', {
+      const response = await fetch(CONTACT_ENDPOINT, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',

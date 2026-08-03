@@ -169,3 +169,66 @@ select:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4), 0 0 20px rgba(56, 189, 248, 0.12);
 }
+
+/* ── Design tokens ─────────────────────────────────────────── */
+
+:root {
+  --fp-black: #050505;
+  --fp-surface: #020C14;
+  --fp-elevated: #0F172A;
+  --fp-border: #1E293B;
+  --fp-input: #334155;
+  --fp-muted: #475569;
+  --fp-secondary: #94A3B8;
+  --fp-primary: #E2E8F0;
+  --fp-white: #FAFAFA;
+  --fp-accent: #3B82F6;
+  --fp-accent-hover: #60A5FA;
+  --fp-success: #4ADE80;
+  --fp-warning: #FBBF24;
+  --fp-danger: #F87171;
+  --fp-info: #C084FC;
+
+  --fp-radius-sm: 6px;
+  --fp-radius-md: 12px;
+  --fp-radius-lg: 18px;
+  --fp-radius-xl: 24px;
+  --fp-radius-2xl: 28px;
+  --fp-radius-3xl: 30px;
+
+  --fp-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Skip to content ───────────────────────────────────────── */
+
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 9999;
+  padding: 8px 16px;
+  border-radius: 24px;
+  background: var(--fp-accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+.skip-to-content:focus {
+  top: 16px;
+}
+
+/* ── Responsive grid utility ────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

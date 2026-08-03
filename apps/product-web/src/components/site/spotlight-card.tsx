@@ -2,7 +2,7 @@
 
 import type { PropsWithChildren } from 'react';
 import { useCallback, useRef } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 
 import { cn } from '@/lib/cn';
 

@@ -1,7 +1,8 @@
 from datetime import datetime
 from enum import StrEnum
+from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class UserRole(StrEnum):
@@ -67,6 +68,11 @@ class UserRead(BaseModel):
 
     model_config = {'from_attributes': True}
 
+    @field_validator('id', mode='before')
+    @classmethod
+    def _coerce_id(cls, v):
+        return str(v) if isinstance(v, UUID) else v
+
 
 class OrganizationRead(BaseModel):
     id: str
@@ -80,6 +86,11 @@ class OrganizationRead(BaseModel):
     created_at: datetime
 
     model_config = {'from_attributes': True}
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def _coerce_id(cls, v):
+        return str(v) if isinstance(v, UUID) else v
 
 
 class CompanySignupRequest(BaseModel):

@@ -1,43 +1,30 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-import { ForecastChart } from '../components/ForecastChart';
-import { InventoryCharts } from '../components/InventoryCharts';
 import { DockGanttChart } from '../components/DockGanttChart';
 import { FeedbackForm } from '../components/FeedbackForm';
 import { FreightReconciliationPanel } from '../components/FreightReconciliationPanel';
+import { ForecastChart } from '../components/ForecastChart';
+import { InventoryCharts } from '../components/InventoryCharts';
 import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useAuth } from '../context/AuthContext';
+import {
+  useAuditTimeline,
+  useCurrentUsage,
+  useDockAppointments,
+  useExceptionFeed,
+  useForecast,
+  useInventoryOverview,
+  useInvalidateDashboard,
+  useReplenishmentPlans,
+  useRouteSchedules,
+  useShipments,
+  useWeatherRiskZones,
+} from '../hooks/queries';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import type { LiveUpdatePayload } from '../hooks/useLiveUpdates';
-import { getCurrentUsage } from '../services/billingApi';
-import {
-  getAuditTimeline,
-  getExceptionFeed,
-  getForecast,
-  getInventoryOverview,
-  getRouteSchedules,
-  getWeatherRiskZones,
-  getDockAppointments,
-  listReplenishmentPlans,
-  listShipments,
-} from '../services/logisticsApi';
-import type {
-  AuditEvent,
-  ExceptionFeedResponse,
-  ForecastPoint,
-  InventoryOverviewRow,
-  ReplenishmentPlan,
-  RouteScheduleSummary,
-  Shipment,
-  UsageSummary,
-  WeatherRiskZone,
-} from '../types/api';
-import type { DockAppointment } from '../services/logisticsApi';
-
-const POLL_INTERVAL_MS = 30000;
 
 function severityTone(severity: string) {
   if (severity === 'critical' || severity === 'danger') return 'danger';
@@ -47,15 +34,15 @@ function severityTone(severity: string) {
 }
 
 function SkeletonBlock({ className }: { className?: string }) {
-  return <div className={`skeleton ${className ?? ''}`} />;
+  return <div className={`animate-pulse rounded-[24px] bg-slate-800/50 ${className ?? ''}`} />;
 }
 
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
       <SkeletonBlock className="h-[140px] rounded-[30px]" />
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+        {[1, 2, 3, 4, 5].map((i) => (
           <SkeletonBlock key={i} className="h-[130px] rounded-[24px]" />
         ))}
       </div>
@@ -68,70 +55,53 @@ function DashboardSkeleton() {
 }
 
 export function DashboardPage() {
-  const { token } = useAuth();
-  const [inventory, setInventory] = useState<InventoryOverviewRow[]>([]);
-  const [forecast, setForecast] = useState<ForecastPoint[]>([]);
-  const [schedules, setSchedules] = useState<RouteScheduleSummary[]>([]);
-  const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [plans, setPlans] = useState<ReplenishmentPlan[]>([]);
-  const [usage, setUsage] = useState<UsageSummary | null>(null);
-  const [exceptionFeed, setExceptionFeed] = useState<ExceptionFeedResponse | null>(null);
-  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { getToken, user } = useAuth();
+  const invalidateDashboard = useInvalidateDashboard();
+
+  const inventoryQ = useInventoryOverview();
+  const forecastQ = useForecast(4);
+  const schedulesQ = useRouteSchedules();
+  const shipmentsQ = useShipments();
+  const plansQ = useReplenishmentPlans();
+  const usageQ = useCurrentUsage();
+  const feedQ = useExceptionFeed();
+  const auditQ = useAuditTimeline();
+  const riskQ = useWeatherRiskZones();
+  const appointmentsQ = useDockAppointments();
+
   const [lastLiveUpdate, setLastLiveUpdate] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [riskZones, setRiskZones] = useState<WeatherRiskZone[]>([]);
-  const [appointments, setAppointments] = useState<DockAppointment[]>([]);
 
-  const loadData = useCallback(async () => {
-    try {
-      setError(null);
-      const [inventoryData, forecastData, scheduleData, shipmentData, planData, usageData, feedData, auditData, riskData, appointmentData] = await Promise.all([
-        getInventoryOverview(),
-        getForecast(4).catch(() => ({ points: [] as ForecastPoint[] })),
-        getRouteSchedules().catch(() => []),
-        listShipments().catch(() => []),
-        listReplenishmentPlans().catch(() => []),
-        getCurrentUsage().catch(() => null),
-        getExceptionFeed().catch(() => null),
-        getAuditTimeline().catch(() => []),
-        getWeatherRiskZones().catch(() => []),
-        getDockAppointments().catch(() => []),
-      ]);
-      setInventory(inventoryData);
-      setForecast(forecastData.points);
-      setSchedules(scheduleData);
-      setShipments(shipmentData);
-      setPlans(planData);
-      setUsage(usageData);
-      setExceptionFeed(feedData);
-      setAuditEvents(auditData);
-      setRiskZones(riskData);
-      setAppointments(appointmentData);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err.message || 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const inventory = inventoryQ.data ?? [];
+  const forecast = forecastQ.data?.points ?? [];
+  const schedules = schedulesQ.data ?? [];
+  const shipments = shipmentsQ.data ?? [];
+  const plans = plansQ.data ?? [];
+  const usage = usageQ.data ?? null;
+  const exceptionFeed = feedQ.data ?? null;
+  const auditEvents = auditQ.data ?? [];
+  const riskZones = riskQ.data ?? [];
+  const appointments = appointmentsQ.data ?? [];
 
-  useEffect(() => {
-    loadData();
-    const timer = setInterval(loadData, POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [loadData]);
+  const isLoading =
+    inventoryQ.isLoading ||
+    forecastQ.isLoading ||
+    schedulesQ.isLoading ||
+    shipmentsQ.isLoading ||
+    plansQ.isLoading ||
+    feedQ.isLoading;
 
-
+  const firstError =
+    inventoryQ.error || forecastQ.error || schedulesQ.error ||
+    shipmentsQ.error || plansQ.error || feedQ.error || auditQ.error ||
+    riskQ.error || usageQ.error || appointmentsQ.error;
 
   const handleLiveMessage = useCallback((payload: LiveUpdatePayload) => {
-    setInventory(payload.inventory_overview);
-    setForecast(payload.forecast_preview);
-    setSchedules(payload.route_summaries);
+    invalidateDashboard();
     setLastLiveUpdate(payload.server_time);
-  }, []);
+  }, [invalidateDashboard]);
 
-  useLiveUpdates({ token, onMessage: handleLiveMessage });
+  useLiveUpdates({ getToken, enabled: Boolean(user), onMessage: handleLiveMessage });
 
   const summary = useMemo(() => {
     const stock = inventory.reduce((sum, row) => sum + row.total_quantity_on_hand, 0);
@@ -139,50 +109,33 @@ export function DashboardPage() {
     const avgUtil = inventory.length
       ? inventory.reduce((sum, row) => sum + row.utilization_percent, 0) / inventory.length
       : 0;
-    const delayedShipments = shipments.filter((shipment) => shipment.status === 'delayed');
-    const inTransitShipments = shipments.filter((shipment) => shipment.status === 'in_transit');
-    const pendingPlans = plans.filter((plan) => plan.status === 'pending_approval');
+    const delayedShipments = shipments.filter((s) => s.status === 'delayed');
+    const inTransitShipments = shipments.filter((s) => s.status === 'in_transit');
+    const pendingPlans = plans.filter((p) => p.status === 'pending_approval');
     const forecastDemand = forecast.reduce((sum, point) => sum + point.predicted_demand, 0);
     const maxRiskScore = riskZones.length > 0 && schedules.length > 0
       ? Math.max(...riskZones.map((z) => z.severity_score))
       : 0;
     return {
-      stock,
-      safety,
+      stock, safety,
       avgUtil: avgUtil.toFixed(1),
-      delayedShipments,
-      inTransitShipments,
-      pendingPlans,
-      forecastDemand,
+      delayedShipments, inTransitShipments,
+      pendingPlans, forecastDemand,
       usagePercent: usage?.utilization_percent ?? null,
       maxRiskScore,
     };
   }, [forecast, inventory, plans, shipments, usage, riskZones, schedules]);
 
-  const feedSummary = exceptionFeed?.summary;
-  const feedItems = exceptionFeed?.items ?? [];
-
   async function handleRefresh() {
     setIsRefreshing(true);
-    await loadData();
-    setIsRefreshing(false);
+    invalidateDashboard();
+    setTimeout(() => setIsRefreshing(false), 800);
   }
 
-  const refreshButton = (
-    <button
-      onClick={handleRefresh}
-      className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
-    >
-      {isRefreshing ? (
-        <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
-      ) : null}
-      {isRefreshing ? 'Refreshing...' : 'Refresh data'}
-    </button>
-  );
+  if (isLoading) return <DashboardSkeleton />;
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
+  const feedSummary = exceptionFeed?.summary;
+  const feedItems = exceptionFeed?.items ?? [];
 
   return (
     <div className="space-y-6">
@@ -194,63 +147,72 @@ export function DashboardPage() {
           <div className="flex flex-wrap items-center gap-2">
             {lastLiveUpdate ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" style={{ animation: 'pulseRing 2s ease-in-out infinite' }} />
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 Live sync {new Date(lastLiveUpdate).toLocaleTimeString()}
               </span>
             ) : null}
-            {refreshButton}
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+            >
+              {isRefreshing ? (
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" />
+                </svg>
+              ) : null}
+              {isRefreshing ? 'Refreshing...' : 'Refresh data'}
+            </button>
           </div>
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricTile
           title="Open exceptions"
           value={feedSummary?.open_alerts ?? 0}
-          detail={`${feedSummary?.delayed_shipments ?? summary.delayedShipments.length} delayed shipment${(feedSummary?.delayed_shipments ?? summary.delayedShipments.length) === 1 ? '' : 's'} currently compounding the queue.`}
+          detail={`${feedSummary?.delayed_shipments ?? summary.delayedShipments.length} delayed shipment${(feedSummary?.delayed_shipments ?? summary.delayedShipments.length) === 1 ? '' : 's'}.`}
           tone={(feedSummary?.open_alerts ?? 0) > 0 ? 'warning' : 'success'}
         />
         <MetricTile
-          title="In-transit shipments"
+          title="In-transit"
           value={summary.inTransitShipments.length}
-          detail="Track live movement and intervene on exception lanes before customer impact spreads."
+          detail="Live movement across exception lanes."
           tone="info"
         />
         <MetricTile
           title="Forecast demand"
           value={summary.forecastDemand.toLocaleString()}
-          detail="Projected demand volume aggregated from the current four-week forecast horizon."
+          detail="4-week projection horizon."
           tone="neutral"
         />
         <MetricTile
-          title="Fleet weather risk"
+          title="Weather risk"
           value={summary.maxRiskScore > 0 ? `${summary.maxRiskScore}/10` : 'None'}
-          detail="Maximum weather disruption risk across active routes intersecting storm zones."
+          detail="Max disruption across active route zones."
           tone={summary.maxRiskScore >= 8 ? 'danger' : summary.maxRiskScore >= 5 ? 'warning' : 'success'}
         />
         <MetricTile
           title="Usage posture"
           value={summary.usagePercent == null ? 'N/A' : `${summary.usagePercent}%`}
-          detail={
-            summary.usagePercent == null
-              ? 'Usage endpoint unavailable for this workspace.'
-              : 'Subscription utilization against the current included monthly task volume.'
-          }
+          detail={summary.usagePercent == null ? 'Usage endpoint unavailable.' : 'Monthly task volume utilization.'}
           tone={summary.usagePercent != null && summary.usagePercent >= 100 ? 'danger' : summary.usagePercent != null && summary.usagePercent >= 80 ? 'warning' : 'success'}
         />
       </div>
 
-      {error ? (
+      {firstError ? (
         <Panel className="border-rose-500/25 bg-rose-950/12">
-          <p className="text-sm text-rose-200">{error}</p>
+          <p className="text-sm text-rose-200">
+            Some data surfaces could not load. {(firstError as Error)?.message || 'Try refreshing.'}
+          </p>
         </Panel>
       ) : null}
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         <Panel
           eyebrow="Exception queue"
-          title="What needs operator action now"
-          description="The unified exception feed combines unresolved alerts, pending replenishment approvals, and route runs that still need manual intervention."
+          title="What needs operator action"
+          description="Unified feed: alerts, pending approvals, and route interventions."
         >
           <div className="space-y-3">
             {feedItems.slice(0, 6).map((item, index) => (
@@ -268,7 +230,6 @@ export function DashboardPage() {
                 <p className="mt-3 text-sm leading-6 text-slate-400">{item.message}</p>
               </article>
             ))}
-
             {feedItems.length === 0 ? (
               <div className="animate-fade-in rounded-[22px] border border-emerald-500/20 bg-emerald-950/12 p-5 text-center">
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-emerald-200">Queue clear</p>
@@ -279,40 +240,32 @@ export function DashboardPage() {
         </Panel>
 
         <div className="grid gap-5">
-          <Panel
-            eyebrow="Execution posture"
-            title="Workspace readiness and commercial signals"
-            description="Keep approval load, capacity posture, and plan usage visible while the team is dispatching."
-          >
+          <Panel eyebrow="Execution posture" title="Workspace readiness">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
               <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Inventory position</p>
                 <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.stock.toLocaleString()}</p>
-                <p className="mt-2 text-sm text-slate-400">Safety stock total: {summary.safety.toLocaleString()} units</p>
+                <p className="mt-2 text-sm text-slate-400">Safety stock: {summary.safety.toLocaleString()} units</p>
               </div>
               <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Warehouse utilization</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Utilization</p>
                 <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.avgUtil}%</p>
-                <p className="mt-2 text-sm text-slate-400">Average capacity pressure across tracked warehouse locations.</p>
+                <p className="mt-2 text-sm text-slate-400">Average capacity pressure.</p>
               </div>
               <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Pending approvals</p>
                 <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.pendingPlans.length}</p>
-                <p className="mt-2 text-sm text-slate-400">Replenishment plans waiting for admin sign-off.</p>
+                <p className="mt-2 text-sm text-slate-400">Replenishment plans awaiting sign-off.</p>
               </div>
               <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Saved route schedules</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Route schedules</p>
                 <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{schedules.length}</p>
-                <p className="mt-2 text-sm text-slate-400">Optimization output currently saved in the route schedule store.</p>
+                <p className="mt-2 text-sm text-slate-400">Saved optimization output.</p>
               </div>
             </div>
           </Panel>
 
-          <Panel
-            eyebrow="Audit timeline"
-            title="Latest workspace actions"
-            description="Key operational and governance events are recorded here so the team can review what changed most recently."
-          >
+          <Panel eyebrow="Audit timeline" title="Latest workspace actions">
             <div className="space-y-3">
               {auditEvents.slice(0, 4).map((event, index) => (
                 <article key={event.id} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4" style={{ animationDelay: `${index * 0.06}s` }}>
@@ -325,7 +278,6 @@ export function DashboardPage() {
                   </div>
                 </article>
               ))}
-
               {auditEvents.length === 0 ? <p className="text-sm text-slate-400">No audit events yet.</p> : null}
             </div>
           </Panel>
@@ -338,7 +290,6 @@ export function DashboardPage() {
             <DockGanttChart appointments={appointments} />
           </div>
         </Panel>
-        
         <Panel eyebrow="Finance" title="Freight Invoice Reconciliation">
           <div className="h-[400px]">
             <FreightReconciliationPanel />

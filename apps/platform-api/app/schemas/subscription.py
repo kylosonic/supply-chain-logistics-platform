@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from enum import StrEnum
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.auth import SubscriptionStatus, SubscriptionTier
 
@@ -30,6 +31,13 @@ class SubscriptionRead(BaseModel):
     preferred_ai_provider: str | None = None
     preferred_ai_key_id: str | None = None
     updated_at: datetime | None
+
+    model_config = {'from_attributes': True}
+
+    @field_validator('organization_id', 'preferred_ai_key_id', mode='before')
+    @classmethod
+    def _coerce_ids(cls, v):
+        return str(v) if isinstance(v, UUID) else v
 
 
 class UsageMetric(StrEnum):

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion, useScroll } from 'framer-motion';
+import { AnimatePresence, m, useScroll } from 'framer-motion';
 import { ArrowUp, ArrowUpRight, Dot, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
@@ -46,6 +46,16 @@ export function SiteChrome({ children }: PropsWithChildren) {
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
+  // Close mobile menu on Escape key
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [menuOpen]);
+
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (menuOpen) {
@@ -67,7 +77,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
       <div className="pointer-events-none fixed inset-0 z-0 opacity-15 sm:opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:40px_40px]" />
 
       <header className="sticky top-0 z-40 px-3 pt-2.5 sm:px-6 sm:pt-4 lg:px-8">
-        <motion.div
+        <m.div
           className={cn(
             'mx-auto flex w-full max-w-[1380px] items-center justify-between gap-3 rounded-[28px] border border-white/10 bg-black/35 px-4 py-2.5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.32)] sm:gap-4 sm:rounded-full sm:py-3',
             compact ? 'max-w-[1320px] px-4 py-2' : 'sm:px-5 sm:py-3',
@@ -122,9 +132,9 @@ export function SiteChrome({ children }: PropsWithChildren) {
             aria-label="Toggle navigation"
           >
             <span className="font-medium">Menu</span>
-            <span className="relative inline-flex h-6 w-10 items-center justify-center">
+            <span className="relative inline-flex h-6 w-10 items-center justify-center" aria-hidden="true">
               {[0, 1, 2].map((index) => (
-                <motion.span
+                <m.span
                   key={index}
                   className="absolute h-1.5 w-1.5 rounded-full bg-cyan-200"
                   animate={
@@ -145,14 +155,14 @@ export function SiteChrome({ children }: PropsWithChildren) {
               ))}
             </span>
           </button>
-        </motion.div>
+        </m.div>
       </header>
 
       <AnimatePresence>
         {menuOpen ? (
           <>
             {/* Backdrop overlay for mobile menu */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -161,7 +171,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
               onClick={() => setMenuOpen(false)}
               aria-hidden="true"
             />
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: -18 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -18 }}
@@ -191,7 +201,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
                   Open console
                 </MagneticLink>
               </div>
-            </motion.div>
+            </m.div>
           </>
         ) : null}
       </AnimatePresence>
@@ -287,7 +297,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
       {/* Back-to-top button */}
       <AnimatePresence>
         {showBackToTop ? (
-          <motion.button
+          <m.button
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
@@ -298,7 +308,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
             aria-label="Back to top"
           >
             <ArrowUp className="h-4 w-4" />
-          </motion.button>
+          </m.button>
         ) : null}
       </AnimatePresence>
     </div>

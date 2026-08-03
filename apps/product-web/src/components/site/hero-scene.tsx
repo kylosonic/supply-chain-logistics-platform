@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { ArrowUpRight, BrainCircuit, ChartNoAxesCombined, ShieldCheck, Sparkles } from 'lucide-react';
 
 import { SpotlightCard } from './spotlight-card';
@@ -34,7 +34,7 @@ export function HeroScene() {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:34px_34px] opacity-20" />
 
       {particles.map((particle) => (
-        <motion.span
+        <m.span
           key={particle.id}
           className={`absolute h-1.5 w-1.5 rounded-full bg-cyan-200/60 shadow-[0_0_18px_rgba(103,232,249,0.7)] ${particle.id > 5 ? 'hidden lg:block' : ''}`}
           style={{ left: particle.left, top: particle.top }}
@@ -61,7 +61,7 @@ export function HeroScene() {
         {/* Main content grid */}
         <div className="grid gap-4 xl:grid-cols-[0.94fr_1.06fr]">
           {/* Control overview panel */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
@@ -102,11 +102,11 @@ export function HeroScene() {
                 ))}
               </div>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* Right column: alerts + workspace controls */}
           <div className="grid gap-4">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15 }}
@@ -125,9 +125,9 @@ export function HeroScene() {
                   ))}
                 </div>
               </SpotlightCard>
-            </motion.div>
+            </m.div>
 
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.28 }}
@@ -143,16 +143,16 @@ export function HeroScene() {
                 <p className="balanced-headline mt-4 max-w-[10ch] font-display text-[clamp(1.55rem,2.2vw,1.9rem)] leading-[1.02] text-white">Approved models</p>
                 <p className="mt-2 text-sm leading-7 text-white/60">Choose preferred providers without giving up workspace policy and audit history.</p>
               </SpotlightCard>
-            </motion.div>
+            </m.div>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="flex flex-col items-start gap-2 rounded-[24px] border border-white/10 bg-black/30 px-4 py-4 text-sm text-white/65 sm:flex-row sm:items-center sm:justify-between">
           <span>Explore how the platform handles planning, response, launch, and governance.</span>
-          <motion.span animate={{ y: [0, 8, 0] }} transition={{ duration: 1.8, repeat: Infinity }} aria-hidden="true">
+          <m.span animate={{ y: [0, 8, 0] }} transition={{ duration: 1.8, repeat: Infinity }} aria-hidden="true">
             ↓
-          </motion.span>
+          </m.span>
         </div>
       </div>
     </div>

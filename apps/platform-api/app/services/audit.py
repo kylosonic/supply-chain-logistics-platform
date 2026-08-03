@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from app.models.alert import Alert
 from app.models.audit_event import AuditEvent
 from app.models.fleet_asset import FleetAsset
-from app.models.membership import OrganizationMembership
 from app.models.route import RouteSchedule
 from app.models.user import User
 from app.utils.geo import haversine_miles
@@ -19,15 +18,18 @@ def resolve_actor_organization_id(db: Session, user: User | None) -> str | None:
     if user is None:
         return None
 
-    membership = db.execute(
-        select(OrganizationMembership)
-        .where(
-            OrganizationMembership.user_id == user.id,
-            OrganizationMembership.is_active.is_(True),
-        )
-        .order_by(OrganizationMembership.created_at.asc())
-    ).scalar_one_or_none()
-    return membership.organization_id if membership else None
+    from app.repositories import MembershipRepository
+    return MembershipRepository(db).get_organization_id_for_user(user.id)
+
+
+def _sanitize_payload(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {k: str(v) if isinstance(v, UUID) else _sanitize_payload(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_sanitize_payload(item) for item in value]
+    if isinstance(value, UUID):
+        return str(value)
+    return value
 
 
 def record_audit_event(
@@ -48,7 +50,7 @@ def record_audit_event(
         actor_user_id=actor.id if actor else None,
         organization_id=organization_id or resolve_actor_organization_id(db, actor),
         description=description,
-        payload=payload,
+        payload=_sanitize_payload(payload),
     )
     db.add(event)
     return event
@@ -65,7 +67,7 @@ def _dist_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return haversine_miles(lat1, lon1, lat2, lon2)
 
 
-async def auto_resolve_late_pickup(alert_id: UUID, db: Session) -> dict[str, Any]:
+def auto_resolve_late_pickup(alert_id: UUID, db: Session) -> dict[str, Any]:
     """Automatically resolve a LATE_PICKUP alert by reassigning the
     closest IDLE fleet asset within 50 miles.
 
@@ -91,7 +93,7 @@ async def auto_resolve_late_pickup(alert_id: UUID, db: Session) -> dict[str, Any
     """
     # 1. Fetch and validate the alert
     alert = db.execute(
-        select(Alert).where(Alert.id == str(alert_id))
+        select(Alert).where(Alert.id == alert_id)
     ).scalar_one_or_none()
 
     if alert is None:

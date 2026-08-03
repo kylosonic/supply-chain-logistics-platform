@@ -22,9 +22,8 @@ def db_session() -> Generator[Session, None, None]:
         'sqlite+pysqlite:///:memory:',
         connect_args={'check_same_thread': False},
         poolclass=StaticPool,
-        future=True,
     )
-    TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+    TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     Base.metadata.create_all(bind=engine)
     session = TestingSessionLocal()
 

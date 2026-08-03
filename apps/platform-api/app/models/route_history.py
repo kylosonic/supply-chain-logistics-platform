@@ -6,14 +6,16 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from uuid import UUID
+from app.db.custom_types import UUIDType
 
 
 class RouteOptimizationRun(UUIDTimestampMixin, Base):
     __tablename__ = 'route_optimization_runs'
 
-    actor_user_id: Mapped[str | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
-    organization_id: Mapped[str | None] = mapped_column(ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True)
-    persisted_schedule_id: Mapped[str | None] = mapped_column(ForeignKey('route_schedules.id', ondelete='SET NULL'), nullable=True, index=True)
+    actor_user_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
+    organization_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True)
+    persisted_schedule_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('route_schedules.id', ondelete='SET NULL'), nullable=True, index=True)
     route_name: Mapped[str] = mapped_column(String(128), nullable=False)
     schedule_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     start_warehouse_code: Mapped[str] = mapped_column(String(32), nullable=False)

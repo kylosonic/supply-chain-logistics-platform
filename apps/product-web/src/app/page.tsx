@@ -1,4 +1,4 @@
-import { ArrowUpRight, BrainCircuit, ShieldCheck, Sparkles } from 'lucide-react';
+import { ShieldCheck, Sparkles } from 'lucide-react';
 
 import { AnimatedCounter } from '@/components/site/animated-counter';
 import { HeroScene } from '@/components/site/hero-scene';
