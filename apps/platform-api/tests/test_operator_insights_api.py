@@ -10,7 +10,7 @@ from app.models.item import Item
 from app.models.warehouse import Warehouse
 
 
-def _seed_route_and_inventory_entities(db_session: Session) -> None:
+def _seed_route_and_inventory_entities(db_session: Session, organization_id: str | None = None) -> None:
     warehouses = [
         Warehouse(
             code='WH-A',
@@ -22,6 +22,7 @@ def _seed_route_and_inventory_entities(db_session: Session) -> None:
             latitude=8.98,
             longitude=38.76,
             capacity_units=1000,
+            organization_id=organization_id,
         ),
         Warehouse(
             code='WH-B',
@@ -33,6 +34,7 @@ def _seed_route_and_inventory_entities(db_session: Session) -> None:
             latitude=8.99,
             longitude=38.77,
             capacity_units=1200,
+            organization_id=organization_id,
         ),
         Warehouse(
             code='WH-C',
@@ -44,9 +46,10 @@ def _seed_route_and_inventory_entities(db_session: Session) -> None:
             latitude=9.01,
             longitude=38.79,
             capacity_units=900,
+            organization_id=organization_id,
         ),
     ]
-    item = Item(sku='SKU-1', name='Test Item', category='General', unit_cost=10.0, reorder_level=30)
+    item = Item(sku='SKU-1', name='Test Item', category='General', unit_cost=10.0, reorder_level=30, organization_id=organization_id)
 
     db_session.add_all([*warehouses, item])
     db_session.flush()
@@ -54,6 +57,7 @@ def _seed_route_and_inventory_entities(db_session: Session) -> None:
         Inventory(
             warehouse_id=warehouses[0].id,
             item_id=item.id,
+            organization_id=organization_id,
             quantity_on_hand=10,
             safety_stock=20,
         )
@@ -76,9 +80,25 @@ def _company_signup_token(client: TestClient, suffix: str) -> str:
     return response.json()['access_token']
 
 
+def _company_signup_org_id(client: TestClient, suffix: str) -> str:
+    response = client.post(
+        '/api/v1/auth/company-signup',
+        json={
+            'company_name': f'Insight Co {suffix}',
+            'company_email': f'owner-{suffix}@insightco.com',
+            'password': 'VeryStrongPass9',
+            'full_name': 'Owner User',
+            'subscription_tier': 'starter',
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    return body['organization']['id'], body['access_token']
+
+
 def test_route_history_and_audit_timeline_are_recorded(client: TestClient, db_session: Session):
-    _seed_route_and_inventory_entities(db_session)
-    token = _company_signup_token(client, 'history')
+    org_id, token = _company_signup_org_id(client, 'history')
+    _seed_route_and_inventory_entities(db_session, organization_id=org_id)
     headers = {'Authorization': f'Bearer {token}'}
 
     optimize = client.post(
@@ -120,8 +140,8 @@ def test_route_history_and_audit_timeline_are_recorded(client: TestClient, db_se
 
 
 def test_exception_feed_combines_alerts_plans_and_route_run_exceptions(client: TestClient, db_session: Session):
-    _seed_route_and_inventory_entities(db_session)
-    token = _company_signup_token(client, 'feed')
+    org_id, token = _company_signup_org_id(client, 'feed')
+    _seed_route_and_inventory_entities(db_session, organization_id=org_id)
     headers = {'Authorization': f'Bearer {token}'}
 
     manual_alert = client.post(

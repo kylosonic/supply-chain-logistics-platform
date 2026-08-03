@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -45,7 +45,7 @@ def require_roles(*allowed: UserRole):
     def checker(user: User = Depends(get_current_user)) -> User:
         try:
             ensure_role(UserRole(user.role), list(allowed))
-        except PermissionError as exc:
+        except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
         return user
 
@@ -53,20 +53,26 @@ def require_roles(*allowed: UserRole):
 
 
 def get_current_membership(
+    x_org_id: str | None = Header(default=None, alias='X-Organization-Id'),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> OrganizationMembership:
-    membership = db.execute(
-        select(OrganizationMembership)
-        .where(
-            OrganizationMembership.user_id == user.id,
-            OrganizationMembership.is_active.is_(True),
-        )
-        .order_by(OrganizationMembership.created_at.asc())
-    ).scalar_one_or_none()
+    query = select(OrganizationMembership).where(
+        OrganizationMembership.user_id == user.id,
+        OrganizationMembership.is_active.is_(True),
+    )
+
+    if x_org_id:
+        query = query.where(OrganizationMembership.organization_id == x_org_id)
+
+    query = query.order_by(OrganizationMembership.created_at.desc())
+
+    membership = db.execute(query).scalars().all()
+
     if not membership:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='No active organization membership')
-    return membership
+
+    return membership[0]
 
 
 def require_org_roles(*allowed: OrganizationRole):

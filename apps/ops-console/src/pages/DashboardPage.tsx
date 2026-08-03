@@ -11,6 +11,7 @@ import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
+import type { LiveUpdatePayload } from '../hooks/useLiveUpdates';
 import { getCurrentUsage } from '../services/billingApi';
 import {
   getAuditTimeline,
@@ -88,10 +89,10 @@ export function DashboardPage() {
       setError(null);
       const [inventoryData, forecastData, scheduleData, shipmentData, planData, usageData, feedData, auditData, riskData, appointmentData] = await Promise.all([
         getInventoryOverview(),
-        getForecast(4),
-        getRouteSchedules(),
-        listShipments(),
-        listReplenishmentPlans(),
+        getForecast(4).catch(() => ({ points: [] as ForecastPoint[] })),
+        getRouteSchedules().catch(() => []),
+        listShipments().catch(() => []),
+        listReplenishmentPlans().catch(() => []),
         getCurrentUsage().catch(() => null),
         getExceptionFeed().catch(() => null),
         getAuditTimeline().catch(() => []),
@@ -108,7 +109,6 @@ export function DashboardPage() {
       setAuditEvents(auditData);
       setRiskZones(riskData);
       setAppointments(appointmentData);
-      setRiskZones(riskData);
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || 'Failed to load dashboard data');
     } finally {
@@ -124,15 +124,14 @@ export function DashboardPage() {
 
 
 
-  useLiveUpdates({
-    token,
-    onMessage: (payload) => {
-      setInventory(payload.inventory_overview);
-      setForecast(payload.forecast_preview);
-      setSchedules(payload.route_summaries);
-      setLastLiveUpdate(payload.server_time);
-    },
-  });
+  const handleLiveMessage = useCallback((payload: LiveUpdatePayload) => {
+    setInventory(payload.inventory_overview);
+    setForecast(payload.forecast_preview);
+    setSchedules(payload.route_summaries);
+    setLastLiveUpdate(payload.server_time);
+  }, []);
+
+  useLiveUpdates({ token, onMessage: handleLiveMessage });
 
   const summary = useMemo(() => {
     const stock = inventory.reduce((sum, row) => sum + row.total_quantity_on_hand, 0);

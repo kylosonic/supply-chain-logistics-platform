@@ -17,6 +17,8 @@ type Props = {
 
 export function useLiveUpdates({ token, onMessage }: Props) {
   const socketRef = useRef<WebSocket | null>(null);
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
 
   useEffect(() => {
     if (!token) return;
@@ -44,7 +46,7 @@ export function useLiveUpdates({ token, onMessage }: Props) {
       try {
         const parsed = JSON.parse(event.data) as LiveUpdatePayload;
         if (parsed.type === 'live_update') {
-          onMessage(parsed);
+          onMessageRef.current(parsed);
         }
       } catch {
         // ignore malformed payloads
@@ -54,5 +56,5 @@ export function useLiveUpdates({ token, onMessage }: Props) {
     return () => {
       socket.close();
     };
-  }, [token, onMessage]);
+  }, [token]);
 }

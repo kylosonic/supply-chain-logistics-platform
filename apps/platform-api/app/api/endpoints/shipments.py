@@ -42,6 +42,7 @@ def _shipment_to_read(db: Session, shipment: Shipment) -> ShipmentRead:
         last_known_location=shipment.last_known_location,
         delay_reason=shipment.delay_reason,
         proof_of_delivery_ref=shipment.proof_of_delivery_ref,
+        scope_3_emissions_kg=shipment.scope_3_emissions_kg,
     )
 
 

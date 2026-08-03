@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.models.membership import OrganizationMembership
@@ -64,9 +64,15 @@ def record_usage_for_user_membership(
             used_units=0,
         )
         db.add(counter)
+        db.flush()
 
-    counter.used_units += units
-    counter.period_end = period_end
-    counter.updated_at = datetime.now(UTC)
-    db.add(counter)
+    db.execute(
+        update(OrganizationUsageCounter)
+        .where(OrganizationUsageCounter.id == counter.id)
+        .values(
+            used_units=OrganizationUsageCounter.used_units + units,
+            period_end=period_end,
+            updated_at=datetime.now(UTC),
+        )
+    )
     return True

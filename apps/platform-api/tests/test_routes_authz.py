@@ -13,7 +13,7 @@ def test_operator_can_access_operator_endpoint():
 def test_viewer_cannot_access_operator_endpoint():
     try:
         ensure_role(UserRole.VIEWER, [UserRole.OPERATOR, UserRole.ADMIN])
-    except PermissionError:
+    except ValueError:
         assert True
         return
-    assert False, 'Expected PermissionError for viewer on operator role gate'
+    assert False, 'Expected ValueError for viewer on operator role gate'

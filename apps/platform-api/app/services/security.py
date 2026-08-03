@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 import hashlib
 import hmac
+import secrets
 from base64 import urlsafe_b64encode
 
 from cryptography.fernet import Fernet
@@ -11,14 +12,16 @@ import jwt
 from app.core.config import settings
 from app.schemas.auth import UserRole
 
+_PBKDF2_ITERATIONS = 600_000
 
-def _pbkdf2_hash(password: str, salt: str) -> str:
-    digest = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 120_000)
+
+def _pbkdf2_hash(password: str, salt: str, iterations: int = _PBKDF2_ITERATIONS) -> str:
+    digest = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), iterations)
     return urlsafe_b64encode(digest).decode('utf-8')
 
 
 def hash_password(password: str) -> str:
-    salt = settings.password_salt
+    salt = secrets.token_hex(16)
     return f'pbkdf2_sha256${salt}${_pbkdf2_hash(password, salt)}'
 
 
@@ -42,7 +45,7 @@ def create_access_token(subject: str, role: UserRole, expires_delta: timedelta |
         'iat': int(now.timestamp()),
         'exp': int(expire.timestamp()),
     }
-    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    return jwt.encode(payload, settings.effective_jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
 def create_access_token_for_org(
@@ -60,18 +63,18 @@ def create_access_token_for_org(
         'iat': int(now.timestamp()),
         'exp': int(expire.timestamp()),
     }
-    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    return jwt.encode(payload, settings.effective_jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
 def decode_access_token(token: str) -> dict:
     try:
-        return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        return jwt.decode(token, settings.effective_jwt_secret_key, algorithms=[settings.jwt_algorithm])
     except jwt.PyJWTError as exc:
         raise ValueError('Invalid or expired token') from exc
 
 
 def _provider_key_fernet() -> Fernet:
-    seed = settings.provider_key_encryption_secret or f'{settings.jwt_secret_key}:{settings.password_salt}'
+    seed = settings.provider_key_encryption_secret or settings.effective_jwt_secret_key
     digest = hashlib.sha256(seed.encode('utf-8')).digest()
     key = urlsafe_b64encode(digest)
     return Fernet(key)

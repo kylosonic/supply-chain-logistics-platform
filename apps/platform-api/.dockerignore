@@ -1,8 +1,10 @@
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+.git/
 .pytest_cache/
 .mypy_cache/
-.venv/
-tests/
-htmlcov/
-*.egg-info/
+.ruff_cache/
+*.log

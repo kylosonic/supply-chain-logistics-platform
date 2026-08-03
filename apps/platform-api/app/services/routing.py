@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from math import asin, cos, radians, sin, sqrt
 import heapq
+
+from app.utils.geo import haversine_km  # noqa: F401 - re-exported for tests
 
 
 @dataclass
@@ -19,16 +20,9 @@ class Delivery:
     demand_units: int
 
 
-def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    r = 6371.0
-    d_lat = radians(lat2 - lat1)
-    d_lon = radians(lon2 - lon1)
-    a = sin(d_lat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(d_lon / 2) ** 2
-    c = 2 * asin(sqrt(a))
-    return r * c
-
-
 def weighted_leg_cost(distance_km: float, speed_kmh: float, cost_per_km: float, weights: dict[str, float]) -> tuple[float, float, float]:
+    if speed_kmh <= 0:
+        raise ValueError('speed_kmh must be positive')
     time_min = (distance_km / speed_kmh) * 60
     monetary_cost = distance_km * cost_per_km
     weighted = (
@@ -39,7 +33,13 @@ def weighted_leg_cost(distance_km: float, speed_kmh: float, cost_per_km: float, 
     return weighted, time_min, monetary_cost
 
 
-def dijkstra_shortest_paths(nodes: dict[str, Node], start_code: str, speed_kmh: float, cost_per_km: float, weights: dict[str, float]) -> dict[str, float]:
+def dijkstra_shortest_paths(
+    nodes: dict[str, Node],
+    start_code: str,
+    speed_kmh: float,
+    cost_per_km: float,
+    weights: dict[str, float],
+) -> dict[str, float]:
     dist: dict[str, float] = {code: float('inf') for code in nodes}
     dist[start_code] = 0.0
     pq: list[tuple[float, str]] = [(0.0, start_code)]

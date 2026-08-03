@@ -12,6 +12,7 @@ from app.models.fleet_asset import FleetAsset
 from app.models.membership import OrganizationMembership
 from app.models.route import RouteSchedule
 from app.models.user import User
+from app.utils.geo import haversine_miles
 
 
 def resolve_actor_organization_id(db: Session, user: User | None) -> str | None:
@@ -57,20 +58,11 @@ def record_audit_event(
 # Autonomous Exception Management
 # ---------------------------------------------------------------------------
 
-_EARTH_RADIUS_MILES = 3958.8
 _MAX_RADIUS_MILES = 50.0
 
 
-def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Great-circle distance between two points in miles."""
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lon2 - lon1)
-    a = (
-        math.sin(dphi / 2) ** 2
-        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
-    )
-    return _EARTH_RADIUS_MILES * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+def _dist_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    return haversine_miles(lat1, lon1, lat2, lon2)
 
 
 async def auto_resolve_late_pickup(alert_id: UUID, db: Session) -> dict[str, Any]:
@@ -141,7 +133,7 @@ async def auto_resolve_late_pickup(alert_id: UUID, db: Session) -> dict[str, Any
     # 4. Filter within 50-mile radius using Haversine
     candidates: list[tuple[FleetAsset, float]] = []
     for asset in idle_assets:
-        dist = _haversine_miles(origin_lat, origin_lon, asset.latitude, asset.longitude)
+        dist = _dist_miles(origin_lat, origin_lon, asset.latitude, asset.longitude)
         if dist <= _MAX_RADIUS_MILES:
             candidates.append((asset, dist))
 

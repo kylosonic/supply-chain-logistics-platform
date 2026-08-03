@@ -2,10 +2,12 @@ from datetime import timedelta
 import re
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.api.security import get_current_user, get_current_user_from_token, require_roles
 from app.core.config import settings
@@ -28,6 +30,16 @@ from app.services.security import create_access_token, create_access_token_for_o
 
 router = APIRouter()
 optional_bearer_scheme = HTTPBearer(auto_error=False)
+limiter = Limiter(key_func=get_remote_address)
+
+_RATE_LOGIN = '10/minute'
+_RATE_REGISTER = '5/minute'
+_RATE_SIGNUP = '3/minute'
+
+if settings.app_env in ('development', 'test'):
+    _RATE_LOGIN = '10000/minute'
+    _RATE_REGISTER = '10000/minute'
+    _RATE_SIGNUP = '10000/minute'
 
 
 def _slugify(name: str) -> str:
@@ -69,8 +81,10 @@ def _generate_unique_username(db: Session, email: str) -> str:
 
 
 @router.post('/register', response_model=UserRead, status_code=201)
+@limiter.limit(_RATE_REGISTER)
 def register_user(
     payload: UserCreate,
+    request: Request,
     db: Session = Depends(get_db),
     credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer_scheme),
 ):
@@ -104,7 +118,8 @@ def register_user(
 
 
 @router.post('/company-signup', response_model=CompanySignupResponse, status_code=201)
-def company_signup(payload: CompanySignupRequest, db: Session = Depends(get_db)):
+@limiter.limit(_RATE_SIGNUP)
+def company_signup(payload: CompanySignupRequest, request: Request, db: Session = Depends(get_db)):
     normalized_email = payload.company_email.strip().lower()
     domain = _extract_domain(normalized_email)
     _ensure_not_public_email(domain)
@@ -184,7 +199,8 @@ def company_signup(payload: CompanySignupRequest, db: Session = Depends(get_db))
 
 
 @router.post('/login', response_model=TokenResponse)
-def login_user(payload: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit(_RATE_LOGIN)
+def login_user(payload: UserLogin, request: Request, db: Session = Depends(get_db)):
     identifier = (payload.identifier or payload.username or '').strip().lower()
     user = db.execute(
         select(User).where(

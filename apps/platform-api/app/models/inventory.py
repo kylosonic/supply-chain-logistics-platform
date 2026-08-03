@@ -13,6 +13,7 @@ class Inventory(UUIDTimestampMixin, Base):
 
     warehouse_id: Mapped[str] = mapped_column(ForeignKey('warehouses.id', ondelete='CASCADE'), nullable=False, index=True)
     item_id: Mapped[str] = mapped_column(ForeignKey('items.id', ondelete='CASCADE'), nullable=False, index=True)
+    organization_id: Mapped[str | None] = mapped_column(ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True)
     quantity_on_hand: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     safety_stock: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

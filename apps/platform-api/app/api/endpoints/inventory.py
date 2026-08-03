@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import get_current_membership, require_roles
 from app.db.session import get_db
 from app.models.inventory import Inventory
 from app.models.item import Item
+from app.models.membership import OrganizationMembership
 from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.schemas.auth import UserRole
@@ -18,8 +20,11 @@ router = APIRouter()
 def list_inventory(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
 ):
-    rows = db.execute(select(Inventory)).scalars().all()
+    rows = db.execute(
+        select(Inventory).where(Inventory.organization_id == membership.organization_id)
+    ).scalars().all()
     return rows
 
 
@@ -28,33 +33,51 @@ def upsert_inventory(
     payload: InventoryUpsert,
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
 ):
-    warehouse = db.execute(select(Warehouse).where(Warehouse.code == payload.warehouse_code)).scalar_one_or_none()
+    warehouse = db.execute(
+        select(Warehouse).where(
+            Warehouse.code == payload.warehouse_code,
+            Warehouse.organization_id == membership.organization_id,
+        )
+    ).scalar_one_or_none()
     if not warehouse:
         raise HTTPException(status_code=404, detail='Warehouse code not found')
 
-    item = db.execute(select(Item).where(Item.sku == payload.sku)).scalar_one_or_none()
+    item = db.execute(
+        select(Item).where(
+            Item.sku == payload.sku,
+            Item.organization_id == membership.organization_id,
+        )
+    ).scalar_one_or_none()
     if not item:
         raise HTTPException(status_code=404, detail='SKU not found')
 
-    inv = db.execute(
-        select(Inventory).where(Inventory.warehouse_id == warehouse.id, Inventory.item_id == item.id)
-    ).scalar_one_or_none()
+    stmt = pg_insert(Inventory).values(
+        warehouse_id=warehouse.id,
+        item_id=item.id,
+        organization_id=membership.organization_id,
+        quantity_on_hand=payload.quantity_on_hand,
+        safety_stock=payload.safety_stock,
+    )
+    stmt = stmt.on_conflict_do_update(
+        constraint='uq_inventory_warehouse_item',
+        set_={
+            'quantity_on_hand': payload.quantity_on_hand,
+            'safety_stock': payload.safety_stock,
+            'updated_at': func.now(),
+        },
+    )
 
-    if inv:
-        inv.quantity_on_hand = payload.quantity_on_hand
-        inv.safety_stock = payload.safety_stock
-    else:
-        inv = Inventory(
-            warehouse_id=warehouse.id,
-            item_id=item.id,
-            quantity_on_hand=payload.quantity_on_hand,
-            safety_stock=payload.safety_stock,
-        )
-
-    db.add(inv)
+    db.execute(stmt)
     db.commit()
-    db.refresh(inv)
+
+    inv = db.execute(
+        select(Inventory).where(
+            Inventory.warehouse_id == warehouse.id,
+            Inventory.item_id == item.id,
+        )
+    ).scalar_one()
     return inv
 
 
@@ -62,6 +85,7 @@ def upsert_inventory(
 def inventory_overview(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
 ):
     stmt = (
         select(
@@ -72,6 +96,7 @@ def inventory_overview(
             func.max(Warehouse.capacity_units).label('capacity_units'),
         )
         .join(Inventory, Inventory.warehouse_id == Warehouse.id, isouter=True)
+        .where(Warehouse.organization_id == membership.organization_id)
         .group_by(Warehouse.code, Warehouse.name)
         .order_by(Warehouse.code)
     )

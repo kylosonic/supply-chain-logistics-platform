@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import get_current_membership, require_roles
 from app.db.session import get_db
 from app.models.item import Item
+from app.models.membership import OrganizationMembership
 from app.models.order import HistoricalOrder
 from app.models.user import User
 from app.models.warehouse import Warehouse
@@ -20,9 +21,14 @@ def list_orders(
     limit: int = Query(default=200, le=1000),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
 ):
     rows = db.execute(
-        select(HistoricalOrder).order_by(desc(HistoricalOrder.order_date)).offset(skip).limit(limit)
+        select(HistoricalOrder)
+        .where(HistoricalOrder.organization_id == membership.organization_id)
+        .order_by(desc(HistoricalOrder.order_date))
+        .offset(skip)
+        .limit(limit)
     ).scalars().all()
     return rows
 
@@ -32,12 +38,23 @@ def create_order(
     payload: HistoricalOrderCreate,
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
 ):
-    warehouse = db.execute(select(Warehouse).where(Warehouse.code == payload.warehouse_code)).scalar_one_or_none()
+    warehouse = db.execute(
+        select(Warehouse).where(
+            Warehouse.code == payload.warehouse_code,
+            Warehouse.organization_id == membership.organization_id,
+        )
+    ).scalar_one_or_none()
     if not warehouse:
         raise HTTPException(status_code=404, detail='Warehouse code not found')
 
-    item = db.execute(select(Item).where(Item.sku == payload.sku)).scalar_one_or_none()
+    item = db.execute(
+        select(Item).where(
+            Item.sku == payload.sku,
+            Item.organization_id == membership.organization_id,
+        )
+    ).scalar_one_or_none()
     if not item:
         raise HTTPException(status_code=404, detail='SKU not found')
 
@@ -45,6 +62,7 @@ def create_order(
         order_date=payload.order_date,
         warehouse_id=warehouse.id,
         item_id=item.id,
+        organization_id=membership.organization_id,
         quantity=payload.quantity,
         unit_price=payload.unit_price,
         customer_region=payload.customer_region,

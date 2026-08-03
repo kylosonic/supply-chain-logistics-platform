@@ -5,12 +5,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
-    database_url: str = 'postgresql+psycopg://postgres:postgres@localhost:5432/supply_chain'
-    jwt_secret_key: str = 'change-me-in-production-minimum-32-bytes'
+    app_env: str = 'development'
+    log_level: str = 'INFO'
+    database_url: str = ''
+    jwt_secret_key: str = ''
     jwt_algorithm: str = 'HS256'
     jwt_access_token_expire_minutes: int = 120
-    password_salt: str = 'supply-chain-static-salt-change-me'
-    provider_key_encryption_secret: str = 'change-me-provider-key-secret'
+    provider_key_encryption_secret: str = ''
     cors_origins: list[str] = ['http://localhost:5173']
     allowed_hosts: list[str] = ['localhost', '127.0.0.1', 'testserver']
     blocked_public_email_domains: list[str] = [
@@ -24,8 +25,24 @@ class Settings(BaseSettings):
         'proton.me',
         'protonmail.com',
     ]
-    app_env: str = 'development'
-    log_level: str = 'INFO'
+
+    @property
+    def effective_database_url(self) -> str:
+        if self.database_url:
+            return self.database_url
+        if self.app_env in ('development', 'test'):
+            return 'sqlite+pysqlite:///:memory:'
+        raise ValueError('DATABASE_URL is required in non-dev environments')
+
+    @property
+    def effective_jwt_secret_key(self) -> str:
+        if self.jwt_secret_key:
+            if len(self.jwt_secret_key) < 32 and self.app_env not in ('development', 'test'):
+                raise ValueError('JWT_SECRET_KEY must be at least 32 characters in non-dev environments')
+            return self.jwt_secret_key
+        if self.app_env in ('development', 'test'):
+            return 'dev-secret-do-not-use-in-production-minimum-32'
+        raise ValueError('JWT_SECRET_KEY is required in non-dev environments')
 
     @field_validator('cors_origins', mode='before')
     @classmethod

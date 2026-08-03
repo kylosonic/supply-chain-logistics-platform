@@ -3,6 +3,9 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+from functools import lru_cache
+import hashlib
+import json
 from uuid import UUID
 
 import numpy as np
@@ -13,16 +16,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
 from app.services.weather import simulated_weather_features
+from app.utils.geo import haversine_km
 
 
 @dataclass
 class ForecastResult:
     model_name: str
     predictions: list[dict]
-
-
-def _week_start(d: date) -> date:
-    return d - timedelta(days=d.weekday())
 
 
 def build_training_frame(orders: list[dict]) -> pd.DataFrame:
@@ -49,7 +49,24 @@ def build_training_frame(orders: list[dict]) -> pd.DataFrame:
     return agg
 
 
-def train_weekly_demand_model(training_df: pd.DataFrame) -> Pipeline:
+def _training_frame_hash(training_df: pd.DataFrame) -> str:
+    data_dict = {
+        'warehouse_codes': sorted(training_df['warehouse_code'].unique().tolist()),
+        'skus': sorted(training_df['sku'].unique().tolist()),
+        'row_count': len(training_df),
+        'quantity_sum': float(training_df['quantity'].sum()),
+    }
+    return hashlib.sha256(json.dumps(data_dict, sort_keys=True).encode()).hexdigest()[:16]
+
+
+_trained_model_cache: dict[str, Pipeline] = {}
+
+
+def _get_or_train_model(training_df: pd.DataFrame) -> Pipeline:
+    cache_key = _training_frame_hash(training_df)
+    if cache_key in _trained_model_cache:
+        return _trained_model_cache[cache_key]
+
     categorical = ['warehouse_code', 'sku']
     numeric = ['week_of_year', 'month', 'weather_avg_temp_c', 'weather_precip_mm', 'weather_disruption_index']
 
@@ -60,7 +77,7 @@ def train_weekly_demand_model(training_df: pd.DataFrame) -> Pipeline:
         ]
     )
 
-    model = RandomForestRegressor(n_estimators=250, random_state=42)
+    model = RandomForestRegressor(n_estimators=250, random_state=42, n_jobs=-1)
     pipeline = Pipeline([
         ('preprocessor', preprocessor),
         ('model', model),
@@ -69,6 +86,11 @@ def train_weekly_demand_model(training_df: pd.DataFrame) -> Pipeline:
     x = training_df[categorical + numeric]
     y = training_df['quantity']
     pipeline.fit(x, y)
+
+    if len(_trained_model_cache) > 10:
+        _trained_model_cache.pop(next(iter(_trained_model_cache)))
+    _trained_model_cache[cache_key] = pipeline
+
     return pipeline
 
 
@@ -78,7 +100,7 @@ def forecast_weekly_demand(
     horizon_weeks: int = 4,
 ) -> ForecastResult:
     training_df = build_training_frame(orders)
-    model = train_weekly_demand_model(training_df)
+    model = _get_or_train_model(training_df)
 
     latest_week = max(training_df['week_start'])
     combos = training_df[['warehouse_code', 'sku']].drop_duplicates()
@@ -112,29 +134,15 @@ def forecast_weekly_demand(
         y_pred = model.predict(future_df)
         y_pred = np.maximum(y_pred, 0)
 
-        for idx, row in future_df.iterrows():
+        for i, row in future_df.iterrows():
             predictions.append({
                 'week_start': future_week,
                 'warehouse_code': row['warehouse_code'],
                 'sku': row['sku'],
-                'predicted_demand': float(round(y_pred[idx], 2)),
+                'predicted_demand': float(round(y_pred[i], 2)),
             })
 
     return ForecastResult(model_name='RandomForestRegressor', predictions=predictions)
-
-
-# ---------------------------------------------------------------------------
-# Predictive ETA Algorithm
-# ---------------------------------------------------------------------------
-
-def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Great-circle distance between two points in miles."""
-    R = 3958.8  # Earth radius in miles
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 def calculate_arrival_probability(
@@ -144,44 +152,27 @@ def calculate_arrival_probability(
     historical_runs: list[dict],
     route_destination: dict[str, float] | None = None,
 ) -> dict:
-    """Predict the remaining transit time using a RandomForestRegressor.
-
-    Args:
-        route_id: UUID of the route being tracked.
-        current_lat: Current latitude of the vehicle.
-        current_lon: Current longitude of the vehicle.
-        historical_runs: List of dicts from RouteOptimizationRun rows,
-            each containing at least ``total_distance_km``,
-            ``estimated_duration_min``, ``speed_kmh``, ``stops_count``,
-            and ``schedule_date``.
-        route_destination: Optional dict with ``latitude`` and
-            ``longitude`` of the route destination.  When provided the
-            remaining distance is estimated via Haversine.
-
-    Returns:
-        A dict with ``predicted_eta`` (ISO datetime) and
-        ``confidence_score`` (float 0-1).
-    """
     now = datetime.now(tz=timezone.utc)
 
-    # ---- Fallback when there is no history ----------------------------------
-    if not historical_runs:
+    min_history = 10
+    if len(historical_runs) < min_history:
+        fallback_minutes = 60
+        if historical_runs:
+            avg_duration = sum(
+                float(run.get('estimated_duration_min', 60)) for run in historical_runs
+            ) / len(historical_runs)
+            fallback_minutes = avg_duration
         return {
-            'predicted_eta': (now + timedelta(minutes=60)).isoformat(),
+            'predicted_eta': (now + timedelta(minutes=fallback_minutes)).isoformat(),
             'confidence_score': 0.1,
         }
 
-    # ---- Build training data from historical optimisation runs ---------------
     records: list[dict] = []
     for run in historical_runs:
         sched_date = run.get('schedule_date', now.date())
         if isinstance(sched_date, str):
             sched_date = datetime.fromisoformat(sched_date).date()
-        weather = simulated_weather_features(
-            sched_date,
-            current_lat,
-            current_lon,
-        )
+        weather = simulated_weather_features(sched_date, current_lat, current_lon)
         records.append({
             'total_distance_km': float(run.get('total_distance_km', 0)),
             'speed_kmh': float(run.get('speed_kmh', 50)),
@@ -194,16 +185,15 @@ def calculate_arrival_probability(
     train_df = pd.DataFrame(records)
     feature_cols = ['total_distance_km', 'speed_kmh', 'stops_count', 'day_of_week', 'weather_disruption_index']
 
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
     model.fit(train_df[feature_cols], train_df['duration_min'])
 
-    # ---- Build prediction row for current conditions -------------------------
     remaining_distance_km: float
     if route_destination:
-        remaining_distance_km = _haversine_miles(
+        remaining_distance_km = haversine_km(
             current_lat, current_lon,
             route_destination['latitude'], route_destination['longitude'],
-        ) * 1.60934  # miles → km
+        )
     else:
         remaining_distance_km = float(train_df['total_distance_km'].mean()) * 0.5
 
@@ -222,11 +212,10 @@ def calculate_arrival_probability(
     predicted_minutes = float(model.predict(pred_input)[0])
     predicted_minutes = max(predicted_minutes, 0.0)
 
-    # ---- Confidence from tree-level variance ---------------------------------
     tree_preds = np.array([t.predict(pred_input) for t in model.estimators_]).flatten()
     std_dev = float(np.std(tree_preds))
     mean_pred = float(np.mean(tree_preds)) or 1.0
-    cv = std_dev / mean_pred  # coefficient of variation
+    cv = std_dev / mean_pred
     confidence = round(max(0.0, min(1.0, 1.0 - cv)), 2)
 
     predicted_eta = now + timedelta(minutes=predicted_minutes)
@@ -235,4 +224,3 @@ def calculate_arrival_probability(
         'predicted_eta': predicted_eta.isoformat(),
         'confidence_score': confidence,
     }
-

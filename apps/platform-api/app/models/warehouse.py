@@ -1,4 +1,4 @@
-from sqlalchemy import Float, Integer, String
+from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -17,6 +17,7 @@ class Warehouse(UUIDTimestampMixin, Base):
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
     capacity_units: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    organization_id: Mapped[str | None] = mapped_column(ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True)
 
     inventory_items = relationship('Inventory', back_populates='warehouse', cascade='all, delete-orphan')
     orders = relationship('HistoricalOrder', back_populates='warehouse')

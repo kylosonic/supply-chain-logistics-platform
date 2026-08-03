@@ -1,7 +1,11 @@
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.db.session import SessionLocal
 
 
-def db_dep() -> Session:
-    return next(get_db())
+def get_db_session() -> Session:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
