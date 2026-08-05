@@ -24,23 +24,27 @@ Source: `docs/behaviors/cashflow-bank-transfer-receipt-verification.md`
 
 **Adjudication note:** NB-06 grace write policy — acceptance criteria (write-disabled grace, "Grace period: X days remaining" banner) wins over behavior doc §5.6 wording. Toggle `GRACE_WRITES_ENABLED` in `app/services/billing/locks.py` flips behavior with one line if revisited.
 
-## Phase 2 — Receipt Processing: Upload, AI Extraction, Matching & Verification Queue (P0)
+## Phase 2 — Receipt Processing: Upload, AI Extraction, Matching & Verification Queue (P0) — ✅ COMPLETE
+
+**Status:** Committed `179eeda` on `feat/market-contender-v1`. QA APPROVED. Ledger debited 2026-08-05.
 
 Source: `docs/behaviors/cashflow-bank-transfer-receipt-verification.md`
 
 | TECH | Parent NB | Ticket summary |
 |---|---|---|
-| TECH-07 | NB-07 | Receipt upload surface (PNG/JPG/PDF only); auto-routing to oldest open invoice; surplus cascades to next invoices; "≤24h" confirmation. |
-| TECH-08 | NB-08 | Partial payments: credit as received, balance carried forward, multiple receipts per invoice, unlock only at zero balance, amount never rejects. |
-| TECH-09 | NB-09 | ±1,000 ETB auto-forward tolerance → wallet credit on next invoice; surplus >1,000 ETB flagged for admin 3-way decision; never auto-reject on amount. |
-| TECH-10 | NB-10 | AI-assisted extraction via org-preferred BYOK key; 8 fields + per-field confidence; zero-confidence warning when no key; low-confidence visual flags. |
-| TECH-11 | NB-11 | Per-org trusted-payer list, admin-only; "NEW SENDER" flag; verify+add / verify-once / reject decisions. |
-| TECH-12 | NB-12 | "CASH" sender always double-flagged with "Cash deposit — confirm" note, even if previously approved. |
-| TECH-13 | NB-13 | Wrong-bank-within-portfolio (CBE↔Dashen) auto-flows with pre-filled Verify; wrong-bank rejection reserved for out-of-portfolio only. |
-| TECH-14 | NB-14 | Hard reject on duplicate reference number across the entire system; fraud-flag pair in audit trail. |
-| TECH-15 | NB-15 | Exact verdict enum: Verify / Reject-wrong-bank / Reject-duplicate / Reject-illegible / Escalate; no amount-mismatch verdict; rejections → in-product banner + re-upload, no SMS. |
-| TECH-16 | NB-16 | Escalation = only SMS-triggering state; ≤160-char SMS to registered phone; banner with escalation question; workspace stays locked. |
-| TECH-17 | NB-17 | Dispute path: rejection banner has Re-upload + Dispute textbox; dispute converts to escalation case; read-only until resolved. |
+| ~~TECH-07~~ | NB-07 | ✅ IMPLEMENTED — Receipt upload surface (PNG/JPG/PDF only, "Unsupported file format" rejection); auto-routing to oldest open invoice; surplus cascades to next-open; "≤24h" confirmation; unrouteable uploads never pollute the queue (rollback → 400). |
+| ~~TECH-08~~ | NB-08 | ✅ IMPLEMENTED — Partial payments credit as received, balance carried forward, multiple receipts per invoice, unlock only at zero balance (pessimistic, on admin Verify), amount never rejects. |
+| ~~TECH-09~~ | NB-09 | ✅ IMPLEMENTED — ±1,000 ETB auto-forward tolerance → wallet credit (FIFO, reduces next invoice total via negative `wallet_credit` line item); surplus >1,000 ETB → 3-way admin decision (credit_forward / credit_backward / partial_ignore); never auto-reject on amount. |
+| ~~TECH-10~~ | NB-10 | ✅ IMPLEMENTED — Extraction via org-preferred BYOK key; 8 fields + per-field confidence; zero-confidence fallback with admin warning when no key; low-confidence (<60%) visual flags; mock adapter in Phase 2 (provider-agnostic registry, real HTTP adapters are a later phase). |
+| ~~TECH-11~~ | NB-11 | ✅ IMPLEMENTED — Per-org trusted-payer list, admin-only, no customer surface; "NEW SENDER" flag; verify+add / verify-once / reject decisions with distinct persistence. |
+| ~~TECH-12~~ | NB-12 | ✅ IMPLEMENTED — "CASH" sender always double-flagged with "Cash deposit — confirm" note; pre-fill suppressed even when trusted. |
+| ~~TECH-13~~ | NB-13 | ✅ IMPLEMENTED — Wrong-bank-within-portfolio (CBE↔Dashen) auto-flows with pre-filled Verify; `reject_wrong_bank` 422-guarded for in-portfolio banks. |
+| ~~TECH-14~~ | NB-14 | ✅ IMPLEMENTED — System-wide dedup on reference number against verified receipts: hard reject at upload + partial unique index backstop (IntegrityError → 409); fraud-flag audit pair; NB-14.3 rejection banner. |
+| ~~TECH-15~~ | NB-15 | ✅ IMPLEMENTED — Exact 5-verdict enum (Verify / reject_wrong_bank / reject_duplicate / reject_illegible / Escalate); no amount-mismatch verdict; rejections → in-product banner + re-upload, no SMS. |
+| ~~TECH-16~~ | NB-16 | ✅ IMPLEMENTED — Escalation = only SMS-triggering state; exact ≤160-char template; outbox-only (`sms_messages` queue, provider-agnostic, fail-soft `no_phone_on_file`); banner with admin's escalation question; workspace stays locked. |
+| ~~TECH-17~~ | NB-17 | ✅ IMPLEMENTED — Dispute path: rejection banner has Re-upload + Dispute textbox; dispute converts rejection → escalation case ("Customer disputes rejection" label); read-only until resolution; one thread per receipt. |
+
+**Adjudication notes:** (1) `contact_phone` added to `organizations` (nullable) with no capture UI yet — escalation SMS degrades to `failed/no_phone_on_file` until a phone field ships (candidate Phase 3 work). (2) Extraction is wired with key plumbing + zero-confidence fallback; only the deterministic mock adapter ships (real HTTP adapters later). (3) `services/billing/receipts/` package split per QA blocker: intake.py (309), queue.py (125), verdicts.py (237), disputes.py (121), `__init__.py` (55).
 
 ## Phase 3 — Cashflow: Audit Trail, Reversibility & Fraud Controls (P0/P1)
 

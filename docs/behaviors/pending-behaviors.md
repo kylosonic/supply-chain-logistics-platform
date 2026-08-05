@@ -68,7 +68,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. During grace, write operations are disabled (same behavior as hard lock, but with a banner reading "Grace period: X days remaining").
   4. The customer cannot reset the first-invoice grace by upgrading tiers; only paying clears the lock.
 
-### NB-07 — Receipt upload surface with auto-routing to open invoices
+### NB-07 — Receipt upload surface with auto-routing to open invoices — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Receipt management, customer upload
 - **Acceptance criteria:**
@@ -78,7 +78,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   4. At upload, the customer sees "Receipt received — verification typically takes ≤24 hours." No further live status updates push to the customer.
   5. Only image files (PNG, JPG) and PDF files are accepted. Other file types are rejected at upload with the message "Unsupported file format."
 
-### NB-08 — Partial payments accepted, balance carried forward, unlock only at zero balance
+### NB-08 — Partial payments accepted, balance carried forward, unlock only at zero balance — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Payment matching, lock enforcement
 - **Acceptance criteria:**
@@ -89,7 +89,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   5. At the moment cumulative credited amount hits zero balance, the system unlocks the workspace (no optimistic unlock — unlock fires only on admin verification, per NB-09).
   6. Amount is never a rejection reason on partials. Partial payments always credit.
 
-### NB-09 — ±1,000 ETB auto-forward tolerance, larger surplus flagged for admin
+### NB-09 — ±1,000 ETB auto-forward tolerance, larger surplus flagged for admin — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Payment matching, wallet credit, admin queue
 - **Acceptance criteria:**
@@ -98,7 +98,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. When a receipt amount exceeds `balance + 1,000 ETB`, the receipt is flagged in the admin queue as "Large surplus — admin manual decision required." The admin takes one of three actions: (a) credit forward as wallet credit, (b) credit backward for manual offline refund, (c) treat as partial credit with surplus ignored. The system applies the chosen action on the admin's confirmation.
   4. The system never auto-rejects based on amount.
 
-### NB-10 — AI-assisted receipt extraction via existing BYOK provider key
+### NB-10 — AI-assisted receipt extraction via existing BYOK provider key — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Receipt processing, BYOK integration
 - **Acceptance criteria:**
@@ -108,7 +108,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   4. The extractor returns a confidence score per field. Fields below a low-confidence threshold (configurable, default 60%) are visually flagged in the admin queue as "low confidence — please manually verify."
   5. The extraction is logged in the audit trail alongside the verification decision (NB-12).
 
-### NB-11 — Trusted-payer list per organization, admin-only
+### NB-11 — Trusted-payer list per organization, admin-only — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Sender identity, fraud prevention, admin workflow
 - **Acceptance criteria:**
@@ -118,7 +118,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   4. When the sender is not on the trusted-payer list, the admin queue item is flagged "NEW SENDER" with a prominent visual marker.
   5. The admin selects one of: "Verify + add to trusted-payer list," "Verify, do not add," or "Reject." Each selection produces a different persistence action on the trusted-payer list.
 
-### NB-12 — "Cash" sender always double-flagged even if previously approved
+### NB-12 — "Cash" sender always double-flagged even if previously approved — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Fraud prevention, high-risk sender handling
 - **Acceptance criteria:**
@@ -127,7 +127,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. The flag persists and the admin must still click Verify (no auto-flow even with prior approval).
   4. The admin may verify the cash receipt normally.
 
-### NB-13 — Wrong-bank-within-portfolio auto-credited, not rejected
+### NB-13 — Wrong-bank-within-portfolio auto-credited, not rejected — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Payment matching, customer friction reduction
 - **Acceptance criteria:**
@@ -136,7 +136,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. No "wrong-bank-within-portfolio" rejection message is shown to the customer for this case.
   4. "Wrong bank" rejection is reserved exclusively for receipts from banks outside the CBE/Dashen portfolio, which would not appear in the admin queue in practice (such a payment would have landed at a different recipient).
 
-### NB-14 — Hard reject on duplicate reference number across the entire system
+### NB-14 — Hard reject on duplicate reference number across the entire system — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Fraud prevention, deduplication
 - **Acceptance criteria:**
@@ -145,7 +145,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. The rejection banner reads: "Your receipt (ref X) was rejected. Reason: This reference number has already been credited. Please upload a new receipt for your current invoice."
   4. The duplicate-event pair is flagged in the audit trail for fraud review (the original receipt that used this reference, plus the duplicate attempt).
 
-### NB-15 — Rejection codes enumerated, amount never a rejection reason
+### NB-15 — Rejection codes enumerated, amount never a rejection reason — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Verification verdicts, customer communication
 - **Acceptance criteria:**
@@ -154,7 +154,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. Partial receipts never produce a rejection of any kind.
   4. Each rejection produces an in-product banner to the customer with the specific rejection reason and a re-upload button. No rejection produces an SMS.
 
-### NB-16 — Escalation is the only state that triggers customer SMS
+### NB-16 — Escalation is the only state that triggers customer SMS — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Customer communication, escalation workflow
 - **Acceptance criteria:**
@@ -164,7 +164,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   4. The escalation SMS fires only on escalation. All other rejection or verification outcomes are communicated in-product only.
   5. The workspace stays locked (or in grace, depending on grace window) while escalation is unresolved.
 
-### NB-17 — Dispute path converts rejections to escalations
+### NB-17 — Dispute path converts rejections to escalations — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Customer voice, admin queue
 - **Acceptance criteria:**
