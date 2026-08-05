@@ -245,7 +245,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
 
 Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operator-activation-and-milestone-tracking.md)
 
-### NB-25 — New workspace auto-seeded with sample data on signup
+### NB-25 — New workspace auto-seeded with sample data on signup — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Workspace initialization, activation flow
 - **Acceptance criteria:**
@@ -254,7 +254,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   3. Sample data seeding is per-workspace; there is no shared "demo tenant" surfaced to the customer.
   4. The audit trail records "workspace.seeded_sample_data" at signup time, with the user ID and timestamp.
 
-### NB-26 — "Demo workspace" banner persistent until data is fully replaced
+### NB-26 — "Demo workspace" banner persistent until data is fully replaced — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Activation social pressure, dashboard UX
 - **Acceptance criteria:**
@@ -265,7 +265,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   5. When the customer has replaced N of 5 categories with real uploads (1 ≤ N < 5), the banner updates to communicate: "You're viewing a partial demo workspace — N of 5 categories is yours. Upload more to complete your real operation."
   6. When all 5 categories are fully replaced by real uploads, the banner disappears entirely (this coincides with milestone 5 of the activation checklist; the banner's disappearance is not a separate signal from milestone 5).
 
-### NB-27 — Sample-data operations consume Free tier meters identically to real-data operations
+### NB-27 — Sample-data operations consume Free tier meters identically to real-data operations — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Metering integrity, no "demo loophole"
 - **Acceptance criteria:**
@@ -274,7 +274,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   3. The audit trail of write operations identifies the data substrate where operationally relevant — route optimization audit events include a `data_origin` field that is "sample" or "real" — but the metering does not differentiate.
   4. The hard-lock (NB-31) fires uniformly on sample and real data.
 
-### NB-28 — Six-milestone activation checklist tracked per organization
+### NB-28 — Six-milestone activation checklist tracked per organization — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Activation state, cooperative onboarding
 - **Acceptance criteria:**
@@ -284,7 +284,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   4. Milestone 6 can be reached on either full-sample data or partial-sample data or full-real data — the first route optimization is the aha, and the data substrate doesn't gate the milestone.
   5. The activation state is reflected in the dashboard banner (NB-26) and on the `/upload` page (NB-30).
 
-### NB-29 — Progressive dashboard panel reveal by milestone
+### NB-29 — Progressive dashboard panel reveal by milestone — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Dashboard UX, value reveal as reward
 - **Acceptance criteria:**
@@ -293,7 +293,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   3. Panels gated by milestone display either nothing (hidden) or an empty placeholder describing their prerequisite milestone with a CTA back to `/upload` or `/routes`. The product team chooses between hidden vs placeholder per panel — the system must support both rendering modes.
   4. Panels unlock in the same order for every customer. There is no panel-specific configuration that allows skipping the reveal sequence.
 
-### NB-30 — Activation banner surfaces on both `/dashboard` and `/upload` from shared state
+### NB-30 — Activation banner surfaces on both `/dashboard` and `/upload` from shared state — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Consistent activation UX across pages
 - **Acceptance criteria:**
@@ -303,7 +303,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   4. State changes (milestone completion) immediately reflect in both renderings without page reload — the customer should not have to refresh to see progress update.
   5. The banner's `data_origin` ("sample or real") state is also reflected on the `/upload` page so the customer understands which CSVs they've uploaded vs which still carry sample data.
 
-### NB-31 — Free tier hard-locks writes when monthly cap is reached
+### NB-31 — Free tier hard-locks writes when monthly cap is reached — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Cashflow funnel, mandatory upgrade pressure
 - **Acceptance criteria:**
@@ -315,7 +315,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   6. The hard-lock banner appears on every page in the console reading: "Free tier cap reached. Writes resume next month, or upgrade now to continue immediately." The banner contains an "Upgrade now" button that opens the in-product subscription tier picker.
   7. The hard-lock lifts automatically on the first day of the next billing month when the meter resets to zero.
 
-### NB-32 — Escalating upgrade pitch at 60% / 80% / 100% of Free quota
+### NB-32 — Escalating upgrade pitch at 60% / 80% / 100% of Free quota — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Upgrade intent surfacing, in-product conversion
 - **Acceptance criteria:**
@@ -325,7 +325,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   4. The upgrade CTA on both the 80% and 100% banners must never navigate the customer away from the console. The customer remains in-product through the entire upgrade flow.
   5. The banners fire once per threshold crossing per billing month — repeating the same page view does not re-fire banners that have already fired.
 
-### NB-33 — Soft post-aha toast at milestone 6 (first route optimization)
+### NB-33 — Soft post-aha toast at milestone 6 (first route optimization) — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Customer emotional bridge to commercial surface
 - **Acceptance criteria:**
@@ -335,7 +335,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   4. The toast fires exactly once per organization, never again. Subsequent milestone 6 completions (e.g., a second user running their first optimization, or the same user running another optimization) do not re-fire it.
   5. The toast fires regardless of whether milestone 6 was reached on full-sample data, partial-sample data, or full-real data.
 
-### NB-34 — Returning user lands on `/dashboard` with activation state surfaced in banner
+### NB-34 — Returning user lands on `/dashboard` with activation state surfaced in banner — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Returning user UX, low-friction re-entry
 - **Acceptance criteria:**
@@ -345,7 +345,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
   4. If the customer has completed N of 5 CSV milestones (0 ≤ N < 5), the banner reads: "Welcome back. You're N of 5 through onboarding — next step is [next CSV category]. Continue setup." CTA navigates to `/upload`.
   5. If the customer has not completed any milestones and is still on full-sample data, the banner reads: "Welcome back. You're 0% through onboarding — 5 steps remaining. Continue setup." CTA navigates to `/upload`.
 
-### NB-35 — Workspace reset to sample data (admin-gated, typed confirmation)
+### NB-35 — Workspace reset to sample data (admin-gated, typed confirmation) — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Catastrophic recovery, admin escape hatch
 - **Acceptance criteria:**

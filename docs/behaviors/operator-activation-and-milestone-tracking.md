@@ -1,6 +1,6 @@
 # Operator Activation & Milestone Tracking — Living Behaviors
 
-> ⚠️ **NOT YET IMPLEMENTED** — This document describes locked-in product behaviors that are not yet built. Engineering work must be triggered by `@architect` after reviewing the gap tickets in `docs/behaviors/pending-behaviors.md`. Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+> ✅ **IMPLEMENTED** — This feature shipped in Phase 4 of the market-contender-v1 batch (TECH-25..35; QA-approved commit `138d38e`). Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
 
 ## 1. Why this feature exists
 

@@ -62,23 +62,33 @@ Source: `docs/behaviors/cashflow-bank-transfer-receipt-verification.md`
 
 **Adjudication notes:** (1) Reversed receipts stay `status='verified'` — reversal state lives on `reversal_status`/`reversed_at` columns so the NB-14 partial-unique dedup invariant is never weakened. (2) Wallet interplay is asymmetric by design: `available` wallet rows for the reversed receipt are voided (new `'voided'` status); `applied` rows are never clawed back (NB-20.5 limits system effects to balance + lock). (3) Migration `20260806_0015` branches by dialect (sqlite skips CHECK/FK DDL — SQLAlchemy batch mode emits malformed SQL; models authoritative via `create_all`; Postgres has full DDL). (4) Cross-org admin isolation NOT enforced (inherited Phase 2 pattern; flag for @architect if ever wanted).
 
-## Phase 4 — Activation: Sample Seeding, Milestones, Progressive Reveal & Free-Cap Lock (P0/P1)
+## Phase 4 — Activation: Sample Seeding, Milestones, Progressive Reveal & Free-Cap Lock (P0/P1) — ✅ COMPLETE
+
+**Status:** Committed `138d38e` on `feat/market-contender-v1`. QA APPROVED (after one FAIL round — banner checklist copy + placeholder CTAs + reset-flow coverage fixed). Ledger debited 2026-08-05. The activation feature is now FULLY SHIPPED; the `⚠️ NOT YET IMPLEMENTED` banner is stripped from `operator-activation-and-milestone-tracking.md`.
 
 Source: `docs/behaviors/operator-activation-and-milestone-tracking.md`
 
 | TECH | Parent NB | Ticket summary |
 |---|---|---|
-| TECH-25 | NB-25 | New workspace auto-seeded from `sample-data/` CSVs on signup; all ops runnable on seed; per-workspace; audit event `workspace.seeded_sample_data`. |
-| TECH-26 | NB-26 | Persistent non-dismissible "demo workspace" banner; N-of-5 progress text; disappears only at milestone 5; CTA to `/upload`. |
-| TECH-27 | NB-27 | Sample-data operations consume meters identically to real; `data_origin` ("sample"/"real") on route audit events; metering never differentiates. |
-| TECH-28 | NB-28 | Six-milestone activation state per organization; milestones 1-5 require ≥1 real row; milestone 6 reachable on sample data. |
-| TECH-29 | NB-29 | Progressive dashboard panel reveal by milestone; always-visible surfaces (banner, exception feed, audit timeline, feedback); hidden-or-placeholder mode support. |
-| TECH-30 | NB-30 | Activation banner on both `/dashboard` (compact) and `/upload` (full checklist) from shared state; live updates without reload. |
-| TECH-31 | NB-31 | Free tier hard-lock at 2,500 delivery_tasks OR 50 route_optimizations; exact disabled/available operation lists; no Free overage; banner on every page; auto-lift at month rollover. |
-| TECH-32 | NB-32 | Escalating upgrade pitch at 60% (dismissible, no CTA) / 80% (persistent, "See pricing" → in-product `/account`) / 100% (hard-lock banner, "Upgrade now"); never leaves console; fires once per threshold per month. |
-| TECH-33 | NB-33 | Soft post-aha toast at milestone 6, exactly once per org; informational only; auto-dismisses. |
-| TECH-34 | NB-34 | Returning users always land on `/dashboard`; banner text varies by activation state (0 of 5 / N of 5 / 5 of 5 pre-optimization / none). |
-| TECH-35 | NB-35 | Admin-gated workspace reset with typed workspace-name confirmation; wipes real uploads, re-seeds sample, resets milestones, audit event, re-login flow. |
+| ~~TECH-25~~ | NB-25 | ✅ IMPLEMENTED — Per-workspace seeding from `sample-data/` CSVs at company-signup (idempotent, FK-ordered, `data_origin='sample'`); audit `workspace.seeded_sample_data`. |
+| ~~TECH-26~~ | NB-26 | ✅ IMPLEMENTED — Persistent non-dismissible demo banner, one component/state source, compact (`/dashboard`) + checklist (`/upload`) densities; N-of-5 copy; disappears at 5-of-5 per decision #8 matrix (demo messaging ends, onboarding banner persists until m6). |
+| ~~TECH-27~~ | NB-27 | ✅ IMPLEMENTED — Metering never differentiates (`services/metering.py` untouched); `route.optimized` audit gains `data_origin` ("sample" if any touched warehouse is sample, else "real"); uploads audit `workspace.csv_uploaded`. |
+| ~~TECH-28~~ | NB-28 | ✅ IMPLEMENTED — Six-milestone state: milestones 1–5 DERIVED (≥1 real row per category, sequential prefix), m6 stored (`m6_completed_at`); first optimization on ANY substrate completes m6 (no prefix requirement); out-of-order uploads don't register. |
+| ~~TECH-29~~ | NB-29 | ✅ IMPLEMENTED — Progressive panel reveal by milestone with hidden-or-placeholder modes; gated panels get prerequisite text + "Continue onboarding" CTA; always-visible surfaces (banner, exception feed, audit timeline, feedback) never hidden. |
+| ~~TECH-30~~ | NB-30 | ✅ IMPLEMENTED — Shared activation state via `GET /activation`; `/dashboard` compact + `/upload` full checklist; live updates without reload (query invalidation). |
+| ~~TECH-31~~ | NB-31 | ✅ IMPLEMENTED — Free-cap lock composes INSIDE `require_writable_workspace` (zero endpoint edits); 2,500 delivery_tasks OR 50 route_optimizations from `pricing.included_units`; exact disabled/available op lists (guarded/unguarded endpoint sets); `route_optimizations` meter gap-filled (was never recorded); no overage; month-rollover auto-lift via lazy derivation; 423 detail carries free_cap fields; phase banner wins when both locks hold; `select-tier` + receipt/reversal endpoints exempt. |
+| ~~TECH-32~~ | NB-32 | ✅ IMPLEMENTED — Pitch ladder: `threshold_crossings` table, fire-once-per-threshold-per-month (lazy insert on activation read), utilization = max of both meter pcts; p60 dismissible/no CTA, p80 persistent "See pricing" → in-product `/account`, p100 = the lock banner itself ("Upgrade now"); never leaves console. |
+| ~~TECH-33~~ | NB-33 | ✅ IMPLEMENTED — Milestone-6 toast exactly once per org (server truth via `toast_fired_at`), exact NB-33.1 copy, no CTA, auto-dismisses (6s), fires on any substrate. |
+| ~~TECH-34~~ | NB-34 | ✅ IMPLEMENTED — Every login lands on `/dashboard` (`/` → DashboardPage, regression-tested); banner copy matrix: 0 of 5 / N of 5 / 80% pre-optimization / none after m6. |
+| ~~TECH-35~~ | NB-35 | ✅ IMPLEMENTED — Admin workspace reset: `POST /activation/reset` with exact typed workspace-name confirmation (422 mismatch); one transaction wipes real rows + re-seeds + resets m6/toast + deletes crossings + audit `workspace.reset_to_sample_data`; console clears cache + logs out + redirects to `/login` (re-login lands on `/` with 0% banner); no server token invalidation (stateless JWTs — documented). |
+
+**Adjudication notes:** (1) **@architect amendment §0A** (in `docs/plans/phase4-activation-milestones.md`): global unique constraints on `warehouses.code` / `items.sku` / `fleet_assets.vehicle_code` were a pre-existing multi-tenant defect (migration `0011` added org_id without dropping them) — replaced with composite `(organization_id, key)` unique indexes in migration `20260806_0016` (both dialects). Two-org identical seeding proven by test. (2) **TECH-48 (folded)**: two Phase 1 tests were tz-fragile (`date.today()` local vs UTC) — fixtures now UTC-anchored; production untouched. (3) **Ingestion org-scoping (decision #13)**: the 5 CSV handlers now scope by `writable.organization_id` and stamp org + `data_origin='real'` — the one place Phase 4 altered existing multi-tenant behavior. (4) `fleet_assets` gained `organization_id` (was missing). (5) QA round 1 found: checklist density not state-driven at 5-of-5, missing placeholder CTAs, missing reset-flow console test — all fixed, console 30/30.
+
+## Follow-up ticket (deferred to a later batch)
+
+| TECH | Parent | Ticket summary |
+|---|---|---|
+| TECH-49 | — | Global unique index `ix_shipments_shipment_no` (migration `0003`) is a multi-tenant hazard of the same class as §0A.1. No current code path creates Shipment rows from user input, so NOT urgent — apply the same composite `(organization_id, shipment_no)` treatment when shipment creation lands. Recorded per `docs/plans/phase4-activation-milestones.md` §0A.2. |
 
 ## Phase 5 — Site Conversion: Hero, Sections, Pricing, Weight Budget & Honesty Rules (P0/P1)
 
