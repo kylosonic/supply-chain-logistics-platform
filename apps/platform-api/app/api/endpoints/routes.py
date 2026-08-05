@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import asc, desc, select
+from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
 from app.api.security import require_roles, require_writable_workspace
@@ -13,19 +13,20 @@ from app.models.route import RouteSchedule, RouteStop
 from app.models.route_history import RouteOptimizationRun
 from app.models.user import User
 from app.models.warehouse import Warehouse
-from app.repositories import RouteOptimizationRunRepository, RouteScheduleRepository, WarehouseRepository
+from app.repositories import RouteOptimizationRunRepository, RouteScheduleRepository
 from app.schemas.auth import UserRole
 from app.schemas.route import (
     DeliveryDemand,
-    RouteOptimizeRequest,
-    RouteOptimizeResponse,
     RouteOptimizationRunDetail,
     RouteOptimizationRunSummary,
+    RouteOptimizeRequest,
+    RouteOptimizeResponse,
     RouteScheduleDetail,
     RouteScheduleSummary,
     RouteStopOut,
     RouteWeights,
 )
+from app.services.activation.state import record_route_optimization
 from app.services.audit import record_audit_event, resolve_actor_organization_id
 from app.services.metering import record_usage_for_user_membership
 from app.services.routing import Delivery, Node, optimize_route_greedy
@@ -92,9 +93,31 @@ def optimize_routes(
         user=actor,
         units=len(payload.deliveries),
     )
+    # NB-31.1 gap-fill: the route_optimizations meter was never recorded;
+    # both Free-cap meters must be able to hit the cap (decision #12).
+    usage_recorded_optimizations = record_usage_for_user_membership(
+        db,
+        user=actor,
+        metric='route_optimizations',
+        units=1,
+    )
 
     serialized_stops = [RouteStopOut(**stop).model_dump(mode='json') for stop in result['stops']]
     organization_id = resolve_actor_organization_id(db, actor)
+
+    # NB-27.3: audit the data substrate of the run (decision #4) — real iff
+    # the start warehouse AND every delivery-target warehouse row used in
+    # the run exist with data_origin='real' (one IN-select, not N queries).
+    used_codes = {payload.start_warehouse_code} | {d.warehouse_code for d in payload.deliveries}
+    origin_rows = db.execute(
+        select(Warehouse.code, Warehouse.data_origin).where(Warehouse.code.in_(list(used_codes)))
+    ).all()
+    origin_by_code = {row.code: row.data_origin for row in origin_rows}
+    run_origin = 'real'
+    for code in used_codes:
+        if origin_by_code.get(code) != 'real':
+            run_origin = 'sample'
+            break
 
     history_run = RouteOptimizationRun(
         actor_user_id=actor.id,
@@ -172,8 +195,25 @@ def optimize_routes(
             'persist_requested': payload.persist_schedule,
             'usage_recorded': usage_recorded,
             'unassigned_count': len(result['unassigned_deliveries']),
+            'data_origin': run_origin,
+            'usage_recorded_optimizations': usage_recorded_optimizations,
         },
     )
+
+    # NB-28.4/33: milestone 6 = first route optimization, ANY substrate.
+    # post_aha_toast surfaces exactly on that first transition (server truth).
+    # Org-less runs (admin with no membership) skip activation — the state
+    # row is 1:1 with an organization and cannot be keyed by NULL.
+    db.flush()
+    post_aha_toast = False
+    if organization_id is not None:
+        post_aha_toast = record_route_optimization(
+            db,
+            organization_id,
+            history_run.id,
+            data_origin=run_origin,
+            now=datetime.now(UTC),
+        )
 
     db.commit()
 
@@ -188,6 +228,8 @@ def optimize_routes(
         unassigned_deliveries=result['unassigned_deliveries'],
         stops=[RouteStopOut(**s) for s in result['stops']],
         co2_saved_kg=co2_saved_kg,
+        post_aha_toast=post_aha_toast,
+        data_origin=run_origin,
     )
 
 

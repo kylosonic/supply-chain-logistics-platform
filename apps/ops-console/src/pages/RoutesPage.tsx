@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { PostAhaToast } from '../components/PostAhaToast';
 import { RouteMap } from '../components/RouteMap';
 import { RouteOptimizerForm } from '../components/RouteOptimizerForm';
 import { RouteSchedulesTable } from '../components/RouteSchedulesTable';
@@ -7,18 +8,26 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useAuth } from '../context/AuthContext';
+import { useActivationState } from '../hooks/queries';
 import { useLiveUpdates } from '../hooks/useLiveUpdates';
 import { getRouteOptimizationHistory, getRouteSchedules, getWeatherRiskZones } from '../services/logisticsApi';
 import type { RouteOptimizationRunSummary, RouteOptimizeResponse, RouteScheduleSummary, RouteStop, WeatherRiskZone } from '../types/api';
 
 export function RoutesPage() {
   const { getToken, user } = useAuth();
+  const activationQ = useActivationState();
   const [schedules, setSchedules] = useState<RouteScheduleSummary[]>([]);
   const [history, setHistory] = useState<RouteOptimizationRunSummary[]>([]);
   const [riskZones, setRiskZones] = useState<WeatherRiskZone[]>([]);
   const [latestRouteStops, setLatestRouteStops] = useState<RouteStop[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [postAhaVisible, setPostAhaVisible] = useState(false);
+
+  // NB-29.1: the weather risk zones map unlocks at milestone 5; the page
+  // itself remains routable (NB-28.5) — optimize 423s only on locks.
+  const milestone = activationQ.data?.m6_completed ? 6 : (activationQ.data?.n_of_5 ?? 0);
+  const weatherMapUnlocked = milestone >= 5;
 
   async function loadSchedules() {
     try {
@@ -80,9 +89,29 @@ export function RoutesPage() {
           onOptimized={(route: RouteOptimizeResponse) => {
             setLatestRouteStops(route.stops);
             loadSchedules();
+            // NB-33: fire the one-time toast exactly when the server says
+            // this was the org's FIRST optimization (server truth).
+            if (route.post_aha_toast) {
+              setPostAhaVisible(true);
+            }
           }}
         />
-        <RouteMap stops={latestRouteStops} riskZones={riskZones} />
+        {weatherMapUnlocked ? (
+          <RouteMap stops={latestRouteStops} riskZones={riskZones} />
+        ) : (
+          <Panel eyebrow="Weather risk" title="Weather risk zones map">
+            <div className="grid h-full min-h-[240px] place-items-center rounded-[24px] border border-dashed border-slate-700/80 bg-slate-900/40 p-6 text-center">
+              <div>
+                <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">
+                  Unlocks after Milestone 5
+                </p>
+                <a href="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
+                  Continue onboarding →
+                </a>
+              </div>
+            </div>
+          </Panel>
+        )}
       </div>
 
       <Panel
@@ -129,6 +158,8 @@ export function RoutesPage() {
           ) : null}
         </div>
       </Panel>
+
+      <PostAhaToast visible={postAhaVisible} onDismiss={() => setPostAhaVisible(false)} />
     </div>
   );
 }

@@ -1,13 +1,13 @@
-from datetime import timedelta
 import re
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from sqlalchemy import or_, select
+from sqlalchemy.orm import Session
 
 from app.api.security import get_current_user, get_current_user_from_token, require_roles
 from app.core.config import settings
@@ -25,8 +25,14 @@ from app.schemas.auth import (
     UserRead,
     UserRole,
 )
+from app.services.activation import seeding
 from app.services.audit import record_audit_event
-from app.services.security import create_access_token, create_access_token_for_org, hash_password, verify_password
+from app.services.security import (
+    create_access_token,
+    create_access_token_for_org,
+    hash_password,
+    verify_password,
+)
 
 router = APIRouter()
 optional_bearer_scheme = HTTPBearer(auto_error=False)
@@ -200,6 +206,10 @@ def company_signup(payload: CompanySignupRequest, request: Request, response: Re
             'owner_email': normalized_email,
         },
     )
+
+    # NB-25: seed the fresh workspace from the shipped sample CSVs
+    # (per-workspace; audit workspace.seeded_sample_data recorded inside).
+    seeding.seed_workspace(db, org, user, now=datetime.now(UTC))
     db.commit()
     db.refresh(org)
     db.refresh(user)

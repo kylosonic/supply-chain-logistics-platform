@@ -31,3 +31,5 @@ from app.models.sms_message import SmsMessage
 from app.models.trusted_payer import TrustedPayer
 from app.models.dispute_thread import DisputeThread
 from app.models.sender_fraud_flag import SenderFraudFlag
+from app.models.activation_state import OrganizationActivationState
+from app.models.threshold_crossing import ThresholdCrossing

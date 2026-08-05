@@ -5,6 +5,8 @@ import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { WorkspaceResetDangerZone } from '../components/WorkspaceResetDangerZone';
+import { useAuth } from '../context/AuthContext';
 import {
   createProviderKey,
   getCurrentUsage,
@@ -35,6 +37,7 @@ function keyTone(status: string) {
 }
 
 export function AccountPage() {
+  const { user } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [subscription, setSubscription] = useState<CurrentSubscription | null>(null);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
@@ -417,6 +420,13 @@ export function AccountPage() {
           {auditEvents.length === 0 ? <p className="text-sm text-slate-500">No audit events recorded yet.</p> : null}
         </div>
       </Panel>
+
+      {user?.role === 'admin' ? (
+        <WorkspaceResetDangerZone
+          organizationName={subscription?.organization_name ?? ''}
+          isAdmin
+        />
+      ) : null}
     </div>
   );
 }

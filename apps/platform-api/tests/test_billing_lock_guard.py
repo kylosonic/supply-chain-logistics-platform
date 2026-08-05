@@ -124,7 +124,12 @@ def test_write_blocked_in_grace_with_days_remaining(client: TestClient, db_sessi
     token, org_id = _signup(client, 'grace')
     _upgrade(client, token)
     _force_trial_ended(db_session, org_id)
-    _inject_invoice(db_session, org_id, grace_ends_at=date.today() + timedelta(days=1), number='INV-999001')
+    _inject_invoice(
+        db_session, org_id,
+        # TECH-48: UTC-anchored (see test_billing_api.py::test_state_grace_banner).
+        grace_ends_at=datetime.now(UTC).date() + timedelta(days=1),
+        number='INV-999001',
+    )
 
     resp = client.post('/api/v1/routes/optimize', headers=_auth(token), json=_optimize_payload())
     assert resp.status_code == 423

@@ -15,6 +15,8 @@ import {
   getRouteOptimizationHistory,
 } from '../services/logisticsApi';
 import { getCurrentUsage } from '../services/billingApi';
+import { dismissPitch, getActivationState, resetWorkspace } from '../services/activationApi';
+import { useAuth } from '../context/AuthContext';
 import {
   getReceiptAuditEvents,
   getWallet,
@@ -243,5 +245,43 @@ export function useInvalidateDashboard() {
     queryClient.invalidateQueries({ queryKey: ['routes'] });
     queryClient.invalidateQueries({ queryKey: ['shipments'] });
     queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+    queryClient.invalidateQueries({ queryKey: ['activation'] });
   };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4 activation hooks (blueprint §9)
+// ---------------------------------------------------------------------------
+
+export function useActivationState() {
+  return useQuery({
+    queryKey: ['activation'],
+    queryFn: getActivationState,
+    staleTime: 30_000,
+  });
+}
+
+export function useResetWorkspace() {
+  const queryClient = useQueryClient();
+  const { logout } = useAuth();
+  return useMutation({
+    mutationFn: (workspaceName: string) => resetWorkspace(workspaceName),
+    onSuccess: async () => {
+      // NB-35.7: clear auth state + server cookie, then land on /login;
+      // the next login lands on `/` with the 0% banner (decision #10).
+      queryClient.clear();
+      await logout();
+      window.location.assign('/login');
+    },
+  });
+}
+
+export function useDismissPitch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (level: 'p60') => dismissPitch(level),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activation'] });
+    },
+  });
 }

@@ -1,6 +1,13 @@
-"""Write-lock enforcement policy (TECH-06 / NB-06).
+"""Write-lock enforcement policy (TECH-06 / NB-06 + Phase 4 decision #5).
 
 Chain: locks -> lifecycle -> invoices -> pricing.
+
+Phase 4 addition: the Free-tier meter gate COMPOSES inside
+``assert_workspace_writable`` — one guard chain, zero per-endpoint edits.
+``can_write = phase not in WRITE_DISABLED_PHASES AND NOT free_cap_locked``.
+Import direction: ``billing.locks -> activation.freecap -> pricing`` has no
+back-edge into billing (activation imports pricing reads only, never
+locks/lifecycle) — acyclic by construction.
 """
 
 from __future__ import annotations
@@ -12,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization
 from app.schemas.billing import WorkspacePhase, WorkspaceStateRead
+from app.services.activation import freecap
 from app.services.billing import lifecycle
 
 WRITE_DISABLED_PHASES = frozenset({WorkspacePhase.LIMBO, WorkspacePhase.GRACE, WorkspacePhase.HARD_LOCKED})
@@ -35,7 +43,10 @@ def assert_workspace_writable(
     now: datetime | None = None,
 ) -> OrganizationMembership:
     """Refresh workspace state (incl. lazy invoice issuance) and raise
-    ``WorkspaceLockedError`` when the phase is write-disabled."""
+    ``WorkspaceLockedError`` when the phase is write-disabled, then
+    evaluate the Phase 4 Free-tier meter gate (decision #5) — the phase
+    lock wins on priority; the free-cap lock re-surfaces when the phase
+    resolves."""
     org = db.get(Organization, membership.organization_id)
     if org is None:
         # No workspace row: nothing to lock (fail-open for org-less calls).
@@ -50,4 +61,6 @@ def assert_workspace_writable(
 
     if state.phase in disabled:
         raise WorkspaceLockedError(state)
+
+    freecap.assert_free_cap_writable(db, org, reference)
     return membership

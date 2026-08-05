@@ -52,6 +52,8 @@ class RouteOptimizeResponse(BaseModel):
     unassigned_deliveries: list[DeliveryDemand]
     stops: list[RouteStopOut]
     co2_saved_kg: float | None = None
+    post_aha_toast: bool = False
+    data_origin: str | None = None
 
 
 class RouteScheduleSummary(BaseModel):

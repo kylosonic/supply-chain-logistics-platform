@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import type { PropsWithChildren } from 'react';
 
 import { useAuth } from '../context/AuthContext';
+import { CapPitchBanner } from './ActivationBanner';
 
 const navItems = [
   { to: '/', label: 'Control Tower', code: 'CT', hint: 'Operations overview' },
@@ -165,6 +166,10 @@ export function Layout({ children }: PropsWithChildren) {
               ))}
             </nav>
           </header>
+
+          {/* Free-cap + pitch banners render on EVERY page (NB-31.6 / NB-32);
+              the activation/demo banner itself stays page-level. */}
+          <CapPitchBanner />
 
           <main className="space-y-5">{children}</main>
         </div>

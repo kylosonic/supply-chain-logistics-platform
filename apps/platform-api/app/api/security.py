@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from fastapi import Cookie, Depends, Header, HTTPException, Request, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,7 @@ from app.models.membership import OrganizationMembership
 from app.models.user import User
 from app.repositories import MembershipRepository, UserRepository
 from app.schemas.auth import OrganizationRole, UserRole
+from app.services.activation import freecap
 from app.services.authz import ensure_role
 from app.services.billing import locks
 from app.services.security import decode_access_token
@@ -92,13 +93,15 @@ def require_writable_workspace(
     membership: OrganizationMembership | None = Depends(get_optional_membership),
     db: Session = Depends(get_db),
 ) -> OrganizationMembership | None:
-    """Write guard (blueprint §5).
+    """Write guard (blueprint §5 + Phase 4 decision #5).
 
     - Membership None -> pass through (org-less write contract preserved).
-    - Else load the org, run ``locks.assert_workspace_writable`` (which
-      refreshes workspace state incl. lazy invoice issuance) and raise
-      ``423 Locked`` when the phase is in {limbo, grace, hard_locked}.
-    - Phases free/trial/active -> membership returned unchanged.
+    - Else load the org, run ``locks.assert_workspace_writable`` (phase
+      check + Free-tier meter gate; refreshes workspace state incl. lazy
+      invoice issuance) and raise ``423 Locked`` when either lock holds.
+    - Phase lock wins the banner priority; the 423 detail gains
+      ``free_cap_locked`` + ``free_cap_message`` when the Free cap holds.
+    - Phases free/trial/active + under-cap -> membership returned unchanged.
     """
     if membership is None:
         return membership
@@ -113,6 +116,19 @@ def require_writable_workspace(
                 'message': state.banner_message,
                 'days_remaining': state.days_remaining,
                 'can_write': False,
+            },
+        ) from exc
+    except freecap.FreeCapLockedError as exc:
+        cap_state = exc.state
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail={
+                'state': 'free_cap_locked',
+                'message': cap_state.message,
+                'days_remaining': None,
+                'can_write': False,
+                'free_cap_locked': True,
+                'free_cap_message': cap_state.message,
             },
         ) from exc
     return membership

@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     wallet_auto_forward_tolerance_etb: Decimal = Decimal('1000.00')
     reversal_undo_window_hours: int = 24
     sms_brand_name: str = 'FreightPilot'
+    sample_data_dir: str = 'sample-data'
 
     @property
     def effective_database_url(self) -> str:

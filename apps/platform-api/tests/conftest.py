@@ -4,11 +4,13 @@ import json
 from collections.abc import Generator
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from uuid import UUID
+from pathlib import Path
+from uuid import UUID, uuid4
 
 import pytest
+from fastapi import Response
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -18,12 +20,17 @@ from app.db.session import get_db
 from app.main import app
 from app.models.audit_event import AuditEvent
 from app.models.collection_account import CollectionAccount
+from app.models.fleet_asset import FleetAsset
+from app.models.inventory import Inventory
+from app.models.item import Item
 from app.models.membership import OrganizationMembership
+from app.models.order import HistoricalOrder
 from app.models.organization import Organization
 from app.models.payment_receipt import PaymentReceipt
 from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.trial_record import TrialRecord
 from app.models.user import User
+from app.models.warehouse import Warehouse
 from app.schemas.auth import UserRole
 from app.services.security import hash_password
 
@@ -425,3 +432,184 @@ def make_verified_with_surplus(
         return org, invoice, token, receipt_id
 
     return _make
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 activation fixtures (blueprint §10.1)
+# ---------------------------------------------------------------------------
+
+CSV_HEADERS = {
+    'warehouses': 'code,name,address,city,state,country,latitude,longitude,capacity_units',
+    'items': 'sku,name,category,unit_cost,reorder_level',
+    'fleet': 'vehicle_code,driver_name,capacity_units',
+    'inventory': 'warehouse_code,sku,quantity_on_hand,safety_stock',
+    'orders': 'order_date,warehouse_code,sku,quantity,unit_price,customer_region',
+}
+
+
+def real_warehouse_csv(rows: list[tuple]) -> str:
+    lines = [CSV_HEADERS['warehouses']]
+    for r in rows:
+        lines.append(','.join(str(v) for v in r))
+    return '\n'.join(lines) + '\n'
+
+
+def real_items_csv(rows: list[tuple]) -> str:
+    lines = [CSV_HEADERS['items']]
+    for r in rows:
+        lines.append(','.join(str(v) for v in r))
+    return '\n'.join(lines) + '\n'
+
+
+def real_fleet_csv(rows: list[tuple]) -> str:
+    lines = [CSV_HEADERS['fleet']]
+    for r in rows:
+        lines.append(','.join(str(v) for v in r))
+    return '\n'.join(lines) + '\n'
+
+
+def real_inventory_csv(rows: list[tuple]) -> str:
+    lines = [CSV_HEADERS['inventory']]
+    for r in rows:
+        lines.append(','.join(str(v) for v in r))
+    return '\n'.join(lines) + '\n'
+
+
+def real_orders_csv(rows: list[tuple]) -> str:
+    lines = [CSV_HEADERS['orders']]
+    for r in rows:
+        lines.append(','.join(str(v) for v in r))
+    return '\n'.join(lines) + '\n'
+
+
+@pytest.fixture()
+def signup_workspace(client: TestClient):
+    """Company-signup wrapper -> (org_id, token) asserting 201 (NB-25)."""
+
+    def _signup(name: str = 'Seed Co', email: str | None = None) -> tuple[str, str]:
+        suffix = uuid4().hex[:8]
+        resp = client.post(
+            '/api/v1/auth/company-signup',
+            json={
+                'company_name': name,
+                'company_email': email or f'owner-{suffix}@seedco.com',
+                'password': 'VeryStrongPass9',
+                'full_name': 'Seed Owner',
+                'subscription_tier': 'free',
+            },
+        )
+        assert resp.status_code == 201, resp.text
+        body = resp.json()
+        return body['organization']['id'], body['access_token']
+
+    return _signup
+
+
+@pytest.fixture()
+def sample_row_counts(db_session: Session):
+    """Per-category ``data_origin='sample'`` counts for seed assertions."""
+
+    def _counts(org_id: str) -> dict[str, int]:
+        org_uuid = UUID(org_id)
+        counts: dict[str, int] = {}
+        for category, model in (
+            ('warehouses', Warehouse),
+            ('items', Item),
+            ('fleet_assets', FleetAsset),
+            ('inventory', Inventory),
+            ('orders', HistoricalOrder),
+        ):
+            counts[category] = db_session.execute(
+                select(func.count())
+                .select_from(model)
+                .where(model.organization_id == org_uuid, model.data_origin == 'sample')
+            ).scalar_one()
+        return counts
+
+    return _counts
+
+
+@pytest.fixture()
+def upload_csv(client: TestClient):
+    """Multipart helper for the 5 ingestion endpoints -> Response."""
+
+    _ENDPOINTS = {
+        'warehouses': 'warehouses-csv',
+        'items': 'items-csv',
+        'fleet': 'fleet-assets-csv',
+        'inventory': 'inventory-csv',
+        'orders': 'orders-csv',
+    }
+
+    def _upload(
+        token: str, category: str, filename: str | None = None, content: str = ''
+    ) -> Response:
+        files = {'file': (filename or f'{category}.csv', content.encode(), 'text/csv')}
+        return client.post(
+            f"/api/v1/ingestion/{_ENDPOINTS[category]}",
+            headers={'Authorization': f'Bearer {token}'},
+            files=files,
+        )
+
+    return _upload
+
+
+@pytest.fixture()
+def advance_usage(db_session: Session):
+    """Direct ``OrganizationUsageCounter`` write to force thresholds/caps."""
+
+    def _advance(
+        org_id: str,
+        metric: str,
+        units: int,
+        period: tuple[date, date] | None = None,
+    ) -> None:
+        from app.models.usage_meter import OrganizationUsageCounter
+        from app.services.metering import current_usage_window
+
+        period_start, period_end = period or current_usage_window(datetime.now(UTC).date())
+        counter = db_session.execute(
+            select(OrganizationUsageCounter).where(
+                OrganizationUsageCounter.organization_id == UUID(org_id),
+                OrganizationUsageCounter.metric == metric,
+                OrganizationUsageCounter.period_start == period_start,
+            )
+        ).scalar_one_or_none()
+        if counter is None:
+            counter = OrganizationUsageCounter(
+                organization_id=UUID(org_id),
+                metric=metric,
+                period_start=period_start,
+                period_end=period_end,
+                used_units=0,
+            )
+            db_session.add(counter)
+        counter.used_units += units
+        counter.period_end = period_end
+        db_session.commit()
+
+    return _advance
+
+
+@pytest.fixture()
+def seed_csv_path(tmp_path, monkeypatch):
+    """Override ``settings.sample_data_dir`` with a tmp copy of the shipped
+    CSVs so repo files stay pristine during tests (blueprint decision #11)."""
+    import shutil
+
+    from app.core.config import settings
+
+    current = Path(__file__).resolve().parent
+    repo_sample = None
+    while current != current.parent:
+        candidate = current / 'sample-data'
+        if candidate.is_dir():
+            repo_sample = candidate
+            break
+        current = current.parent
+    assert repo_sample is not None, 'sample-data directory not found in repo'
+
+    target = tmp_path / 'sample-data'
+    shutil.copytree(repo_sample, target)
+    monkeypatch.setattr(settings, 'sample_data_dir', str(target))
+    return target

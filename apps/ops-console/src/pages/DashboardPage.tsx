@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
+import { ActivationBanner } from '../components/ActivationBanner';
 import { DockGanttChart } from '../components/DockGanttChart';
 import { FeedbackForm } from '../components/FeedbackForm';
 import { FreightReconciliationPanel } from '../components/FreightReconciliationPanel';
@@ -11,6 +12,7 @@ import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useAuth } from '../context/AuthContext';
 import {
+  useActivationState,
   useAuditTimeline,
   useCurrentUsage,
   useDockAppointments,
@@ -35,6 +37,39 @@ function severityTone(severity: string) {
 
 function SkeletonBlock({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded-[24px] bg-slate-800/50 ${className ?? ''}`} />;
+}
+
+// NB-29.3 panel gate map: hidden vs placeholder per surface, milestone
+// threshold fixed — no per-panel configuration path (NB-29.4).
+const PANEL_GATES = [
+  { id: 'inventory-charts', mode: 'placeholder', milestone: 4 },
+  { id: 'utilization', mode: 'placeholder', milestone: 4 },
+  { id: 'forecast-chart', mode: 'placeholder', milestone: 5 },
+  { id: 'forecast-demand', mode: 'placeholder', milestone: 5 },
+  { id: 'weather-risk', mode: 'placeholder', milestone: 5 },
+  { id: 'dock-gantt', mode: 'hidden', milestone: 6 },
+  { id: 'freight-recon', mode: 'hidden', milestone: 6 },
+] as const;
+
+function gateMilestone(id: (typeof PANEL_GATES)[number]['id']) {
+  return PANEL_GATES.find((gate) => gate.id === id)!.milestone;
+}
+
+export { PANEL_GATES };
+
+function GatePlaceholder({ milestone }: { milestone: number }) {
+  return (
+    <div className="grid h-full min-h-[160px] place-items-center rounded-[24px] border border-dashed border-slate-700/80 bg-slate-900/40 p-6 text-center">
+      <div>
+        <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">
+          Unlocks after Milestone {milestone}
+        </p>
+        <a href="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
+          Continue onboarding →
+        </a>
+      </div>
+    </div>
+  );
 }
 
 function DashboardSkeleton() {
@@ -68,6 +103,7 @@ export function DashboardPage() {
   const auditQ = useAuditTimeline();
   const riskQ = useWeatherRiskZones();
   const appointmentsQ = useDockAppointments();
+  const activationQ = useActivationState();
 
   const [lastLiveUpdate, setLastLiveUpdate] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -82,6 +118,10 @@ export function DashboardPage() {
   const auditEvents = auditQ.data ?? [];
   const riskZones = riskQ.data ?? [];
   const appointments = appointmentsQ.data ?? [];
+
+  // NB-29: milestone = 6 once m6 completes, else the sequential N-of-5.
+  const activation = activationQ.data ?? null;
+  const milestone = activation?.m6_completed ? 6 : (activation?.n_of_5 ?? 0);
 
   const isLoading =
     inventoryQ.isLoading ||
@@ -167,6 +207,8 @@ export function DashboardPage() {
         }
       />
 
+      <ActivationBanner mode="compact" />
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricTile
           title="Open exceptions"
@@ -180,18 +222,38 @@ export function DashboardPage() {
           detail="Live movement across exception lanes."
           tone="info"
         />
-        <MetricTile
-          title="Forecast demand"
-          value={summary.forecastDemand.toLocaleString()}
-          detail="4-week projection horizon."
-          tone="neutral"
-        />
-        <MetricTile
-          title="Weather risk"
-          value={summary.maxRiskScore > 0 ? `${summary.maxRiskScore}/10` : 'None'}
-          detail="Max disruption across active route zones."
-          tone={summary.maxRiskScore >= 8 ? 'danger' : summary.maxRiskScore >= 5 ? 'warning' : 'success'}
-        />
+        {milestone >= gateMilestone('forecast-demand') ? (
+          <MetricTile
+            title="Forecast demand"
+            value={summary.forecastDemand.toLocaleString()}
+            detail="4-week projection horizon."
+            tone="neutral"
+          />
+        ) : (
+          <MetricTile
+            title="Forecast demand"
+            value="Locked"
+            detail="Unlocks after Milestone 5."
+            tone="neutral"
+            cta={{ label: 'Continue onboarding', href: '/upload' }}
+          />
+        )}
+        {milestone >= gateMilestone('weather-risk') ? (
+          <MetricTile
+            title="Weather risk"
+            value={summary.maxRiskScore > 0 ? `${summary.maxRiskScore}/10` : 'None'}
+            detail="Max disruption across active route zones."
+            tone={summary.maxRiskScore >= 8 ? 'danger' : summary.maxRiskScore >= 5 ? 'warning' : 'success'}
+          />
+        ) : (
+          <MetricTile
+            title="Weather risk"
+            value="Locked"
+            detail="Unlocks after Milestone 5."
+            tone="neutral"
+            cta={{ label: 'Continue onboarding', href: '/upload' }}
+          />
+        )}
         <MetricTile
           title="Usage posture"
           value={summary.usagePercent == null ? 'N/A' : `${summary.usagePercent}%`}
@@ -247,11 +309,21 @@ export function DashboardPage() {
                 <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.stock.toLocaleString()}</p>
                 <p className="mt-2 text-sm text-slate-400">Safety stock: {summary.safety.toLocaleString()} units</p>
               </div>
-              <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Utilization</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.avgUtil}%</p>
-                <p className="mt-2 text-sm text-slate-400">Average capacity pressure.</p>
-              </div>
+              {milestone >= gateMilestone('utilization') ? (
+                <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Utilization</p>
+                  <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.avgUtil}%</p>
+                  <p className="mt-2 text-sm text-slate-400">Average capacity pressure.</p>
+                </div>
+              ) : (
+                <div className="rounded-[22px] border border-dashed border-slate-700/70 bg-slate-900/40 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Utilization</p>
+                  <p className="mt-2 text-sm text-slate-400">Unlocks after Milestone 4.</p>
+                  <a href="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
+                    Continue onboarding →
+                  </a>
+                </div>
+              )}
               <div className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Pending approvals</p>
                 <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.pendingPlans.length}</p>
@@ -284,26 +356,40 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <Panel eyebrow="Dock Management" title="Live Capacity Setup">
-          <div className="h-[400px]">
-            <DockGanttChart appointments={appointments} />
-          </div>
-        </Panel>
-        <Panel eyebrow="Finance" title="Freight Invoice Reconciliation">
-          <div className="h-[400px]">
-            <FreightReconciliationPanel />
-          </div>
-        </Panel>
-      </div>
+      {milestone >= gateMilestone('dock-gantt') ? (
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <Panel eyebrow="Dock Management" title="Live Capacity Setup">
+            <div className="h-[400px]">
+              <DockGanttChart appointments={appointments} />
+            </div>
+          </Panel>
+          <Panel eyebrow="Finance" title="Freight Invoice Reconciliation">
+            <div className="h-[400px]">
+              <FreightReconciliationPanel />
+            </div>
+          </Panel>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         <div className="xl:col-span-1">
           <FeedbackForm />
         </div>
         <div className="xl:col-span-2 space-y-5">
-          <InventoryCharts data={inventory} />
-          <ForecastChart points={forecast} />
+          {milestone >= gateMilestone('inventory-charts') ? (
+            <InventoryCharts data={inventory} />
+          ) : (
+            <Panel eyebrow="Inventory" title="Stock position by warehouse">
+              <GatePlaceholder milestone={gateMilestone('inventory-charts')} />
+            </Panel>
+          )}
+          {milestone >= gateMilestone('forecast-chart') ? (
+            <ForecastChart points={forecast} />
+          ) : (
+            <Panel eyebrow="Forecast" title="4-week demand projection">
+              <GatePlaceholder milestone={gateMilestone('forecast-chart')} />
+            </Panel>
+          )}
         </div>
       </div>
     </div>

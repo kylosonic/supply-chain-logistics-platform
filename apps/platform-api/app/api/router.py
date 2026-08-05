@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.endpoints import (
+    activation,
     alerts,
     auth,
     billing,
@@ -16,8 +17,8 @@ from app.api.endpoints import (
     orders,
     planning,
     providers,
-    receipts,
     receipt_reversals,
+    receipts,
     routes,
     shipments,
     subscriptions,
@@ -50,3 +51,4 @@ api_router.include_router(receipts.router, prefix='/receipts', tags=['receipts']
 # Reversals must register AFTER receipts so the static suffixes
 # (/audit, /trusted-payers) are never shadowed by a {receipt_id} pattern.
 api_router.include_router(receipt_reversals.router, prefix='/receipts', tags=['receipts'])
+api_router.include_router(activation.router, prefix='/activation', tags=['activation'])
