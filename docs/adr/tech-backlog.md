@@ -7,18 +7,22 @@
 > - Each phase below is a vertical slice: @plan writes the blueprint to `docs/plans/`, @build executes TDD, @qa audits, @build commits atomically on QA APPROVED.
 > - The ledger is debited (tickets removed here, `[IMPLEMENTED]` appended to NB parents, warning banners stripped) by @architect only after QA sign-off per phase.
 
-## Phase 1 — Cashflow Core: Invoicing, Trials, Limbo, Grace & Locks (P0)
+## Phase 1 — Cashflow Core: Invoicing, Trials, Limbo, Grace & Locks (P0) — ✅ COMPLETE
+
+**Status:** Committed `6715f88` on `feat/market-contender-v1`. QA APPROVED. Ledger debited 2026-08-05.
 
 Source: `docs/behaviors/cashflow-bank-transfer-receipt-verification.md`
 
 | TECH | Parent NB | Ticket summary |
 |---|---|---|
-| TECH-01 | NB-01 | Tier pricing locked: Starter 4,500/mo, Scale 10,000/qtr, Enterprise 45,000/qtr in plan catalog + invoice line items; Enterprise never shows overage; Free never invoices. |
-| TECH-02 | NB-02 | Two collection accounts (CBE + Dashen) in single config surface; each invoice designates exactly one; account locked at issuance. |
-| TECH-03 | NB-03 | 7-day (168h) trial on first paid-tier upgrade; full RW access; no invoice during trial; re-trials of same tier silently blocked. |
-| TECH-04 | NB-04 | Read-only limbo between trial end and next billing-period start; banner with due date; write ops disabled. |
-| TECH-05 | NB-05 | 3-day warning notification on every invoice at issuance (in-product only): invoice number, flat amount, designated bank, due date. |
-| TECH-06 | NB-06 | Grace windows: 3 days on first invoice ever, 0 days on subsequent; grace banner; hard lock with write-disabled state; only payment clears. |
+| ~~TECH-01~~ | NB-01 | ✅ IMPLEMENTED — Tier pricing locked: Starter 4,500/mo, Scale 10,000/qtr, Enterprise 45,000/qtr in plan catalog + invoice line items; Enterprise never shows overage; Free never invoices. |
+| ~~TECH-02~~ | NB-02 | ✅ IMPLEMENTED — Two collection accounts (CBE + Dashen) in single config surface; each invoice designates exactly one; account locked at issuance. |
+| ~~TECH-03~~ | NB-03 | ✅ IMPLEMENTED — 7-day (168h) trial on first paid-tier upgrade; full RW access; no invoice during trial; re-trials of same tier silently blocked. |
+| ~~TECH-04~~ | NB-04 | ✅ IMPLEMENTED — Read-only limbo between trial end and next billing-period start; banner with due date; write ops disabled. |
+| ~~TECH-05~~ | NB-05 | ✅ IMPLEMENTED — 3-day warning notification on every invoice at issuance (in-product only): invoice number, flat amount, designated bank, due date. |
+| ~~TECH-06~~ | NB-06 | ✅ IMPLEMENTED — Grace windows: 3 days on first invoice ever, 0 days on subsequent; grace banner; hard lock with write-disabled state; only payment clears. |
+
+**Adjudication note:** NB-06 grace write policy — acceptance criteria (write-disabled grace, "Grace period: X days remaining" banner) wins over behavior doc §5.6 wording. Toggle `GRACE_WRITES_ENABLED` in `app/services/billing/locks.py` flips behavior with one line if revisited.
 
 ## Phase 2 — Receipt Processing: Upload, AI Extraction, Matching & Verification Queue (P0)
 

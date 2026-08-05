@@ -12,7 +12,7 @@
 
 Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashflow-bank-transfer-receipt-verification.md)
 
-### NB-01 — Tier pricing locked into the system
+### NB-01 — Tier pricing locked into the system — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Subscription tiers, invoice generation
 - **Acceptance criteria:**
@@ -22,7 +22,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   4. When an invoice is issued for an upgraded Enterprise customer, the flat amount is 45,000 ETB billed quarterly; no overage line items ever appear on Enterprise invoices regardless of usage recorded in the meter.
   5. Free tier customers never receive an invoice and never see a "Billing" or "Invoice" surface in the product.
 
-### NB-02 — Two collection accounts (CBE + Dashen) surfaced on every invoice
+### NB-02 — Two collection accounts (CBE + Dashen) surfaced on every invoice — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Invoice rendering, payment instructions
 - **Acceptance criteria:**
@@ -31,7 +31,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. The two account strings are stored in a single configuration surface (no per-customer preference; all customers see one of these two accounts based on system policy).
   4. Accounts other than CBE and Dashen are never displayed on any invoice regardless of admin action.
 
-### NB-03 — 7-day trial on first upgrade to any paid tier
+### NB-03 — 7-day trial on first upgrade to any paid tier — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Subscription lifecycle, workspace access
 - **Acceptance criteria:**
@@ -41,7 +41,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   4. At the end of the 7-day trial, the workspace drops to read-only limbo (see NB-04).
   5. Trials do not stack — a customer cannot start a second trial of the same tier after a previous trial of that tier ended. Re-trials of the same tier are blocked silently.
 
-### NB-04 — Read-only limbo between trial end and billing-period start
+### NB-04 — Read-only limbo between trial end and billing-period start — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Workspace state, billing cadence
 - **Acceptance criteria:**
@@ -50,7 +50,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. The customer sees an in-product banner: "Your trial has ended. Your first invoice is due on [billing-period start date] — once paid, your workspace resumes."
   4. At the moment the billing period starts, the first invoice is issued and the 3-day warning fires (NB-05). The limbo state continues until the invoice is paid or the lock is enforced.
 
-### NB-05 — 3-day warning fires on every invoice at issuance
+### NB-05 — 3-day warning fires on every invoice at issuance — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Invoice communication
 - **Acceptance criteria:**
@@ -59,7 +59,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. The notification persists in the customer's notification surface for the full 3-day window.
   4. The notification is in-product only (no SMS, no email) — the only SMS in this feature fires on escalation (NB-09).
 
-### NB-06 — Grace window: 3 days on first invoice, 0 days on subsequent
+### NB-06 — Grace window: 3 days on first invoice, 0 days on subsequent — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Lock enforcement, customer trust
 - **Acceptance criteria:**
