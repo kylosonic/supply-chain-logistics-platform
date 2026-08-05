@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.api.security import get_current_membership, require_roles
+from app.api.security import get_current_membership, require_roles, require_writable_workspace
 from app.db.session import get_db
 from app.models.membership import OrganizationMembership
 from app.models.order import HistoricalOrder
@@ -31,7 +31,9 @@ def create_order(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     membership: OrganizationMembership = Depends(get_current_membership),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     warehouse_repo = WarehouseRepository(db)
     item_repo = ItemRepository(db)
     order_repo = OrderRepository(db)

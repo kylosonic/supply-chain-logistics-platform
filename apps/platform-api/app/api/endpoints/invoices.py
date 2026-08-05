@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import require_roles, require_writable_workspace
 from app.db.session import get_db
+from app.models.membership import OrganizationMembership
 from app.models.order import HistoricalOrder
 from app.models.freight_invoice import FreightInvoice
 from app.models.user import User
@@ -27,7 +28,9 @@ def upload_invoices(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     if not file.filename or not file.filename.lower().endswith('.csv'):
         raise HTTPException(status_code=400, detail='Only CSV files are accepted')
     content = file.file.read()

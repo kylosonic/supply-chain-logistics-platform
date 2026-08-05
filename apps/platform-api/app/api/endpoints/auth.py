@@ -158,8 +158,9 @@ def company_signup(payload: CompanySignupRequest, request: Request, response: Re
         name=payload.company_name,
         slug=_generate_unique_slug(db, payload.company_name),
         primary_email_domain=domain,
-        subscription_tier=payload.subscription_tier,
-        subscription_status='trialing',
+        subscription_tier='free',
+        subscription_status='active',
+        billing_phase='free',
         is_active=True,
     )
     db.add(org)
@@ -195,6 +196,7 @@ def company_signup(payload: CompanySignupRequest, request: Request, response: Re
         payload={
             'organization_name': org.name,
             'subscription_tier': org.subscription_tier,
+            'tier_preference': payload.subscription_tier,
             'owner_email': normalized_email,
         },
     )

@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import require_roles, require_writable_workspace
 from app.db.session import get_db
 from app.models.user import User
+from app.models.membership import OrganizationMembership
 from app.models.warehouse import Warehouse
 from app.schemas.auth import UserRole
 from app.schemas.warehouse import WarehouseCreate, WarehouseRead, WarehouseUpdate
@@ -28,7 +29,9 @@ def create_warehouse(
     payload: WarehouseCreate,
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     exists = db.execute(select(Warehouse).where(Warehouse.code == payload.code)).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail='Warehouse code already exists')
@@ -58,7 +61,9 @@ def update_warehouse(
     payload: WarehouseUpdate,
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     row = db.get(Warehouse, warehouse_id)
     if not row:
         raise HTTPException(status_code=404, detail='Warehouse not found')

@@ -1,10 +1,12 @@
 from datetime import date, datetime
+from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.auth import SubscriptionStatus, SubscriptionTier
+from app.schemas.billing import BillingCycle, WorkspacePhase
 
 
 class PlanRead(BaseModel):
@@ -17,6 +19,9 @@ class PlanRead(BaseModel):
     overage_unit_price_usd: float | None
     includes_sso: bool
     includes_priority_support: bool
+    flat_price_etb: Decimal | None = None
+    billing_cycle: BillingCycle | None = None
+    overage_unit_price_etb: Decimal | None = None
 
 
 class SelectTierRequest(BaseModel):
@@ -31,6 +36,9 @@ class SubscriptionRead(BaseModel):
     preferred_ai_provider: str | None = None
     preferred_ai_key_id: str | None = None
     updated_at: datetime | None
+    billing_phase: WorkspacePhase | None = None
+    trial_ends_at: datetime | None = None
+    next_billing_period_start: date | None = None
 
     model_config = {'from_attributes': True}
 

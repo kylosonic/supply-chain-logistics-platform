@@ -12,6 +12,7 @@ class UserRole(StrEnum):
 
 
 class SubscriptionTier(StrEnum):
+    FREE = 'free'
     STARTER = 'starter'
     SCALE = 'scale'
     ENTERPRISE = 'enterprise'

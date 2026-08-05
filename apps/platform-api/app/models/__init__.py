@@ -18,3 +18,9 @@ from app.models.dock_appointment import DockAppointment
 from app.models.freight_invoice import FreightInvoice
 from app.models.feedback import Feedback
 from app.models.metered_event import MeteredEvent
+from app.models.billing_counter import BillingCounter
+from app.models.collection_account import CollectionAccount
+from app.models.invoice_line_item import InvoiceLineItem
+from app.models.notification import Notification
+from app.models.subscription_invoice import SubscriptionInvoice
+from app.models.trial_record import TrialRecord

@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import asc, desc, select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import require_roles, require_writable_workspace
 from app.db.session import get_db
+from app.models.membership import OrganizationMembership
 from app.models.route import RouteSchedule, RouteStop
 from app.models.route_history import RouteOptimizationRun
 from app.models.user import User
@@ -37,6 +38,7 @@ def optimize_routes(
     payload: RouteOptimizeRequest,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
     warehouses = db.execute(select(Warehouse)).scalars().all()
     if not warehouses:

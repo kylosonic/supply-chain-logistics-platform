@@ -13,7 +13,17 @@ def _signup_company(client: TestClient, *, tier: str = 'starter', suffix: str = 
         },
     )
     assert resp.status_code == 201
-    return resp.json()['access_token']
+    token = resp.json()['access_token']
+    # Signup always creates a Free org; upgrade into the paid tier (7-day
+    # trial, full write access) before recording usage.
+    if tier != 'free':
+        selected = client.post(
+            '/api/v1/subscriptions/select-tier',
+            headers={'Authorization': f'Bearer {token}'},
+            json={'tier': tier},
+        )
+        assert selected.status_code == 200
+    return token
 
 
 def test_usage_metering_emits_threshold_events(client: TestClient):

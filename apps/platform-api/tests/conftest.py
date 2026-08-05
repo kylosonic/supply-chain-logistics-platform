@@ -8,9 +8,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import app.models  # noqa: F401
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
+from app.models.collection_account import CollectionAccount
 from app.models.user import User
 from app.schemas.auth import UserRole
 from app.services.security import hash_password
@@ -59,6 +61,31 @@ def db_session() -> Generator[Session, None, None]:
     finally:
         session.close()
         Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def seed_collection_accounts(db_session: Session) -> Generator[None, None, None]:
+    """Seed the two collection accounts (CBE + Dashen) for every test."""
+    db_session.add_all(
+        [
+            CollectionAccount(
+                bank_code='cbe',
+                bank_name='Commercial Bank of Ethiopia',
+                account_holder='FreightPilot PLC',
+                account_number='1000134567890',
+                is_active=True,
+            ),
+            CollectionAccount(
+                bank_code='dashen',
+                bank_name='Dashen Bank S.C.',
+                account_holder='FreightPilot PLC',
+                account_number='012345678901',
+                is_active=True,
+            ),
+        ]
+    )
+    db_session.commit()
+    yield
 
 
 @pytest.fixture()

@@ -7,12 +7,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import require_roles, require_writable_workspace
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.models.fleet_asset import FleetAsset
 from app.models.inventory import Inventory
 from app.models.item import Item
+from app.models.membership import OrganizationMembership
 from app.models.order import HistoricalOrder
 from app.models.user import User
 from app.models.warehouse import Warehouse
@@ -44,7 +45,9 @@ def ingest_warehouses_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     df = _read_csv_to_df(file)
     required = {'code', 'name', 'address', 'city', 'state', 'country', 'latitude', 'longitude', 'capacity_units'}
     missing = required.difference(df.columns)
@@ -96,7 +99,9 @@ def ingest_items_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     df = _read_csv_to_df(file)
     required = {'sku', 'name', 'category', 'unit_cost', 'reorder_level'}
     missing = required.difference(df.columns)
@@ -140,7 +145,9 @@ def ingest_fleet_assets_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     df = _read_csv_to_df(file)
     required = {'vehicle_code', 'driver_name', 'capacity_units'}
     missing = required.difference(df.columns)
@@ -184,7 +191,9 @@ def ingest_inventory_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     df = _read_csv_to_df(file)
     required = {'warehouse_code', 'sku', 'quantity_on_hand'}
     missing = required.difference(df.columns)
@@ -235,7 +244,9 @@ def ingest_orders_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     df = _read_csv_to_df(file)
     required = {'order_date', 'warehouse_code', 'sku', 'quantity'}
     missing = required.difference(df.columns)
@@ -277,6 +288,7 @@ def ingest_orders_csv(
 async def ingest_telematics(
     payload: TelematicsPayload,
     db: Session = Depends(get_db),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
     """Ingest a real-time telematics data point for a fleet asset.
 
@@ -313,6 +325,7 @@ async def ingest_telematics(
 async def ingest_iot_telemetry(
     payload: IoTColdChainPayload,
     db: Session = Depends(get_db),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
     item = db.execute(select(Item).where(Item.sku == payload.sku)).scalar_one_or_none()
 

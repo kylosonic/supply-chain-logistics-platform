@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     provider_key_encryption_secret: str = ''
     cors_origins: list[str] = ['http://localhost:5173']
     allowed_hosts: list[str] = ['localhost', '127.0.0.1', 'testserver']
+    cbe_account_holder: str = ''
+    cbe_account_number: str = ''
+    dashen_account_holder: str = ''
+    dashen_account_number: str = ''
     blocked_public_email_domains: list[str] = [
         'gmail.com',
         'yahoo.com',
