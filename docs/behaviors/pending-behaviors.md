@@ -173,7 +173,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. The workspace remains read-only until the dispute is resolved in the customer's favor.
   4. The admin renders a final decision on the dispute (verify or maintain rejection); the customer is notified in-product of the decision.
 
-### NB-18 — Every verification action creates a permanent audit record
+### NB-18 — Every verification action creates a permanent audit record — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Audit trail, accountability
 - **Acceptance criteria:**
@@ -181,7 +181,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   2. The record contains: timestamp (Addis timezone), admin user ID, invoice number, receipt reference number, sender name as extracted, amount as extracted, expected invoice balance at moment of action, decision, credit delta applied, admin free-text note (mandatory on escalations and on "Verify, do not add to trusted-payer list" one-offs; optional elsewhere).
   3. The audit record is immutable post-write. Reversals (NB-19) create their own audit records rather than mutating original records.
 
-### NB-19 — Silent undo of verifications within 24 hours
+### NB-19 — Silent undo of verifications within 24 hours — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Admin workflow, mistake recovery
 - **Acceptance criteria:**
@@ -190,7 +190,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. No customer notification is sent for an Undo within 24 hours.
   4. After 24 hours pass, the Undo action is no longer visible on the verification record. Only the explicit reversal (NB-20) is available.
 
-### NB-20 — Verified reversal with customer notice after 24 hours
+### NB-20 — Verified reversal with customer notice after 24 hours — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Audit integrity, fraud recovery, customer communication
 - **Acceptance criteria:**
@@ -200,7 +200,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   4. The reversal creates its own audit record, distinct from the original verification (NB-18).
   5. The reversal does not perform a manual bank refund — the refund is handled offline as a separate manual action; the system only adjusts the invoice balance and lock state.
 
-### NB-21 — Fraud-risk sender flag when reversal targets a previously-added trusted sender
+### NB-21 — Fraud-risk sender flag when reversal targets a previously-added trusted sender — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Trusted-payer list, fraud detection
 - **Acceptance criteria:**
@@ -211,8 +211,9 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   5. The admin also retains the option to manually remove the sender from the trusted-payer list entirely or to escalate any future receipt from this sender.
   6. Hard-block of a sender is a separate manual action (outside the scope of automatic reversal logic); a single reversed verification never hard-blocks a sender.
 
-### NB-22 — Verify CBE and Dashen fee schedules before launch (verification gap)
+### NB-22 — Verify CBE and Dashen fee schedules before launch (verification gap) — [HUMAN GAP — VERIFICATION PENDING]
 - **Priority:** P0
+- **Status note:** This is NOT a code ticket — TECH-22 in the tech backlog is marked as a human gate. The ±1,000 ETB tolerance ships configured; production launch is BLOCKED until a human verifies the published CBE/Dashen fee schedules and documents the result in `cashflow-bank-transfer-receipt-verification.md` §12. Procedure recorded in `docs/plans/phase3-audit-reversibility.md` §12.
 - **Feature area:** Tolerance calibration, collections accuracy
 - **Acceptance criteria:**
   1. Before this feature reaches production, the ±1,000 ETB tolerance defined in NB-09 must be verified against the actual published fee schedules of CBE and Dashen Bank for transfers in the 5,000–50,000 ETB range.

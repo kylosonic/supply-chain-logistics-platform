@@ -1,6 +1,6 @@
 # Cashflow & Bank-Transfer Receipt Verification — Living Behaviors
 
-> ⚠️ **NOT YET IMPLEMENTED** — This document describes locked-in product behaviors that are not yet built. Engineering work must be triggered by `@architect` after reviewing the gap tickets in `docs/behaviors/pending-behaviors.md`. Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+> ✅ **IMPLEMENTED** — This feature shipped in Phases 1–3 of the market-contender-v1 batch (TECH-01..21; QA-approved commits `6715f88`, `179eeda`, `fd5b69c`). One open item remains: **NB-22/TECH-22** — a human verification of CBE/Dashen fee schedules vs the ±1,000 ETB tolerance is required before production launch (see §12). Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
 
 ## 1. Why this feature exists
 

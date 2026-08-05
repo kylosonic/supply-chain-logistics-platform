@@ -46,17 +46,21 @@ Source: `docs/behaviors/cashflow-bank-transfer-receipt-verification.md`
 
 **Adjudication notes:** (1) `contact_phone` added to `organizations` (nullable) with no capture UI yet — escalation SMS degrades to `failed/no_phone_on_file` until a phone field ships (candidate Phase 3 work). (2) Extraction is wired with key plumbing + zero-confidence fallback; only the deterministic mock adapter ships (real HTTP adapters later). (3) `services/billing/receipts/` package split per QA blocker: intake.py (309), queue.py (125), verdicts.py (237), disputes.py (121), `__init__.py` (55).
 
-## Phase 3 — Cashflow: Audit Trail, Reversibility & Fraud Controls (P0/P1)
+## Phase 3 — Cashflow: Audit Trail, Reversibility & Fraud Controls (P0/P1) — ✅ COMPLETE
+
+**Status:** Committed `fd5b69c` on `feat/market-contender-v1`. QA APPROVED. Ledger debited 2026-08-05. The cashflow feature is now FULLY SHIPPED (Phases 1–3); the `⚠️ NOT YET IMPLEMENTED` banner is stripped from the behavior doc.
 
 Source: `docs/behaviors/cashflow-bank-transfer-receipt-verification.md`
 
 | TECH | Parent NB | Ticket summary |
 |---|---|---|
-| TECH-18 | NB-18 | Immutable audit record per verification action with full field set; reversals create new records, never mutate originals. |
-| TECH-19 | NB-19 | Silent Undo within 24h: reverses credit, restores balance, re-locks; no customer notice; Undo hidden after 24h. |
-| TECH-20 | NB-20 | Reverse with notice after 24h: mandatory reason note; auto-message to customer; creates distinct audit record; no automatic refund. |
-| TECH-21 | NB-21 | Fraud-risk sender badge on trusted-payer list when reversal targets a previously-added sender; badge persists; never auto-hard-blocks. |
-| TECH-22 | NB-22 | **HUMAN GAP — NOT CODE.** Verify CBE + Dashen published fee schedules (5,000–50,000 ETB range) and confirm the ±1,000 ETB tolerance before production launch. Requires user action; do not build. |
+| ~~TECH-18~~ | NB-18 | ✅ IMPLEMENTED — Every verification action writes exactly one immutable audit record with the full field set (Addis-time rendering, admin user, invoice no., ref no., sender, amount, balance-before, decision, credit delta, mandatory note on escalations/one-offs). Reversals create new records; original records are structurally never mutated (insert-only audit writer). |
+| ~~TECH-19~~ | NB-19 | ✅ IMPLEMENTED — Silent Undo within 24h (server-enforced, exactly-24h boundary eligible): credit reversed, balance restored, invoice re-opened, workspace re-locked via lifecycle refresh; zero customer notifications; Undo hidden past 24h and 409-guarded server-side. |
+| ~~TECH-20~~ | NB-20 | ✅ IMPLEMENTED — Reverse after 24h: mandatory non-blank reason (422); exact NB-20.3 auto-message as in-product Notification (kind `receipt_reversed`, expires +3d, NO SMS); distinct audit record; balance + lock adjusted only — no automatic refund (DEFERRED-01). |
+| ~~TECH-21~~ | NB-21 | ✅ IMPLEMENTED — Fraud-risk badge in new `sender_fraud_flags` table (per-org, normalized sender, UNIQUE); fires on undo AND reverse when the verified audit payload shows `trusted_payer_action='added'`; surfaces on EVERY future queue item for that sender; persists indefinitely incl. after trusted-payer list removal; display-only, never hard-blocks; admin retains verify/escalate/remove discretion. |
+| TECH-22 | NB-22 | ⏳ **HUMAN GAP — OPEN, BLOCKS PRODUCTION LAUNCH ONLY.** Verify CBE + Dashen published fee schedules (5,000–50,000 ETB range) against the ±1,000 ETB tolerance before production; document findings in `cashflow-bank-transfer-receipt-verification.md` §12. Procedure in `docs/plans/phase3-audit-reversibility.md` §12. No code required. |
+
+**Adjudication notes:** (1) Reversed receipts stay `status='verified'` — reversal state lives on `reversal_status`/`reversed_at` columns so the NB-14 partial-unique dedup invariant is never weakened. (2) Wallet interplay is asymmetric by design: `available` wallet rows for the reversed receipt are voided (new `'voided'` status); `applied` rows are never clawed back (NB-20.5 limits system effects to balance + lock). (3) Migration `20260806_0015` branches by dialect (sqlite skips CHECK/FK DDL — SQLAlchemy batch mode emits malformed SQL; models authoritative via `create_all`; Postgres has full DDL). (4) Cross-org admin isolation NOT enforced (inherited Phase 2 pattern; flag for @architect if ever wanted).
 
 ## Phase 4 — Activation: Sample Seeding, Milestones, Progressive Reveal & Free-Cap Lock (P0/P1)
 
