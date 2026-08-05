@@ -1,5 +1,6 @@
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from decimal import Decimal
 
 
 class Settings(BaseSettings):
@@ -29,6 +30,10 @@ class Settings(BaseSettings):
         'proton.me',
         'protonmail.com',
     ]
+    receipt_extraction_mode: str = 'mock'
+    receipt_max_size_bytes: int = 5 * 1024 * 1024
+    wallet_auto_forward_tolerance_etb: Decimal = Decimal('1000.00')
+    sms_brand_name: str = 'FreightPilot'
 
     @property
     def effective_database_url(self) -> str:

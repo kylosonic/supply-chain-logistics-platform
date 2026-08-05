@@ -24,7 +24,7 @@ from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.trial_record import TrialRecord
 from app.models.usage_meter import OrganizationUsageCounter
 from app.services.audit import record_audit_event
-from app.services.billing import pricing
+from app.services.billing import pricing, wallet
 
 _INVOICE_WARNING_EXPIRY_DAYS = 3
 
@@ -139,6 +139,7 @@ def _issue_invoice(
     overage: dict[str, int],
     ordinal: int,
     now: datetime,
+    wallet_credit_etb: Decimal = Decimal('0.00'),
 ) -> SubscriptionInvoice:
     flat = pricing.flat_price_etb(tier)
     account = designate_account(db, org, ordinal)
@@ -188,6 +189,22 @@ def _issue_invoice(
             )
         )
         total = total + amount
+
+    # Wallet credit reduces the TOTAL (and balance), never the flat amount;
+    # carried as a negative line so the math stays legible (decision #8).
+    # Floored at 0; excess wallet stays available and rolls to the next invoice.
+    if wallet_credit_etb > 0:
+        applied = min(wallet_credit_etb, total)
+        invoice.lines.append(
+            InvoiceLineItem(
+                kind='wallet_credit',
+                description='Wallet credit applied',
+                quantity=None,
+                unit_price_etb=None,
+                amount_etb=-applied,
+            )
+        )
+        total = max(Decimal('0.00'), total - applied)
     invoice.total_etb = total
     invoice.balance_remaining_etb = total
     db.add_all(invoice.lines)
@@ -209,6 +226,7 @@ def _issue_invoice(
             'period_end': str(period_end),
             'designated_account': account.bank_code,
             'grace_days': grace_days,
+            'wallet_credit_etb': str(wallet_credit_etb),
         },
     )
     return invoice
@@ -235,7 +253,9 @@ def issue_first_invoice(db: Session, org: Organization, now: datetime) -> Subscr
 
 def issue_next_invoice(db: Session, org: Organization, now: datetime) -> SubscriptionInvoice:
     """Second and every subsequent invoice: 0-day grace (NB-06.2), account
-    rotation continues, overage from the prior paid period."""
+    rotation continues, overage from the prior paid period. Available
+    wallet credits reduce the new total at issuance (blueprint decision #8);
+    rows are marked applied FIFO."""
     last = _latest_invoice(db, org)
     if last is None:
         raise ValueError('No prior invoice; use issue_first_invoice')
@@ -246,7 +266,41 @@ def issue_next_invoice(db: Session, org: Organization, now: datetime) -> Subscri
     ).scalars().all()
     ordinal = len(count) + 1
     overage = _overage_units(db, org, last.tier, last.billing_period_start, last.billing_period_end)
-    return _issue_invoice(db, org, last.tier, start, end, overage, ordinal=ordinal, now=now)
+
+    flat = pricing.flat_price_etb(last.tier)
+    pre_wallet_total = flat
+    for metric, units in overage.items():
+        rate = pricing.overage_rate_etb(last.tier, metric)
+        if rate is None:
+            continue
+        pre_wallet_total = pre_wallet_total + (Decimal(units) * rate).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+
+    available = wallet.available_wallet_credit(db, org)
+    wallet_credit_etb = min(available, pre_wallet_total)
+    invoice = _issue_invoice(
+        db,
+        org,
+        last.tier,
+        start,
+        end,
+        overage,
+        ordinal=ordinal,
+        now=now,
+        wallet_credit_etb=wallet_credit_etb,
+    )
+    applied, _remaining = wallet.apply_available_wallet_credits(db, org, invoice, pre_wallet_total)
+    record_audit_event(
+        db,
+        event_type='billing.wallet_applied',
+        entity_type='subscription_invoice',
+        entity_id=invoice.id,
+        organization_id=org.id,
+        description=f'Wallet credit applied to {invoice.invoice_number}',
+        payload={'invoice_number': invoice.invoice_number, 'wallet_applied_etb': str(applied)},
+    )
+    return invoice
 
 
 def try_issue_invoice(db: Session, org: Organization, now: datetime) -> SubscriptionInvoice | None:

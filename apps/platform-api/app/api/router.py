@@ -16,6 +16,7 @@ from app.api.endpoints import (
     orders,
     planning,
     providers,
+    receipts,
     routes,
     shipments,
     subscriptions,
@@ -44,3 +45,4 @@ api_router.include_router(invoices.router, prefix='/invoices', tags=['invoices']
 api_router.include_router(billing.router, prefix='/billing', tags=['billing'])
 api_router.include_router(notifications.router, prefix='/notifications', tags=['notifications'])
 api_router.include_router(feedback.router, prefix='/feedback', tags=['feedback'])
+api_router.include_router(receipts.router, prefix='/receipts', tags=['receipts'])

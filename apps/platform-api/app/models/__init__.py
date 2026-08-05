@@ -24,3 +24,9 @@ from app.models.invoice_line_item import InvoiceLineItem
 from app.models.notification import Notification
 from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.trial_record import TrialRecord
+from app.models.payment_receipt import PaymentReceipt
+from app.models.receipt_extraction import ReceiptExtraction
+from app.models.wallet_credit import WalletCredit
+from app.models.sms_message import SmsMessage
+from app.models.trusted_payer import TrustedPayer
+from app.models.dispute_thread import DisputeThread

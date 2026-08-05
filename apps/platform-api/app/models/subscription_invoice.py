@@ -15,6 +15,7 @@ from app.models.common import UUIDTimestampMixin
 if TYPE_CHECKING:
     from app.models.collection_account import CollectionAccount
     from app.models.invoice_line_item import InvoiceLineItem
+    from app.models.payment_receipt import PaymentReceipt
 
 
 class SubscriptionInvoice(UUIDTimestampMixin, Base):
@@ -53,3 +54,6 @@ class SubscriptionInvoice(UUIDTimestampMixin, Base):
         back_populates='invoice', cascade='all, delete-orphan', lazy='selectin'
     )
     designated_account: Mapped[CollectionAccount] = relationship(lazy='joined')
+    receipts: Mapped[list[PaymentReceipt]] = relationship(
+        back_populates='invoice', passive_deletes=True
+    )

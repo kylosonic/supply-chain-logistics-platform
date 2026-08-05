@@ -11,6 +11,8 @@ const navItems = [
   { to: '/alerts', label: 'Exceptions', code: 'EX', hint: 'Triage and response' },
   { to: '/planning', label: 'Planning', code: 'PL', hint: 'Replenishment rhythm' },
   { to: '/upload', label: 'Data Intake', code: 'DI', hint: 'CSV onboarding' },
+  { to: '/receipts', label: 'Payments', code: 'PY', hint: 'Receipts and wallet' },
+  { to: '/admin/receipts', label: 'Verification Queue', code: 'VQ', hint: 'Receipt verdicts' },
   { to: '/account', label: 'Workspace', code: 'WS', hint: 'Billing and AI keys' },
   { to: '/providers', label: 'Integrations', code: 'IN', hint: 'Carrier API keys' },
 ];

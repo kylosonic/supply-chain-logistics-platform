@@ -15,6 +15,14 @@ import {
   getRouteOptimizationHistory,
 } from '../services/logisticsApi';
 import { getCurrentUsage } from '../services/billingApi';
+import {
+  getWallet,
+  listReceiptQueue,
+  listReceipts,
+  renderDecision,
+  submitDispute,
+} from '../services/receiptsApi';
+import type { RenderDecisionPayload } from '../services/receiptsApi';
 
 export function useInventoryOverview() {
   return useQuery({
@@ -117,6 +125,51 @@ export function useRouteOptimizationHistory() {
     queryKey: ['routes', 'history'],
     queryFn: getRouteOptimizationHistory,
     staleTime: 30_000,
+  });
+}
+
+export function useReceipts() {
+  return useQuery({
+    queryKey: ['receipts'],
+    queryFn: listReceipts,
+    staleTime: 15_000,
+  });
+}
+
+export function useReceiptQueue() {
+  return useQuery({
+    queryKey: ['receipts', 'queue'],
+    queryFn: listReceiptQueue,
+    staleTime: 10_000,
+  });
+}
+
+export function useWallet() {
+  return useQuery({
+    queryKey: ['receipts', 'wallet'],
+    queryFn: getWallet,
+    staleTime: 15_000,
+  });
+}
+
+export function useRenderDecision() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: RenderDecisionPayload }) =>
+      renderDecision(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['receipts'] });
+    },
+  });
+}
+
+export function useSubmitDispute() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, text }: { id: string; text: string }) => submitDispute(id, text),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['receipts'] });
+    },
   });
 }
 
