@@ -26,7 +26,7 @@ class WalletCredit(UUIDTimestampMixin, Base):
     __tablename__ = 'wallet_credits'
     __table_args__ = (
         CheckConstraint('amount_etb > 0', name='ck_wallet_credit_amount_positive'),
-        CheckConstraint("status IN ('available','applied')", name='ck_wallet_credit_status'),
+        CheckConstraint("status IN ('available','applied','voided')", name='ck_wallet_credit_status'),
         Index('ix_wallet_credits_org_status', 'organization_id', 'status'),
     )
 
@@ -42,5 +42,6 @@ class WalletCredit(UUIDTimestampMixin, Base):
         UUIDType, ForeignKey('subscription_invoices.id', ondelete='SET NULL'), nullable=True
     )
     applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    voided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     applied_to_invoice: Mapped[SubscriptionInvoice | None] = relationship(lazy='joined')

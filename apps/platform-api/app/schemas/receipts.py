@@ -44,6 +44,11 @@ class LargeSurplusDecision(StrEnum):
     PARTIAL_IGNORE = 'partial_ignore'
 
 
+class ReversalStatus(StrEnum):
+    UNDO = 'undo'
+    REVERSED = 'reversed'
+
+
 class ReceiptUploadResponse(BaseModel):
     message: str
     receipt_id: str
@@ -63,6 +68,7 @@ class ReceiptRead(BaseModel):
     rejection_reason: str | None = None
     created_at: datetime
     decided_at: datetime | None = None
+    reversal_status: ReversalStatus | None = None
 
     @field_validator('id', mode='before')
     @classmethod
@@ -96,6 +102,8 @@ class ReceiptQueueItemRead(BaseModel):
     partial_credit_amount_etb: Decimal | None = None
     trusted_payer_action: TrustedPayerAction | None = None
     admin_note: str | None = None
+    sender_has_reversed_credit: bool = False
+    fraud_risk_since: datetime | None = None
     dispute_text: str | None = None
     dispute_status: str | None = None
     file_name: str
@@ -148,3 +156,78 @@ class WalletCreditRead(BaseModel):
 class WalletRead(BaseModel):
     available_etb: Decimal
     credits: list[WalletCreditRead]
+
+
+class UndoRequest(BaseModel):
+    """Silent Undo (NB-19): optional note, max 512 chars."""
+
+    note: str | None = Field(default=None, max_length=512)
+
+
+class ReverseRequest(BaseModel):
+    """Explicit Reverse (NB-20): MANDATORY non-blank reason (NB-20.2)."""
+
+    reason: str = Field(min_length=1, max_length=512)
+
+    @field_validator('reason')
+    @classmethod
+    def _reject_whitespace_only(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError('reverse reason must not be blank')
+        return stripped
+
+
+class ReversalRead(BaseModel):
+    """The admin reversal outcome (message populated on Reverse with the
+    exact NB-20.3 copy)."""
+
+    receipt_id: str
+    invoice_number: str | None = None
+    reference_number: str | None = None
+    amount_etb: Decimal | None = None
+    reversal_status: ReversalStatus
+    reversal_note: str | None = None
+    reversed_at: datetime | None = None
+    restored_balance_etb: Decimal | None = None
+    wallet_voided_etb: Decimal | None = None
+    message: str | None = None
+
+    @field_validator('receipt_id', mode='before')
+    @classmethod
+    def _coerce_id(cls, v):
+        return str(v) if isinstance(v, UUID) else v
+
+
+class VerifiedReceiptAuditRead(BaseModel):
+    """One row of GET /receipts/audit — availability computed SERVER-side
+    (decision #7)."""
+
+    id: str
+    organization_id: str
+    organization_name: str
+    invoice_number: str | None = None
+    reference_number: str | None = None
+    amount_etb: Decimal | None = None
+    sender_name: str | None = None
+    decided_at: datetime | None = None
+    reversal_status: ReversalStatus | None = None
+    undo_available: bool
+    undo_available_until: datetime | None = None
+    reverse_available: bool
+
+    @field_validator('id', 'organization_id', mode='before')
+    @classmethod
+    def _coerce_ids(cls, v):
+        return str(v) if isinstance(v, UUID) else v
+
+
+class ReceiptAuditEventRead(BaseModel):
+    """One audit event of the per-receipt timeline (NB-18.1)."""
+
+    id: str
+    event_type: str
+    description: str
+    created_at: datetime
+    payload: dict | list | None = None
+    available_actions: list[str] = []

@@ -3,18 +3,236 @@ import { useState } from 'react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { useReceiptQueue } from '../hooks/queries';
+import {
+  useReceiptAuditEvents,
+  useReceiptQueue,
+  useRemoveTrustedPayer,
+  useReverseReceipt,
+  useUndoReceipt,
+  useVerifiedAudit,
+} from '../hooks/queries';
 import { getReceiptFileUrl, renderDecision } from '../services/receiptsApi';
-import type { LargeSurplusDecision, ReceiptQueueItem, TrustedPayerAction, Verdict } from '../types/api';
+import type {
+  LargeSurplusDecision,
+  ReceiptQueueItem,
+  TrustedPayerAction,
+  Verdict,
+  VerifiedReceiptAudit,
+} from '../types/api';
 
 const CASH_FLAG = 'Cash deposit — confirm with customer that this was their intended transfer.';
 const LARGE_SURPLUS_FLAG = 'Large surplus — admin manual decision required';
 const LOW_CONFIDENCE_HINT = 'low confidence — please manually verify';
+const REVERSED_CREDIT_CHIP = 'This sender has a reversed credit on file';
 
 function verdictTone(status: ReceiptQueueItem['status']) {
   if (status === 'escalated') return 'warning';
   return 'neutral';
 }
+
+// ---------------------------------------------------------------------------
+// Reversal actions (Undo / Reverse) — server-enforced windows (decision #7)
+// ---------------------------------------------------------------------------
+
+type ReversalActionButtonsProps = {
+  row: VerifiedReceiptAudit;
+  onUndo: (row: VerifiedReceiptAudit, note: string) => void;
+  onReverse: (row: VerifiedReceiptAudit, reason: string) => void;
+};
+
+function ReversalActionButtons({ row, onUndo, onReverse }: ReversalActionButtonsProps) {
+  const [mode, setMode] = useState<'idle' | 'undo' | 'reverse'>('idle');
+  const [text, setText] = useState('');
+
+  if (row.reversal_status) {
+    return (
+      <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        {row.reversal_status}
+      </span>
+    );
+  }
+
+  if (mode === 'idle') {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {row.undo_available ? (
+          <button
+            type="button"
+            onClick={() => setMode('undo')}
+            className="rounded-full border border-teal-400/40 bg-teal-950/30 px-3 py-1.5 text-[11px] font-semibold text-teal-100 transition hover:border-teal-300/60"
+          >
+            Undo (≤24h)
+          </button>
+        ) : null}
+        {row.reverse_available ? (
+          <button
+            type="button"
+            onClick={() => setMode('reverse')}
+            className="rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-1.5 text-[11px] font-semibold text-amber-100 transition hover:border-amber-400/60"
+          >
+            Reverse
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  const isReverse = mode === 'reverse';
+  const canSubmit = isReverse ? text.trim().length > 0 : true;
+
+  function onSubmit() {
+    if (isReverse) {
+      onReverse(row, text.trim());
+    } else {
+      onUndo(row, text.trim());
+    }
+    setMode('idle');
+    setText('');
+  }
+
+  return (
+    <div className="w-full space-y-2">
+      <textarea
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        placeholder={isReverse ? 'Reason (required — shown to the customer)' : 'Note (optional)'}
+        maxLength={512}
+        className="glow-ring min-h-20 w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-amber-400/50"
+      />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={!canSubmit}
+          onClick={onSubmit}
+          className="inline-flex min-h-9 items-center justify-center rounded-full bg-amber-400 px-4 text-xs font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isReverse ? 'Confirm reverse' : 'Confirm undo'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMode('idle');
+            setText('');
+          }}
+          className="inline-flex min-h-9 items-center justify-center rounded-full border border-slate-700 px-4 text-xs font-semibold text-slate-300 transition hover:border-slate-500"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AuditEventsDrawer({ receiptId }: { receiptId: string }) {
+  const { data: events = [] } = useReceiptAuditEvents(receiptId);
+  if (events.length === 0) {
+    return <p className="text-xs text-slate-500">No audit events.</p>;
+  }
+  return (
+    <div className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+      {events.map((event) => (
+        <div
+          key={event.id}
+          className="rounded-[12px] border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-mono font-semibold text-sky-200">{event.event_type}</span>
+            <span className="text-[10px] text-slate-500">
+              {new Date(event.created_at).toLocaleString()}
+            </span>
+          </div>
+          <p className="mt-1 text-slate-400">{event.description}</p>
+          {event.available_actions.length > 0 ? (
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-300">
+              Actions: {event.available_actions.join(', ')}
+            </p>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReversalsPanel({
+  onUndo,
+  onReverse,
+  onError,
+}: {
+  onUndo: (row: VerifiedReceiptAudit, note: string) => void;
+  onReverse: (row: VerifiedReceiptAudit, reason: string) => void;
+  onError: (message: string) => void;
+}) {
+  const { data: rows = [], refetch } = useVerifiedAudit();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  return (
+    <Panel
+      eyebrow="Audit & reversibility"
+      title="Verified & reversible"
+      description="Every verification is permanently auditable. Undo within 24 hours (silent); Reverse after 24 hours (customer notice, mandatory reason). Server-enforced."
+    >
+      {rows.length === 0 ? (
+        <p className="text-sm text-slate-500">No verified receipts.</p>
+      ) : (
+        <div className="grid gap-2">
+          {rows.map((row) => (
+            <div
+              key={row.id}
+              className="rounded-[16px] border border-slate-800 bg-slate-900/70 p-3"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-50">
+                    {row.organization_name} · {row.reference_number ?? 'no ref'} ·{' '}
+                    {row.amount_etb ?? '—'} ETB
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    Invoice {row.invoice_number ?? '—'} · decided{' '}
+                    {row.decided_at ? new Date(row.decided_at).toLocaleString() : '—'}
+                  </p>
+                  {row.undo_available_until && row.undo_available ? (
+                    <p className="mt-0.5 text-[10px] text-teal-300/80">
+                      Undo window closes {new Date(row.undo_available_until).toLocaleString()}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ReversalActionButtons row={row} onUndo={onUndo} onReverse={onReverse} />
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId(expandedId === row.id ? null : row.id)}
+                    className="rounded-full border border-slate-700 px-3 py-1.5 text-[11px] font-semibold text-slate-300 transition hover:border-slate-500"
+                  >
+                    {expandedId === row.id ? 'Hide events' : 'Audit events'}
+                  </button>
+                </div>
+              </div>
+              {expandedId === row.id ? (
+                <div className="mt-3 border-t border-slate-800 pt-2">
+                  <AuditEventsDrawer receiptId={row.id} />
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => {
+          refetch();
+          onError('');
+        }}
+        className="mt-3 rounded-full border border-slate-700 px-4 py-1.5 text-[11px] font-semibold text-slate-300 transition hover:border-slate-500"
+      >
+        Refresh audit
+      </button>
+    </Panel>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Admin queue detail
+// ---------------------------------------------------------------------------
 
 type DetailProps = {
   item: ReceiptQueueItem;
@@ -34,6 +252,8 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
   const [partialAmount, setPartialAmount] = useState('');
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const removeMutation = useRemoveTrustedPayer();
 
   const fieldRows: Array<[string, string | null, number]> = [
     ['sender_name', item.extracted_fields['sender_name'] ?? null, item.confidence['sender_name'] ?? 0],
@@ -81,10 +301,32 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
     }
   }
 
+  async function onRemoveTrustedPayer() {
+    const sender = item.extracted_fields['sender_name'] ?? '';
+    if (!sender || !window.confirm(`Remove "${sender}" from this workspace's trusted-payer list?`)) {
+      return;
+    }
+    setRemoving(true);
+    try {
+      await removeMutation.mutateAsync({ senderName: sender, organizationId: item.organization_id });
+      onError('');
+    } catch (error: unknown) {
+      const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      onError(detail ?? 'Failed to remove trusted payer.');
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       {/* Flags */}
       <div className="flex flex-wrap gap-2">
+        {item.sender_has_reversed_credit ? (
+          <span className="inline-flex items-center rounded-full border border-violet-500/50 bg-violet-950/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-200">
+            {REVERSED_CREDIT_CHIP}
+          </span>
+        ) : null}
         {item.is_new_sender ? (
           <span className="inline-flex items-center rounded-full border border-rose-500/50 bg-rose-950/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-200">
             NEW SENDER
@@ -140,6 +382,29 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
           </div>
         ))}
       </div>
+
+      {/* Fraud badge admin controls — display-only, never blocks (NB-21.4/21.6) */}
+      {item.sender_has_reversed_credit ? (
+        <div className="rounded-[16px] border border-violet-500/30 bg-violet-950/20 p-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
+            {REVERSED_CREDIT_CHIP}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            This badge is informational — you can still verify or escalate this receipt normally.
+            {item.fraud_risk_since
+              ? ` Flagged since ${new Date(item.fraud_risk_since).toLocaleString()}.`
+              : ''}
+          </p>
+          <button
+            type="button"
+            disabled={removing}
+            onClick={onRemoveTrustedPayer}
+            className="mt-2 inline-flex min-h-9 items-center justify-center rounded-full border border-rose-500/40 px-4 text-xs font-semibold text-rose-200 transition hover:border-rose-400/60 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {removing ? 'Removing…' : 'Remove sender from trusted-payer list'}
+          </button>
+        </div>
+      ) : null}
 
       {/* File preview */}
       <div className="rounded-[16px] border border-slate-800 bg-slate-900/70 p-3">
@@ -254,8 +519,15 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export function AdminReceiptsPage() {
   const { data: queue = [], refetch } = useReceiptQueue();
+  const { refetch: refetchAudit } = useVerifiedAudit();
+  const undoMutation = useUndoReceipt();
+  const reverseMutation = useReverseReceipt();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -266,7 +538,31 @@ export function AdminReceiptsPage() {
     setMessage('Decision rendered.');
     setError(null);
     setSelectedId(null);
-    await refetch();
+    await Promise.all([refetch(), refetchAudit()]);
+  }
+
+  async function onUndo(row: VerifiedReceiptAudit, note: string) {
+    setError(null);
+    try {
+      await undoMutation.mutateAsync({ id: row.id, note: note || null });
+      setMessage(`Undo applied to ${row.reference_number ?? row.id} — balance restored, no customer notice.`);
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(detail ?? 'Undo failed.');
+    }
+  }
+
+  async function onReverse(row: VerifiedReceiptAudit, reason: string) {
+    setError(null);
+    try {
+      const result = await reverseMutation.mutateAsync({ id: row.id, reason });
+      setMessage(
+        result.message ?? `Reversal applied to ${row.reference_number ?? row.id} — customer notified.`,
+      );
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(detail ?? 'Reverse failed.');
+    }
   }
 
   return (
@@ -287,6 +583,8 @@ export function AdminReceiptsPage() {
           <p className="text-sm text-rose-100">{error}</p>
         </Panel>
       ) : null}
+
+      <ReversalsPanel onUndo={onUndo} onReverse={onReverse} onError={setError} />
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel eyebrow="Queue" title="Pending and escalated" description="Oldest first — receipts from every workspace.">
@@ -312,6 +610,11 @@ export function AdminReceiptsPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge label={item.status} tone={verdictTone(item.status)} />
+                      {item.sender_has_reversed_credit ? (
+                        <span className="rounded-full border border-violet-500/50 bg-violet-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-200">
+                          {REVERSED_CREDIT_CHIP}
+                        </span>
+                      ) : null}
                       {item.is_new_sender ? (
                         <span className="rounded-full border border-rose-500/50 bg-rose-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-200">
                           NEW SENDER

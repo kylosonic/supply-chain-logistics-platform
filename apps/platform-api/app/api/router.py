@@ -17,6 +17,7 @@ from app.api.endpoints import (
     planning,
     providers,
     receipts,
+    receipt_reversals,
     routes,
     shipments,
     subscriptions,
@@ -46,3 +47,6 @@ api_router.include_router(billing.router, prefix='/billing', tags=['billing'])
 api_router.include_router(notifications.router, prefix='/notifications', tags=['notifications'])
 api_router.include_router(feedback.router, prefix='/feedback', tags=['feedback'])
 api_router.include_router(receipts.router, prefix='/receipts', tags=['receipts'])
+# Reversals must register AFTER receipts so the static suffixes
+# (/audit, /trusted-payers) are never shadowed by a {receipt_id} pattern.
+api_router.include_router(receipt_reversals.router, prefix='/receipts', tags=['receipts'])

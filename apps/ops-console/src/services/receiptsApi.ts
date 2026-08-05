@@ -2,9 +2,12 @@ import { api } from './api';
 import type {
   LargeSurplusDecision,
   Receipt,
+  ReceiptAuditEvent,
   ReceiptQueueItem,
+  ReversalRead,
   TrustedPayerAction,
   Verdict,
+  VerifiedReceiptAudit,
   WalletSummary,
 } from '../types/api';
 
@@ -64,5 +67,36 @@ export async function renderDecision(id: string, payload: RenderDecisionPayload)
 
 export async function submitDispute(id: string, text: string): Promise<Receipt> {
   const { data } = await api.post<Receipt>(`/receipts/${id}/dispute`, { text });
+  return data;
+}
+
+export async function listVerifiedAudit(): Promise<VerifiedReceiptAudit[]> {
+  const { data } = await api.get<VerifiedReceiptAudit[]>('/receipts/audit');
+  return data;
+}
+
+export async function getReceiptAuditEvents(id: string): Promise<ReceiptAuditEvent[]> {
+  const { data } = await api.get<ReceiptAuditEvent[]>(`/receipts/${id}/audit-events`);
+  return data;
+}
+
+export async function undoReceipt(id: string, note?: string | null): Promise<ReversalRead> {
+  const { data } = await api.post<ReversalRead>(`/receipts/${id}/undo`, { note: note ?? null });
+  return data;
+}
+
+export async function reverseReceipt(id: string, reason: string): Promise<ReversalRead> {
+  const { data } = await api.post<ReversalRead>(`/receipts/${id}/reverse`, { reason });
+  return data;
+}
+
+export async function removeTrustedPayer(
+  senderName: string,
+  organizationId: string,
+): Promise<{ removed: boolean }> {
+  const { data } = await api.delete<{ removed: boolean }>(
+    `/receipts/trusted-payers/${encodeURIComponent(senderName)}`,
+    { params: { organization_id: organizationId } },
+  );
   return data;
 }

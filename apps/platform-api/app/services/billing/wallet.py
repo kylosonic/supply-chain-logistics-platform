@@ -18,6 +18,7 @@ from app.models.organization import Organization
 from app.models.payment_receipt import PaymentReceipt
 from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.wallet_credit import WalletCredit
+from app.services.audit import record_audit_event
 
 _WALLET_NOTIFICATION_EXPIRY_DAYS = 3
 
@@ -102,6 +103,46 @@ def apply_available_wallet_credits(
     # follow-up queries see the applied state (autoflush is off).
     db.flush()
     return _q(applied), available_wallet_credit(db, org)
+
+
+def void_wallet_credits_for_receipt(
+    db: Session, org: Organization, receipt: PaymentReceipt, reversal_kind: str = 'undo'
+) -> Decimal:
+    """Void every AVAILABLE wallet credit for the receipt (decision #5).
+
+    Deliberate asymmetry: rows already ``applied`` to a later invoice are
+    LEFT UNTOUCHED — unwinding a consumed credit would mutate a different
+    invoice than the reversed one (NB-20.5 limits reversal effects to the
+    reversed invoice's balance and the lock state). ``available_wallet_credit``
+    recomputes correctly because it filters ``status == 'available'``, and
+    the customer wallet list surfaces the voided rows with their status.
+    Audits ``wallet.voided``; returns the voided total.
+    """
+    rows = db.execute(
+        select(WalletCredit).where(
+            WalletCredit.organization_id == org.id,
+            WalletCredit.receipt_id == receipt.id,
+            WalletCredit.status == 'available',
+        )
+    ).scalars().all()
+    total = Decimal('0.00')
+    for row in rows:
+        row.status = 'voided'
+        row.voided_at = datetime.now(UTC)
+        db.add(row)
+        total += row.amount_etb
+    total = _q(total)
+    if rows:
+        record_audit_event(
+            db,
+            event_type='wallet.voided',
+            entity_type='payment_receipt',
+            entity_id=receipt.id,
+            organization_id=org.id,
+            description=f'Voided {len(rows)} available wallet credit(s) for receipt {receipt.reference_number or receipt.id}',
+            payload={'receipt_id': str(receipt.id), 'amount_etb': str(total), 'reversal_kind': reversal_kind},
+        )
+    return total
 
 
 def _wallet_notification(db: Session, org: Organization, amount_etb: Decimal) -> Notification:

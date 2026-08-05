@@ -27,3 +27,4 @@ from app.services.billing import receipt_extraction as receipt_extraction  # noq
 from app.services.billing import trusted_payers as trusted_payers  # noqa: F401
 from app.services.billing import sms as sms  # noqa: F401
 from app.services.billing import receipts as receipts  # noqa: F401
+from app.services.billing import reversals as reversals  # noqa: F401

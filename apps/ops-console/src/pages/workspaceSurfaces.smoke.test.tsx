@@ -95,4 +95,31 @@ describe('ops console surface smoke', () => {
     expect(html).toContain('Receipt verdicts');
     expect(html).toContain('No receipts awaiting a verdict.');
   });
+
+  it('renders the admin reversals panel (Verified & reversible)', () => {
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/admin/receipts">
+          <AdminReceiptsPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    // React SSR escapes the ampersand in the panel title.
+    expect(html).toContain('Verified &amp; reversible');
+    expect(html).toContain('No verified receipts.');
+  });
+
+  it('renders the queue without the fraud badge chip when no flag is present', () => {
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/admin/receipts">
+          <AdminReceiptsPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    // The mocked api returns an empty queue — no sender flag can be present.
+    expect(html).not.toContain('reversed credit on file');
+  });
 });

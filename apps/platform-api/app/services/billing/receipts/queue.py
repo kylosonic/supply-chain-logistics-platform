@@ -23,6 +23,7 @@ from app.services.billing.receipt_extraction import (
     ZERO_CONFIDENCE_WARNING,
 )
 from app.services.billing.receipts.intake import recommended_verdict
+from app.services.billing.reversals import fraud_flags
 
 
 def list_customer_receipts(db: Session, org: Organization) -> list[PaymentReceipt]:
@@ -31,6 +32,18 @@ def list_customer_receipts(db: Session, org: Organization) -> list[PaymentReceip
             select(PaymentReceipt)
             .where(PaymentReceipt.organization_id == org.id)
             .order_by(PaymentReceipt.created_at.desc())
+        ).scalars()
+    )
+
+
+def list_verified(db: Session) -> list[PaymentReceipt]:
+    """All verified receipts, newest decision first — the reversal audit
+    surface (GET /receipts/audit)."""
+    return list(
+        db.execute(
+            select(PaymentReceipt)
+            .where(PaymentReceipt.status == 'verified')
+            .order_by(PaymentReceipt.decided_at.desc())
         ).scalars()
     )
 
@@ -79,6 +92,10 @@ def queue_item_payload(db: Session, receipt: PaymentReceipt) -> dict:
     ).scalar_one_or_none()
     invoice = receipt.invoice
 
+    # NB-21.2 fraud-risk badge: ONE indexed lookup per item against
+    # sender_fraud_flags (blueprint risk #6) — display-only, never gates.
+    flag = fraud_flags.fraud_flag_read(db, receipt.organization_id, receipt.sender_name)
+
     return {
         'id': receipt.id,
         'organization_id': receipt.organization_id,
@@ -103,6 +120,8 @@ def queue_item_payload(db: Session, receipt: PaymentReceipt) -> dict:
         'partial_credit_amount_etb': receipt.partial_credit_amount_etb,
         'trusted_payer_action': receipt.trusted_payer_action,
         'admin_note': receipt.admin_note,
+        'sender_has_reversed_credit': flag is not None,
+        'fraud_risk_since': flag.fraud_risk_since if flag is not None else None,
         'dispute_text': thread.dispute_text if thread else None,
         'dispute_status': thread.status if thread else None,
         'file_name': receipt.file_name,

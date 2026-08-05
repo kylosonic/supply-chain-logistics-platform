@@ -41,10 +41,25 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
         </div>
       </div>
 
-      {receipt.status === 'verified' ? (
+      {receipt.reversal_status ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <StatusBadge label={receipt.reversal_status} tone={receipt.reversal_status === 'reversed' ? 'danger' : 'neutral'} />
+        </div>
+      ) : null}
+
+      {receipt.status === 'verified' && !receipt.reversal_status ? (
         <p className="mt-3 text-sm text-emerald-200">
           {receipt.invoice_number ? `Invoice #${receipt.invoice_number} paid. Your workspace is unlocked.` : 'Receipt verified.'}
         </p>
+      ) : null}
+
+      {receipt.reversal_status === 'reversed' ? (
+        <div className="mt-3 rounded-[16px] border border-rose-500/30 bg-rose-950/20 p-3">
+          <p className="text-sm text-rose-100">
+            This payment was reversed — the credited amount was restored to your invoice balance. See
+            your notifications for the full message.
+          </p>
+        </div>
       ) : null}
 
       {receipt.status === 'rejected' && receipt.rejection_reason ? (

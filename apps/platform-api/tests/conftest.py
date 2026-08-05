@@ -16,9 +16,11 @@ import app.models  # noqa: F401
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
+from app.models.audit_event import AuditEvent
 from app.models.collection_account import CollectionAccount
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization
+from app.models.payment_receipt import PaymentReceipt
 from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.trial_record import TrialRecord
 from app.models.user import User
@@ -313,5 +315,113 @@ def make_admin_membership(db_session: Session):
         db_session.commit()
         db_session.refresh(membership)
         return membership
+
+    return _make
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 reversal fixtures (blueprint §10.1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def verify_receipt(client: TestClient, db_session: Session):
+    """Upload -> queue lookup -> verify decision (blueprint §10.1).
+
+    Returns ``(receipt_id, invoice)``. The caller's token must be an
+    OWNER/ADMIN of the org (the company-signup owner token works).
+    """
+
+    def _verify(
+        token: str,
+        ref: str,
+        *,
+        amount: str = '4520.00',
+        sender: str = 'Mulugeta Tesfaye',
+        trusted_payer_action: str = 'verified_once',
+        **decision_extra,
+    ) -> tuple[str, SubscriptionInvoice]:
+        payload = mock_extraction_payload(
+            fields={
+                'sender_name': sender,
+                'sender_account_number': '1000123456',
+                'receiver_account_number': '1000134567890',
+                'receiver_name': 'FreightPilot PLC',
+                'transfer_amount': amount,
+                'transfer_date': '2026-08-01',
+                'reference_number': ref,
+                'bank_identifier': 'cbe',
+            }
+        )
+        resp = client.post(
+            '/api/v1/receipts/upload',
+            headers={'Authorization': f'Bearer {token}'},
+            files={'file': ('receipt.png', sample_receipt_bytes(), 'image/png')},
+            data={'mock_extraction': json.dumps(payload)},
+        )
+        assert resp.status_code == 200, resp.text
+        rows = client.get('/api/v1/receipts/queue', headers={'Authorization': f'Bearer {token}'}).json()
+        receipt_id = next(
+            item['id'] for item in rows if item['extracted_fields']['reference_number'] == ref
+        )
+        body = {'verdict': 'verify', 'trusted_payer_action': trusted_payer_action, **decision_extra}
+        resp = client.post(
+            f'/api/v1/receipts/{receipt_id}/decision',
+            headers={'Authorization': f'Bearer {token}'},
+            json=body,
+        )
+        assert resp.status_code == 200, resp.text
+        receipt = db_session.get(PaymentReceipt, receipt_id)
+        invoice = db_session.get(SubscriptionInvoice, receipt.invoice_id) if receipt.invoice_id else None
+        return receipt_id, invoice
+
+    return _verify
+
+
+@pytest.fixture()
+def force_window(db_session: Session):
+    """Rewind/advance ``decided_at`` (and the verified audit event's
+    ``created_at`` where the payload copy is read) for deterministic
+    window tests (blueprint §10.1). ``hours`` = age of the decision:
+    24.0 = exactly the boundary, > 24 = past the Undo window."""
+
+    def _force(receipt_id: str, hours: float) -> None:
+        receipt = db_session.get(PaymentReceipt, receipt_id)
+        assert receipt is not None
+        receipt.decided_at = datetime.now(UTC) - timedelta(hours=hours)
+        event = db_session.execute(
+            select(AuditEvent).where(
+                AuditEvent.event_type == 'receipts.verified',
+                AuditEvent.entity_id == str(receipt_id),
+            )
+        ).scalars().first()
+        if event is not None:
+            event.created_at = datetime.now(UTC) - timedelta(hours=hours)
+        db_session.commit()
+
+    return _force
+
+
+@pytest.fixture()
+def make_verified_with_surplus(
+    client: TestClient, db_session: Session, make_paid_org_with_open_invoice, verify_receipt
+):
+    """Verify with ``amount > balance`` (auto-forward, NB-09) so an
+    ``available`` WalletCredit row exists for wallet-interplay tests
+    (blueprint §10.1). Returns ``(org, invoice, token, receipt_id)``."""
+
+    def _make(
+        *,
+        balance_etb: Decimal | int = Decimal('4520.00'),
+        amount: str = '5000.00',
+        ref: str = 'TXN-SUR1',
+        sender: str = 'Mulugeta Tesfaye',
+    ) -> tuple[Organization, SubscriptionInvoice, str, str]:
+        org, invoice, token = make_paid_org_with_open_invoice(balance_etb=balance_etb)
+        receipt_id, _invoice = verify_receipt(
+            token, ref, amount=amount, sender=sender, trusted_payer_action='verified_once'
+        )
+        db_session.refresh(invoice)
+        return org, invoice, token, receipt_id
 
     return _make

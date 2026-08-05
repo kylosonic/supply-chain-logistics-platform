@@ -16,11 +16,16 @@ import {
 } from '../services/logisticsApi';
 import { getCurrentUsage } from '../services/billingApi';
 import {
+  getReceiptAuditEvents,
   getWallet,
   listReceiptQueue,
   listReceipts,
+  listVerifiedAudit,
+  removeTrustedPayer,
   renderDecision,
+  reverseReceipt,
   submitDispute,
+  undoReceipt,
 } from '../services/receiptsApi';
 import type { RenderDecisionPayload } from '../services/receiptsApi';
 
@@ -169,6 +174,63 @@ export function useSubmitDispute() {
     mutationFn: ({ id, text }: { id: string; text: string }) => submitDispute(id, text),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['receipts'] });
+    },
+  });
+}
+
+export function useVerifiedAudit() {
+  return useQuery({
+    queryKey: ['receipts', 'audit'],
+    queryFn: listVerifiedAudit,
+    staleTime: 15_000,
+  });
+}
+
+export function useReceiptAuditEvents(id: string | null) {
+  return useQuery({
+    queryKey: ['receipts', 'audit-events', id],
+    queryFn: () => getReceiptAuditEvents(id as string),
+    enabled: Boolean(id),
+    staleTime: 15_000,
+  });
+}
+
+function invalidateReversalSurfaces(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['receipts'] });
+  queryClient.invalidateQueries({ queryKey: ['receipts', 'queue'] });
+  queryClient.invalidateQueries({ queryKey: ['receipts', 'audit'] });
+  queryClient.invalidateQueries({ queryKey: ['receipts', 'audit-events'] });
+  queryClient.invalidateQueries({ queryKey: ['ops', 'audit-timeline'] });
+}
+
+export function useUndoReceipt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note?: string | null }) => undoReceipt(id, note),
+    onSuccess: () => {
+      invalidateReversalSurfaces(queryClient);
+    },
+  });
+}
+
+export function useReverseReceipt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => reverseReceipt(id, reason),
+    onSuccess: () => {
+      invalidateReversalSurfaces(queryClient);
+    },
+  });
+}
+
+export function useRemoveTrustedPayer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ senderName, organizationId }: { senderName: string; organizationId: string }) =>
+      removeTrustedPayer(senderName, organizationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['receipts', 'queue'] });
+      queryClient.invalidateQueries({ queryKey: ['receipts', 'audit'] });
     },
   });
 }

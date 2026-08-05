@@ -58,6 +58,10 @@ class PaymentReceipt(UUIDTimestampMixin, Base):
             'OR large_surplus_decision IS NULL',
             name='ck_payment_receipt_large_surplus_decision',
         ),
+        CheckConstraint(
+            "reversal_status IN ('undo','reversed') OR reversal_status IS NULL",
+            name='ck_payment_receipt_reversal_status',
+        ),
         Index('ix_payment_receipts_org_status', 'organization_id', 'status'),
         Index('ix_payment_receipts_status_created', 'status', 'created_at'),
         Index(
@@ -102,6 +106,15 @@ class PaymentReceipt(UUIDTimestampMixin, Base):
     large_surplus_decision: Mapped[str | None] = mapped_column(String(24), nullable=True)
     partial_credit_amount_etb: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     surplus_etb: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+
+    # Reversal layer (decision #2): the receipt NEVER leaves status='verified';
+    # these columns carry the correction. One reversal per receipt, ever.
+    reversal_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    reversal_note: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    reversed_by_user_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
+    reversed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     is_new_sender: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_cash_sender: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

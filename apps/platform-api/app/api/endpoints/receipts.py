@@ -60,6 +60,7 @@ def _receipt_read(receipt) -> ReceiptRead:
         rejection_reason=receipt.rejection_reason,
         created_at=receipt.created_at,
         decided_at=receipt.decided_at,
+        reversal_status=receipt.reversal_status,
     )
 
 

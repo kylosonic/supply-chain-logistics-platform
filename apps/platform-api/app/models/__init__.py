@@ -30,3 +30,4 @@ from app.models.wallet_credit import WalletCredit
 from app.models.sms_message import SmsMessage
 from app.models.trusted_payer import TrustedPayer
 from app.models.dispute_thread import DisputeThread
+from app.models.sender_fraud_flag import SenderFraudFlag
