@@ -17,9 +17,11 @@ from app.main import app
 ALLOWED_ORIGINS = {
     'http://localhost',
     'http://localhost:5173',  # ops-console dev (must not regress)
-    'http://localhost:3000',  # product-web dev (Next.js)
+    'http://localhost:3000',  # product-web dev (Next.js, default port)
+    'http://localhost:5174',  # product-web dev (next dev -p 5174 — the real script port)
     'http://localhost:8081',  # product-web via docker compose
     'http://127.0.0.1:3000',
+    'http://127.0.0.1:5174',
     'http://127.0.0.1:8081',
 }
 
@@ -62,6 +64,36 @@ def test_preflight_allows_product_web_compose_origin():
         )
         assert resp.status_code == 200
         assert resp.headers.get('access-control-allow-origin') == 'http://localhost:8081'
+
+
+def test_preflight_allows_product_web_local_dev_origin_5174():
+    """Regression: product-web's real dev port is 5174 (package.json
+    ``next dev -p 5174``), NOT Next's default 3000. The hotfix allowed
+    :3000/:8081 but missed :5174, so local `npm run dev` signup kept
+    hitting the network-failure fallback (preflight blocked -> fetch throws)."""
+    with TestClient(app) as client:
+        resp = client.options(
+            '/api/v1/auth/company-signup',
+            headers={
+                'Origin': 'http://localhost:5174',
+                'Access-Control-Request-Method': 'POST',
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.headers.get('access-control-allow-origin') == 'http://localhost:5174'
+
+
+def test_preflight_allows_product_web_local_dev_origin_127_0_0_1_5174():
+    with TestClient(app) as client:
+        resp = client.options(
+            '/api/v1/auth/company-signup',
+            headers={
+                'Origin': 'http://127.0.0.1:5174',
+                'Access-Control-Request-Method': 'POST',
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.headers.get('access-control-allow-origin') == 'http://127.0.0.1:5174'
 
 
 def test_preflight_still_allows_ops_console_dev_origin():
