@@ -185,6 +185,7 @@ export type CurrentSubscription = {
   status: 'trialing' | 'active' | 'past_due' | 'canceled';
   preferred_ai_provider: string | null;
   preferred_ai_key_id: string | null;
+  contact_phone: string | null;
   updated_at: string | null;
 };
 

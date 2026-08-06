@@ -3,6 +3,8 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
+import re
+
 from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.auth import SubscriptionStatus, SubscriptionTier
@@ -28,6 +30,24 @@ class SelectTierRequest(BaseModel):
     tier: SubscriptionTier
 
 
+class UpdateContactPhoneRequest(BaseModel):
+    """Escalation SMS contact phone (PROD-03). Normalized on input:
+    spaces/dashes/parens stripped; 9-15 digits with an optional leading
+    ``+`` are required (returned in normalized form)."""
+
+    contact_phone: str
+
+    @field_validator('contact_phone')
+    @classmethod
+    def normalize_contact_phone(cls, v: str) -> str:
+        cleaned = v.strip()
+        for ch in (' ', '-', '(', ')'):
+            cleaned = cleaned.replace(ch, '')
+        if not cleaned or re.fullmatch(r'\+?\d{9,15}', cleaned) is None:
+            raise ValueError('contact_phone must be 9-15 digits with an optional leading +')
+        return cleaned
+
+
 class SubscriptionRead(BaseModel):
     organization_id: str
     organization_name: str
@@ -35,6 +55,7 @@ class SubscriptionRead(BaseModel):
     status: SubscriptionStatus
     preferred_ai_provider: str | None = None
     preferred_ai_key_id: str | None = None
+    contact_phone: str | None = None
     updated_at: datetime | None
     billing_phase: WorkspacePhase | None = None
     trial_ends_at: datetime | None = None

@@ -307,6 +307,7 @@ def _subscription_read(db: Session, org: Organization) -> SubscriptionRead:
         status=SubscriptionStatus(org.subscription_status),
         preferred_ai_provider=org.preferred_ai_provider,
         preferred_ai_key_id=org.preferred_ai_key_id,
+        contact_phone=org.contact_phone,
         updated_at=org.updated_at,
         billing_phase=WorkspacePhase(org.billing_phase) if org.billing_phase else None,
         trial_ends_at=org.trial_ends_at,

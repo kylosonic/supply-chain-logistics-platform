@@ -16,6 +16,7 @@ COPY alembic.ini ./
 COPY alembic ./alembic
 COPY app ./app
 COPY scripts ./scripts
+COPY sample-data ./sample-data
 
 FROM python:3.12-slim AS runtime
 
@@ -32,6 +33,7 @@ COPY --from=builder /app/alembic.ini ./
 COPY --from=builder /app/alembic ./alembic
 COPY --from=builder /app/app ./app
 COPY --from=builder /app/pyproject.toml ./
+COPY --from=builder /app/sample-data ./sample-data
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \

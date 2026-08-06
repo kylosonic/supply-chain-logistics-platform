@@ -17,7 +17,7 @@ Full-stack logistics platform with an operations console, API backend, and a pro
 - `apps/ops-console` React + Tailwind operations frontend (Vite + TypeScript)
 - `apps/product-web` Next.js + React + Tailwind product website
 - `apps/desktop` Electron shell for desktop distribution
-- `sample-data` CSV demo datasets for warehouses, items, inventory, and orders
+- `apps/platform-api/sample-data` CSV demo datasets for warehouses, items, fleet assets, inventory, and orders (baked into the API image at build time; seeding resolves via `SAMPLE_DATA_DIR`)
 - `scripts` backup and restore scripts for PostgreSQL
 - `docs` architecture and roadmap documentation
 
@@ -251,7 +251,7 @@ npm run test
 
 ## Seed and demo data
 
-CSV examples live in `sample-data`.
+CSV examples live in `apps/platform-api/sample-data`.
 
 ```bash
 cd apps/platform-api
@@ -269,7 +269,7 @@ Default seeded user emails:
 - `viewer@testco.com`
 
 Extra onboarding sample:
-- `sample-data/fleet_assets.csv`
+- `apps/platform-api/sample-data/fleet_assets.csv`
 
 ## Roadmap for desktop B2B SaaS
 

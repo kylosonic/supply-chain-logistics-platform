@@ -18,6 +18,7 @@ import {
   selectTier,
   setProviderPreference,
   testProviderKey,
+  updateContactPhone,
 } from '../services/billingApi';
 import { getAuditTimeline } from '../services/logisticsApi';
 import { includedTasksLabel, overageRateLabel, usageMetricLabel, usageProgressPercent } from './accountUsageUtils';
@@ -47,8 +48,9 @@ export function AccountPage() {
   const [keyName, setKeyName] = useState('primary');
   const [apiKey, setApiKey] = useState('');
   const [preferredKeyId, setPreferredKeyId] = useState<string>('');
+  const [contactPhone, setContactPhone] = useState<string>('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const currentTier = subscription?.tier;
 
@@ -95,6 +97,10 @@ export function AccountPage() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    setContactPhone(subscription?.contact_phone ?? '');
+  }, [subscription]);
 
   async function onSelectTier(tier: SubscriptionTier) {
     setStatusMessage(null);
@@ -163,6 +169,17 @@ export function AccountPage() {
       setUsage(usageData);
     } catch {
       setStatusMessage('Failed to refresh usage data.');
+    }
+  }
+
+  async function onSaveContactPhone() {
+    setStatusMessage(null);
+    try {
+      const updated = await updateContactPhone(contactPhone);
+      setSubscription(updated);
+      setStatusMessage('Escalation contact phone saved.');
+    } catch {
+      setStatusMessage('Failed to save escalation contact phone.');
     }
   }
 
@@ -316,6 +333,37 @@ export function AccountPage() {
                 </button>
               </div>
             ))}
+          </div>
+        </Panel>
+
+        <Panel
+          eyebrow="Escalation contact"
+          title="Escalation SMS phone"
+          description="Receipt escalations are sent to this number. The workspace can be locked exactly when escalation matters — owners and admins can update it anytime."
+        >
+          <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+            <label htmlFor="contactPhone" className="text-sm font-semibold text-slate-100">
+              Contact phone
+            </label>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <input
+                id="contactPhone"
+                value={contactPhone}
+                onChange={(event) => setContactPhone(event.target.value)}
+                className={`${fieldClassName} min-w-[240px]`}
+                placeholder="Escalation phone"
+              />
+              <button
+                type="button"
+                onClick={onSaveContactPhone}
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+              >
+                Save phone number
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Current: {subscription?.contact_phone ?? 'Not set'}
+            </p>
           </div>
         </Panel>
 
