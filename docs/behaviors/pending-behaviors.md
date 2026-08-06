@@ -363,7 +363,7 @@ Source behavior doc: [`operator-activation-and-milestone-tracking.md`](./operato
 
 Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.md)
 
-### NB-36 — Home page hero copy and single "Start free" CTA
+### NB-36 — Home page hero copy and single "Start free" CTA — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Home page conversion, primary CTA
 - **Acceptance criteria:**
@@ -373,7 +373,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   4. The hero does not display a secondary CTA, a "See pricing" button, a "Book a demo" button, a "Download desktop" button, or any urgency / scarcity language.
   5. The "Start free" button navigates to the existing company-signup form on `/launch`.
 
-### NB-37 — Home page section structure (exactly five sections)
+### NB-37 — Home page section structure (exactly five sections) — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Home page layout
 - **Acceptance criteria:**
@@ -383,7 +383,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   4. The home page does not force the visitor to navigate to other routes (`/platform`, `/technology`, `/pricing`, `/launch`, `/contact`) — those remain accessible only from the top nav.
   5. All five sections are reachable by single vertical scroll from top to bottom.
 
-### NB-38 — "How it works" section collapsed by default with exactly three steps
+### NB-38 — "How it works" section collapsed by default with exactly three steps — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Home page "how it works" expansion behavior
 - **Acceptance criteria:**
@@ -396,7 +396,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   4. The section contains no images, videos, GIFs, or product-screenshot carousels. Text and line icons only.
   5. The expanded state can be collapsed back to the default state by the same affordance used to expand it.
 
-### NB-39 — Pricing summary: 3 paid tiers + Free line below, no "Most Popular" badge, no "Contact sales"
+### NB-39 — Pricing summary: 3 paid tiers + Free line below, no "Most Popular" badge, no "Contact sales" — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Home page pricing surface
 - **Acceptance criteria:**
@@ -408,7 +408,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   6. The Enterprise row does not display a "Contact sales" CTA — the price is shown directly.
   7. Below the table and the Free line, the partial-payment + wallet-credit story surfaces verbatim: "Partial payments welcome. Pay what your cash flow allows — send the receipt for each transfer, and your workspace unlocks when the full balance clears. If you overpay within 1,000 ETB, the surplus applies as credit to your next invoice."
 
-### NB-40 — Trust strip between pricing and final CTA
+### NB-40 — Trust strip between pricing and final CTA — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Home page conversion reassurance
 - **Acceptance criteria:**
@@ -416,7 +416,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   2. The trust strip does not link anywhere — it is text only, no anchor tags, no buttons.
   3. The trust strip is single-line on desktop and wraps cleanly on mobile to no more than 3 lines.
 
-### NB-41 — Final CTA: single "Start free" button
+### NB-41 — Final CTA: single "Start free" button — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Home page closing CTA
 - **Acceptance criteria:**
@@ -426,7 +426,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   4. The footer below the final CTA is the site chrome footer (existing component), not an additional CTA surface.
   5. On click, the button navigates to the existing `/launch` signup form.
 
-### NB-42 — Page weight budget: under 1.2 MB total, under 3 seconds on 3G
+### NB-42 — Page weight budget: under 1.2 MB total, under 3 seconds on 3G — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Site performance, Ethiopian mobile connection reality
 - **Acceptance criteria:**
@@ -439,7 +439,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   7. Third-party analytics scripts load with `defer` or via next/script `strategy="lazyOnload"`. No synchronous third-party scripts in `<head>`.
   8. The expanded "How it works" section contains no images (per NB-38 criterion 4).
 
-### NB-43 — No fabricated social proof anywhere on the site
+### NB-43 — No fabricated social proof anywhere on the site — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Honesty in marketing copy
 - **Acceptance criteria:**
@@ -449,7 +449,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   4. No page displays a "Compare us to competitors" style table that invents competitor weaknesses or invents FreightPilot advantages not backed by real product behavior.
   5. The trust signals the site uses are limited to: (a) the bank-transfer-to-CBE/Dashen story (verifiable, per cashflow NB-02), (b) the sample-data-seeded-on-signup story (verifiable, per activation NB-25), (c) the no-card-required story (verifiable, per cashflow §6.1), and (d) the partial-payment-welcome story (verifiable, per cashflow NB-08 / NB-24).
 
-### NB-44 — No "free trial" language for signup path
+### NB-44 — No "free trial" language for signup path — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Copy precision, expectation honesty
 - **Acceptance criteria:**
@@ -459,7 +459,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   4. The signup form on `/launch` does not promise a "free trial" — it communicates "Start free, no card required" or equivalent honest language.
   5. No email confirmation or post-signup in-product copy (in the ops console) references "free trial" for the Free tier signup path. The 7-day trial language is reserved exclusively for the in-console upgrade pitch (per activation NB-32 / NB-33).
 
-### NB-45 — Existing site components audited against page weight budget
+### NB-45 — Existing site components audited against page weight budget — [IMPLEMENTED]
 - **Priority:** P0
 - **Feature area:** Codebase audit, v1 launch readiness
 - **Acceptance criteria:**
@@ -468,7 +468,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   3. The audit findings are documented as a checklist in the implementation PR description, with each home page render-path component marked "OK" or "Slimmed/Removed" before the PR is merged.
   4. The audit explicitly verifies that the existing `animated-counter.tsx` component is NOT used on the home page (it may be used on `/platform` or `/technology` if those routes pass the budget).
 
-### NB-46 — Other site routes (pricing, platform, technology, launch, contact) pass the same weight and honesty rules
+### NB-46 — Other site routes (pricing, platform, technology, launch, contact) pass the same weight and honesty rules — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Site-wide rules
 - **Acceptance criteria:**
@@ -479,7 +479,7 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
   5. The `/launch` route is the existing company-signup form. It accepts business email + password + company name + optional tier preference. It rejects public email domains. On submit it fires the company-signup API call and on success redirects to the ops console. On success it triggers sample-data seeding per activation NB-25.
   6. The `/contact` route remains available for visitors who want to send a message. The contact form is not a hidden "lead capture for sales follow-up" funnel — visitors who fill it out are acknowledged but not entered into an automated sales drip.
 
-### NB-47 — No Amharic localization in v1 (scope lock)
+### NB-47 — No Amharic localization in v1 (scope lock) — [IMPLEMENTED]
 - **Priority:** P2
 - **Feature area:** Localization scope
 - **Acceptance criteria:**

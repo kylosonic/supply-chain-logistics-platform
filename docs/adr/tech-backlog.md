@@ -90,24 +90,28 @@ Source: `docs/behaviors/operator-activation-and-milestone-tracking.md`
 |---|---|---|
 | TECH-49 | — | Global unique index `ix_shipments_shipment_no` (migration `0003`) is a multi-tenant hazard of the same class as §0A.1. No current code path creates Shipment rows from user input, so NOT urgent — apply the same composite `(organization_id, shipment_no)` treatment when shipment creation lands. Recorded per `docs/plans/phase4-activation-milestones.md` §0A.2. |
 
-## Phase 5 — Site Conversion: Hero, Sections, Pricing, Weight Budget & Honesty Rules (P0/P1)
+## Phase 5 — Site Conversion: Hero, Sections, Pricing, Weight Budget & Honesty Rules (P0/P1) — ✅ COMPLETE
 
-Source: `docs/behaviors/site-conversion-and-copy.md` (+ folds in NB-23/NB-24 site-copy tickets)
+**Status:** Committed `9dc9b49` on `feat/market-contender-v1`. QA APPROVED. Ledger debited 2026-08-05. The site conversion feature is now FULLY SHIPPED; the `⚠️ NOT YET IMPLEMENTED` banner is stripped from `site-conversion-and-copy.md`. **This is the final phase of the batch — all TECH tickets are now closed and the branch awaits user UAT before merge to main.**
+
+Source: `docs/behaviors/site-conversion-and-copy.md` (+ folded NB-23/NB-24 site-copy tickets — those were already covered by Phases 2/3 shipping the cashflow mechanic the copy describes)
 
 | TECH | Parent NB | Ticket summary |
 |---|---|---|
-| TECH-36 | NB-36 | Home hero: exact headline + supporting paragraph + single "Start free" CTA → `/launch`; no secondary CTAs, no urgency. |
-| TECH-37 | NB-37 | Home page exactly five sections in order; no testimonials/logos/case-studies/compare tables. |
-| TECH-38 | NB-38 | "How it works" collapsed by default; exactly 3 text-only steps; expand/collapse affordance. |
-| TECH-39 | NB-39 | Pricing summary: 3 paid-tier rows + Free line; no Most Popular badge; no Contact sales; partial-payment + wallet-credit story verbatim. |
-| TECH-40 | NB-40 | Trust strip line between pricing and final CTA; text-only, no links; wraps ≤3 lines mobile. |
-| TECH-41 | NB-41 | Final CTA: single large "Start free" button, no companions. |
-| TECH-42 | NB-42 | Page weight budget: <1.2 MB total, <3s on 3G; no video; CSS hero ≤100 KB image; framer-motion limited to one hero entrance; Inter + Space Grotesk only; analytics deferred. |
-| TECH-43 | NB-43 | No fabricated social proof anywhere (no "Trusted by N", no fake logos/reviews/case studies, no invented comparison table). |
-| TECH-44 | NB-44 | No "free trial" language for signup path; "trial" only in paid-tier-trial contexts on `/pricing` FAQ; signup form honest. |
-| TECH-45 | NB-45 | Audit existing `apps/product-web/src/components/site/` components against weight budget; document OK/Slimmed/Removed checklist in PR; `animated-counter.tsx` excluded from home page. |
-| TECH-46 | NB-46 | All site routes pass weight + honesty + single-CTA rules; `/pricing` full details + trust story; `/launch` signup wiring incl. sample seeding trigger; `/contact` not a lead-capture funnel. |
-| TECH-47 | NB-47 | Scope lock: English-only v1; simple clear English copy. |
+| ~~TECH-36~~ | NB-36 | ✅ IMPLEMENTED — Hero: exact H1 "Run your first optimized route in 5 minutes. Free." + verbatim supporting paragraph + single "Start free" CTA → `/launch`; no secondary CTAs, no urgency. |
+| ~~TECH-37~~ | NB-37 | ✅ IMPLEMENTED — Exactly five sections in locked order (hero → how-it-works → pricing-summary → trust-strip → final-cta, `data-section` attrs); no testimonials/logos/case-studies/compare tables. |
+| ~~TECH-38~~ | NB-38 | ✅ IMPLEMENTED — "How it works in 5 minutes" collapsed by default (CSS grid-rows transition, not framer-motion); exactly 3 text-only steps; Show/Hide affordance with aria state; no images. |
+| ~~TECH-39~~ | NB-39 | ✅ IMPLEMENTED — Compact 4-column pricing table with the 3 locked ETB rows + Free line; no Most Popular badge; no Contact sales; partial-payment + wallet-credit story verbatim. |
+| ~~TECH-40~~ | NB-40 | ✅ IMPLEMENTED — Trust strip line verbatim, text-only (zero anchors), ≤3 lines mobile via CSS. |
+| ~~TECH-41~~ | NB-41 | ✅ IMPLEMENTED — Final CTA: single large "Start free" button, no companions; footer = existing chrome. |
+| ~~TECH-42~~ | NB-42 | ✅ IMPLEMENTED — Weight gate `scripts/check-bundle-budget.mjs` (`check:bundle`, raw-byte sums from `.next/app-build-manifest.json` + CSS + fonts; all 6 routes 614–711 KB, ~500 KB under the 1.2 MB budget); no video; CSS-driven hero (hero-scene deleted); exactly ONE framer entrance on home (hero-entrance wrapper, test-asserted single `opacity:0`); Inter + Space Grotesk only (verified in built output); zero analytics (nothing to lazy-load); 3G devtools step documented in PR checklist. |
+| ~~TECH-43~~ | NB-43 | ✅ IMPLEMENTED — All fabricated social proof deleted site-wide (testimonials, homeStats, USD pricing "Talk to sales", fake phone/HQ, "24 hours" reply promise); trust signals = the 4 verifiable stories only. |
+| ~~TECH-44~~ | NB-44 | ✅ IMPLEMENTED — "free trial" absent from the Free signup path; "trial" occurs ONLY in the `/pricing` FAQ (7-day paid-tier mechanic, grep-verified); `/launch` honest ("Start free, no card required."). |
+| ~~TECH-45~~ | NB-45 | ✅ IMPLEMENTED — Audit table (in blueprint §7): site-chrome **Slimmed** (scroll motion + back-to-top removed), site-content **Rewritten**, hero-scene **Deleted**, motion-section **Removed from home path** (kept for /platform+/technology), animated-counter **Deleted**, magnetic-link **OK**, motion-provider **OK**. |
+| ~~TECH-46~~ | NB-46 | ✅ IMPLEMENTED — All 6 routes pass weight gate + honesty + single-CTA ("Start free"); `/pricing` full tier details from `pricing.TIER_SPECS` + trust story, CTA "Start free" everywhere (no Choose Starter/Scale); `/launch` platform-api-only signup (Supabase branch deleted — it silently broke NB-25 seeding), optional tier, public-email rejection surfaced verbatim, success redirect to console; `/contact` honest, no drip/CRM hooks, no fake details. |
+| ~~TECH-47~~ | NB-47 | ✅ IMPLEMENTED — English-only v1, simple concrete English copy; metadata updated; no Amharic. |
+
+**Adjudication notes:** (1) `hero-entrance.tsx` (25-line client wrapper) carries the single home entrance — Next 14.2.35's client-reference proxy crashes prerender when a server component renders `m` directly; QA adjudicated ACCEPTED (locked one-entrance semantics preserved, invariant strengthened). (2) Weight script reads `app-build-manifest.json` (App Router) not `build-manifest.json` (Pages router) — justified correction. (3) Housekeeping items recorded by QA (non-gating): `@supabase/supabase-js` dead dependency in product-web package.json, dead `.back-to-top` CSS, dead `iconLinks` export. (4) The 3G `LoadEventEnd < 3s` criterion remains a documented manual devtools PR-checklist item (unreachable in node).
 
 ## Deferred (explicitly NOT in this batch)
 
