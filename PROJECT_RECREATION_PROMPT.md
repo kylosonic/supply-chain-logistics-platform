@@ -111,10 +111,10 @@ Create this top-level layout:
 │       │   └── utils/
 │       ├── scripts/
 │       │   └── seed_data.py
+│       ├── sample-data/
 │       └── tests/
 ├── docs/
 ├── packages/
-├── sample-data/
 ├── scripts/
 └── supabase/
 		├── config.toml

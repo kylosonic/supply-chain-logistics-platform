@@ -1,7 +1,7 @@
 """Per-workspace sample seeding + supersede semantics (decisions #2/#3/#11).
 
 Seed rows are inserted with ``data_origin='sample'`` + the org id from
-the shipped ``sample-data/`` CSVs (repo-root-relative via
+the shipped ``sample-data/`` CSVs (build-image-relative via
 ``settings.sample_data_dir``). Uploads supersede sample rows of the
 uploaded category in the SAME transaction — except sample rows still
 referenced by real rows of a downstream table (decision #3 keep rule).

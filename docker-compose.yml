@@ -36,6 +36,7 @@ services:
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,testserver}
       APP_ENV: ${APP_ENV:-production}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SAMPLE_DATA_DIR: ${SAMPLE_DATA_DIR:-sample-data}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     healthcheck:
