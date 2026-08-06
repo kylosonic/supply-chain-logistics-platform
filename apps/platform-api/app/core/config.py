@@ -119,6 +119,22 @@ class Settings(BaseSettings):
             raise ValueError('DASHEN_ACCOUNT_NUMBER is required in non-dev environments')
         return self.dashen_account_number
 
+    @property
+    def effective_provider_key_encryption_secret(self) -> str:
+        """Production secrets guard (PROD-05): non-empty and >= 32 chars in
+        non-dev environments; dev/test return the raw value (empty allowed —
+        legacy Fernet fallback to the JWT secret)."""
+        if self.app_env in ('development', 'test'):
+            return self.provider_key_encryption_secret
+        if not self.provider_key_encryption_secret:
+            raise ValueError('PROVIDER_KEY_ENCRYPTION_SECRET is required in non-dev environments')
+        if len(self.provider_key_encryption_secret) < 32:
+            raise ValueError(
+                'PROVIDER_KEY_ENCRYPTION_SECRET must be at least 32 characters '
+                'in non-dev environments'
+            )
+        return self.provider_key_encryption_secret
+
     @field_validator('cors_origins', mode='before')
     @classmethod
     def parse_cors_origins(cls, value: list[str] | str) -> list[str]:

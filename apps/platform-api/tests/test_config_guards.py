@@ -65,3 +65,74 @@ def test_production_dashen_number_required():
     s = _prod_settings(dashen_account_number='')
     with pytest.raises(ValueError, match='DASHEN_ACCOUNT_NUMBER'):
         s.effective_dashen_account_number
+
+
+# --- PROD-05: secrets guardrails --------------------------------------------
+
+def test_production_requires_provider_key_encryption_secret():
+    s = _prod_settings(provider_key_encryption_secret='')
+    with pytest.raises(ValueError, match='PROVIDER_KEY_ENCRYPTION_SECRET'):
+        s.effective_provider_key_encryption_secret
+
+
+def test_production_provider_key_encryption_secret_min_length():
+    s = _prod_settings(provider_key_encryption_secret='12345678')
+    with pytest.raises(ValueError, match='at least 32 characters'):
+        s.effective_provider_key_encryption_secret
+
+
+def test_production_database_url_required():
+    """Pins the pre-existing DATABASE_URL guard."""
+    s = _prod_settings(database_url='')
+    with pytest.raises(ValueError, match='DATABASE_URL'):
+        s.effective_database_url
+
+
+def test_production_jwt_secret_required():
+    """Pins the pre-existing JWT_SECRET_KEY guard."""
+    s = _prod_settings(jwt_secret_key='')
+    with pytest.raises(ValueError, match='JWT_SECRET_KEY'):
+        s.effective_jwt_secret_key
+
+
+def test_production_jwt_secret_min_length():
+    """Pins the pre-existing JWT_SECRET_KEY minimum-length guard."""
+    s = _prod_settings(jwt_secret_key='12345678')
+    with pytest.raises(ValueError, match='at least 32 characters'):
+        s.effective_jwt_secret_key
+
+
+def test_development_defaults_skip_guards():
+    s = Settings(_env_file=None, app_env='development')
+    assert s.effective_receipt_extraction_mode == 'mock'
+    assert s.effective_cbe_account_holder == ''
+    assert s.effective_cbe_account_number == ''
+    assert s.effective_dashen_account_holder == ''
+    assert s.effective_dashen_account_number == ''
+    assert s.effective_provider_key_encryption_secret == ''
+    assert s.effective_database_url == 'sqlite+pysqlite:///:memory:'
+
+
+def test_fernet_binding_uses_effective_encryption_secret(monkeypatch):
+    """The provider-key Fernet must seed from the PROD-05 effective property:
+    a 32+ char production secret round-trips; a different secret cannot
+    decrypt; an empty production secret raises ValueError at encrypt time."""
+    import app.services.security as security_mod
+
+    from cryptography.fernet import InvalidToken
+
+    prod = _prod_settings()
+    monkeypatch.setattr(security_mod, 'settings', prod)
+
+    token = security_mod.encrypt_provider_key('sk-test-1234')
+    assert security_mod.decrypt_provider_key(token) == 'sk-test-1234'
+
+    other = _prod_settings(provider_key_encryption_secret='z' * 40)
+    monkeypatch.setattr(security_mod, 'settings', other)
+    with pytest.raises(InvalidToken):
+        security_mod.decrypt_provider_key(token)
+
+    empty = _prod_settings(provider_key_encryption_secret='')
+    monkeypatch.setattr(security_mod, 'settings', empty)
+    with pytest.raises(ValueError, match='PROVIDER_KEY_ENCRYPTION_SECRET'):
+        security_mod.encrypt_provider_key('sk-test-1234')

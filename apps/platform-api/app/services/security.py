@@ -74,7 +74,9 @@ def decode_access_token(token: str) -> dict:
 
 
 def _provider_key_fernet() -> Fernet:
-    seed = settings.provider_key_encryption_secret or settings.effective_jwt_secret_key
+    # PROD-05: seeded from the guarded effective secret; dev/test fallback
+    # to the JWT secret is preserved when the raw value is empty.
+    seed = settings.effective_provider_key_encryption_secret or settings.effective_jwt_secret_key
     digest = hashlib.sha256(seed.encode('utf-8')).digest()
     key = urlsafe_b64encode(digest)
     return Fernet(key)
