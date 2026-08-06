@@ -221,7 +221,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   3. If the verified fee upper bound is materially below 1,000 ETB, the NB-09 tolerance window can be tightened (reduces fraud surface). If the verified fee upper bound exceeds 1,000 ETB, the NB-09 tolerance window must be widened (otherwise legitimate payments will be flagged for admin manual decision too often).
   4. The verification is documented in `docs/behaviors/cashflow-bank-transfer-receipt-verification.md` §12 (Open verification items) before this gap is closed.
 
-### NB-23 — Site copy must reflect bank-transfer-only payment model
+### NB-23 — Site copy must reflect bank-transfer-only payment model — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Public website (apps/product-web)
 - **Acceptance criteria:**
@@ -231,7 +231,7 @@ Source behavior doc: [`cashflow-bank-transfer-receipt-verification.md`](./cashfl
   4. There is no mention of Stripe, cards, "credit card on file," "annual billing discount," or any payment method not supported in v1.
   5. The "Read-only limbo" concept is communicated as a sales story: "Pay at your bank's pace — your first invoice isn't due until the start of the next billing period."
 
-### NB-24 — Site copy must reflect the partial-payment welcome story
+### NB-24 — Site copy must reflect the partial-payment welcome story — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Public website (apps/product-web)
 - **Acceptance criteria:**

@@ -90,6 +90,16 @@ Source: `docs/behaviors/operator-activation-and-milestone-tracking.md`
 |---|---|---|
 | TECH-49 | — | Global unique index `ix_shipments_shipment_no` (migration `0003`) is a multi-tenant hazard of the same class as §0A.1. No current code path creates Shipment rows from user input, so NOT urgent — apply the same composite `(organization_id, shipment_no)` treatment when shipment creation lands. Recorded per `docs/plans/phase4-activation-milestones.md` §0A.2. |
 
+## Closeout — Site Copy Closeout (NB-23 / NB-24) — ✅ COMPLETE
+
+**Status:** Committed on `feat/tech-50-site-copy-closeout`, merged into `master` as part of the final closeout. QA APPROVED. Ledger debited 2026-08-05. **This closes the last open behaviors — the batch is fully complete.**
+
+| TECH | Parent NB | Ticket summary |
+|---|---|---|
+| ~~TECH-50~~ | NB-23 / NB-24 | ✅ IMPLEMENTED — NB-23.5 read-only-limbo sales story line added to `/pricing` payment trust card verbatim: "Pay at your bank's pace — your first invoice isn't due until the start of the next billing period." (new `paymentPaceStory` export; rendered third paragraph of the SpotlightCard). All other NB-23/NB-24 criteria verified already satisfied by Phase 5 copy: ETB ladder + cycles, "Bank transfer to CBE or Dashen — receipt verified within 24 hours", trial substance ("first 7 days on that tier are a trial at no charge" + "No card required"), zero Stripe/credit-card/annual-billing mentions, partial-payment + wallet-credit story verbatim, no over-promising. Regression net: 4 new tests (57/57 product-web), trial-count invariant (2 / 1 in FAQ only), CTA count unchanged (4× "Start free"), check:bundle green (/pricing 690,976 raw bytes). |
+
+**Closeout note:** NB-22 (CBE/Dashen fee-schedule verification) remains the sole open item — a HUMAN GAP (TECH-22) that blocks production launch only, not the codebase. Procedure in `docs/plans/phase3-audit-reversibility.md` §12.
+
 ## Phase 5 — Site Conversion: Hero, Sections, Pricing, Weight Budget & Honesty Rules (P0/P1) — ✅ COMPLETE
 
 **Status:** Committed `9dc9b49` on `feat/market-contender-v1`. QA APPROVED. Ledger debited 2026-08-05. The site conversion feature is now FULLY SHIPPED; the `⚠️ NOT YET IMPLEMENTED` banner is stripped from `site-conversion-and-copy.md`. **This is the final phase of the batch — all TECH tickets are now closed and the branch awaits user UAT before merge to main.**
