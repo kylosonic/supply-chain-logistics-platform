@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import require_roles, require_writable_workspace
 from app.db.session import get_db
 from app.models.item import Item
+from app.models.membership import OrganizationMembership
 from app.models.order import HistoricalOrder
 from app.models.user import User
 from app.models.warehouse import Warehouse
@@ -23,7 +24,9 @@ def weekly_demand_forecast(
     payload: ForecastRequest,
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     stmt = (
         select(
             HistoricalOrder.order_date,

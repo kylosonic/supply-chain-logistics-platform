@@ -1,15 +1,21 @@
 from datetime import UTC, date, datetime
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import get_current_membership, require_org_roles
+from app.api.security import (
+    get_current_membership,
+    require_org_roles,
+    require_writable_workspace,
+)
 from app.db.session import get_db
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization
 from app.models.usage_meter import OrganizationUsageCounter
 from app.schemas.auth import OrganizationRole, SubscriptionTier
+from app.schemas.billing import BillingCycle
 from app.schemas.subscription import (
     PlanRead,
     PlanThresholdEvent,
@@ -22,11 +28,17 @@ from app.schemas.subscription import (
     UsageRecordResponse,
 )
 from app.services.audit import record_audit_event
+from app.services.billing import lifecycle
+from app.services.billing import pricing
 from app.services.metering import current_usage_window
 
 router = APIRouter()
 
 PLAN_QUOTAS: dict[str, dict[str, tuple[int | None, float | None]]] = {
+    'free': {
+        UsageMetric.DELIVERY_TASKS: (2500, None),
+        UsageMetric.ROUTE_OPTIMIZATIONS: (50, None),
+    },
     'starter': {
         UsageMetric.DELIVERY_TASKS: (2500, 0.2),
         UsageMetric.ROUTE_OPTIMIZATIONS: (50, 1.5),
@@ -41,41 +53,58 @@ PLAN_QUOTAS: dict[str, dict[str, tuple[int | None, float | None]]] = {
     },
 }
 
-PLANS: list[PlanRead] = [
-    PlanRead(
-        tier='starter',
-        title='Starter',
-        monthly_price_usd=399,
-        seat_limit=3,
-        vehicle_limit=25,
-        included_tasks_per_month=PLAN_QUOTAS['starter'][UsageMetric.DELIVERY_TASKS][0],
-        overage_unit_price_usd=PLAN_QUOTAS['starter'][UsageMetric.DELIVERY_TASKS][1],
-        includes_sso=False,
-        includes_priority_support=False,
-    ),
-    PlanRead(
-        tier='scale',
-        title='Scale',
-        monthly_price_usd=1290,
-        seat_limit=20,
-        vehicle_limit=250,
-        included_tasks_per_month=PLAN_QUOTAS['scale'][UsageMetric.DELIVERY_TASKS][0],
-        overage_unit_price_usd=PLAN_QUOTAS['scale'][UsageMetric.DELIVERY_TASKS][1],
-        includes_sso=True,
-        includes_priority_support=True,
-    ),
-    PlanRead(
-        tier='enterprise',
-        title='Enterprise',
-        monthly_price_usd=None,
-        seat_limit=None,
-        vehicle_limit=None,
-        included_tasks_per_month=PLAN_QUOTAS['enterprise'][UsageMetric.DELIVERY_TASKS][0],
-        overage_unit_price_usd=PLAN_QUOTAS['enterprise'][UsageMetric.DELIVERY_TASKS][1],
-        includes_sso=True,
-        includes_priority_support=True,
-    ),
-]
+_USD_SPECS: dict[str, dict] = {
+    'starter': {
+        'title': 'Starter',
+        'monthly_price_usd': 399,
+        'seat_limit': 3,
+        'vehicle_limit': 25,
+        'includes_sso': False,
+        'includes_priority_support': False,
+    },
+    'scale': {
+        'title': 'Scale',
+        'monthly_price_usd': 1290,
+        'seat_limit': 20,
+        'vehicle_limit': 250,
+        'includes_sso': True,
+        'includes_priority_support': True,
+    },
+    'enterprise': {
+        'title': 'Enterprise',
+        'monthly_price_usd': None,
+        'seat_limit': None,
+        'vehicle_limit': None,
+        'includes_sso': True,
+        'includes_priority_support': True,
+    },
+}
+
+
+def _build_plans() -> list[PlanRead]:
+    """Plan catalog: USD fields preserved + locked ETB pricing (NB-01)."""
+    plans: list[PlanRead] = []
+    for tier in ('free', 'starter', 'scale', 'enterprise'):
+        specs = pricing.TIER_SPECS[tier]
+        usd = _USD_SPECS.get(tier, {})
+        cycle = specs['billing_cycle']
+        plans.append(
+            PlanRead(
+                tier=tier,
+                title=specs['title'],
+                monthly_price_usd=usd.get('monthly_price_usd'),
+                seat_limit=usd.get('seat_limit'),
+                vehicle_limit=usd.get('vehicle_limit'),
+                included_tasks_per_month=specs['included_units'][UsageMetric.DELIVERY_TASKS],
+                overage_unit_price_usd=PLAN_QUOTAS[tier][UsageMetric.DELIVERY_TASKS][1],
+                includes_sso=usd.get('includes_sso', False),
+                includes_priority_support=usd.get('includes_priority_support', False),
+                flat_price_etb=specs['flat_price_etb'],
+                billing_cycle=BillingCycle(cycle) if cycle else None,
+                overage_unit_price_etb=specs['overage_rate_etb'][UsageMetric.DELIVERY_TASKS],
+            )
+        )
+    return plans
 
 
 def _current_usage_window(reference_day: date) -> tuple[date, date]:
@@ -178,7 +207,7 @@ def _plan_quota_for_tier(tier: str, metric: str) -> tuple[int | None, float | No
 
 @router.get('/plans', response_model=list[PlanRead])
 def list_plans() -> list[PlanRead]:
-    return PLANS
+    return _build_plans()
 
 
 @router.get('/me', response_model=SubscriptionRead)
@@ -190,15 +219,8 @@ def get_my_subscription(
     if not organization:
         raise HTTPException(status_code=404, detail='Organization not found')
 
-    return SubscriptionRead(
-        organization_id=organization.id,
-        organization_name=organization.name,
-        tier=organization.subscription_tier,
-        status=organization.subscription_status,
-        preferred_ai_provider=organization.preferred_ai_provider,
-        preferred_ai_key_id=organization.preferred_ai_key_id,
-        updated_at=organization.updated_at,
-    )
+    lifecycle.refresh_workspace_state(db, organization, datetime.now(UTC))
+    return lifecycle.subscription_read(db, organization)
 
 
 @router.get('/usage/me', response_model=UsageMeterRead)
@@ -240,6 +262,7 @@ def record_usage(
     membership: OrganizationMembership = Depends(
         require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN, OrganizationRole.OPERATOR)
     ),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
     organization = db.get(Organization, membership.organization_id)
     if not organization:
@@ -309,32 +332,9 @@ def select_tier(
     if not organization:
         raise HTTPException(status_code=404, detail='Organization not found')
 
-    previous_tier = organization.subscription_tier
-    organization.subscription_tier = payload.tier
-    if organization.subscription_status in {'trialing', 'past_due'}:
-        organization.subscription_status = 'active'
-    organization.updated_at = datetime.now(UTC)
-
-    db.add(organization)
-
-    record_audit_event(
+    return lifecycle.apply_tier_selection(
         db,
-        event_type='subscription.tier_selected',
-        entity_type='organization',
-        entity_id=organization.id,
-        organization_id=membership_user.organization_id,
-        description=f'Changed subscription tier from {previous_tier} to {payload.tier}',
-        payload={'from_tier': previous_tier, 'to_tier': payload.tier},
-    )
-    db.commit()
-    db.refresh(organization)
-
-    return SubscriptionRead(
-        organization_id=organization.id,
-        organization_name=organization.name,
-        tier=organization.subscription_tier,
-        status=organization.subscription_status,
-        preferred_ai_provider=organization.preferred_ai_provider,
-        preferred_ai_key_id=organization.preferred_ai_key_id,
-        updated_at=organization.updated_at,
+        organization,
+        payload.tier.value,
+        datetime.now(UTC),
     )

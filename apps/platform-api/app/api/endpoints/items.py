@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import require_roles, require_writable_workspace
 from app.db.session import get_db
 from app.models.item import Item
+from app.models.membership import OrganizationMembership
 from app.models.user import User
 from app.schemas.auth import UserRole
 from app.schemas.item import ItemCreate, ItemRead, ItemUpdate
@@ -28,7 +29,9 @@ def create_item(
     payload: ItemCreate,
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     exists = db.execute(select(Item).where(Item.sku == payload.sku)).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail='SKU already exists')
@@ -58,7 +61,9 @@ def update_item(
     payload: ItemUpdate,
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     row = db.get(Item, item_id)
     if not row:
         raise HTTPException(status_code=404, detail='Item not found')

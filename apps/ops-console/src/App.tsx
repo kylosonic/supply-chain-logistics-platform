@@ -15,6 +15,8 @@ const PlanningPage = lazy(() => import('./pages/PlanningPage').then((m) => ({ de
 const UnauthorizedPage = lazy(() => import('./pages/UnauthorizedPage').then((m) => ({ default: m.UnauthorizedPage })));
 const UploadPage = lazy(() => import('./pages/UploadPage').then((m) => ({ default: m.UploadPage })));
 const ProvidersPage = lazy(() => import('./pages/ProvidersPage').then((m) => ({ default: m.ProvidersPage })));
+const ReceiptsPage = lazy(() => import('./pages/ReceiptsPage').then((m) => ({ default: m.ReceiptsPage })));
+const AdminReceiptsPage = lazy(() => import('./pages/AdminReceiptsPage').then((m) => ({ default: m.AdminReceiptsPage })));
 
 function RouteFallback() {
   return (
@@ -115,6 +117,28 @@ export default function App() {
               <ProtectedRoute allowedRoles={['admin', 'owner', 'operator']}>
                 <Layout>
                   <ProvidersPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/receipts"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'owner', 'operator', 'viewer']}>
+                <Layout>
+                  <ReceiptsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/receipts"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'owner']}>
+                <Layout>
+                  <AdminReceiptsPage />
                 </Layout>
               </ProtectedRoute>
             }

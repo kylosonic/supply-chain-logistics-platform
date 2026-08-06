@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
+import { useActivationState } from '../hooks/queries';
 import {
   uploadFleetAssetsCsv,
   uploadInventoryCsv,
@@ -60,6 +62,9 @@ export function CsvUploadPanel() {
   });
   const [results, setResults] = useState<Partial<Record<UploadKind, string>>>({});
   const [activeKind, setActiveKind] = useState<UploadKind | null>(null);
+  const queryClient = useQueryClient();
+  const activationQ = useActivationState();
+  const freeCapLocked = activationQ.data?.free_cap?.locked ?? false;
 
   async function submit(kind: UploadKind) {
     const file = files[kind];
@@ -82,6 +87,8 @@ export function CsvUploadPanel() {
           ...prev,
           [kind]: `${kind} import: processed=${response.records_processed}, created=${response.records_created}, updated=${response.records_updated}, errors=${response.errors.length}`,
         }));
+        // NB-30.4: milestone state reflects without a page reload.
+        queryClient.invalidateQueries({ queryKey: ['activation'] });
     } catch (err: any) {
         setResults((prev) => ({
           ...prev,
@@ -125,11 +132,11 @@ export function CsvUploadPanel() {
               />
               <div className="flex flex-wrap items-center gap-3">
                 <button
-                  disabled={!files[spec.key] || activeKind !== null}
+                  disabled={!files[spec.key] || activeKind !== null || freeCapLocked}
                   onClick={() => submit(spec.key)}
                   className="glow-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {activeKind === spec.key ? 'Uploading...' : spec.actionLabel}
+                  {activeKind === spec.key ? 'Uploading...' : freeCapLocked ? 'Writes locked (Free cap)' : spec.actionLabel}
                 </button>
                 <span className="text-sm text-slate-500">{files[spec.key]?.name || 'No file selected'}</span>
               </div>

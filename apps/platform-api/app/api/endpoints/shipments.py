@@ -6,10 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import require_roles, require_writable_workspace
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.models.item import Item
+from app.models.membership import OrganizationMembership
 from app.models.route import RouteSchedule
 from app.models.shipment import Shipment
 from app.models.user import User
@@ -60,7 +61,9 @@ def create_shipment(
     payload: ShipmentCreate,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     existing = db.execute(select(Shipment).where(Shipment.shipment_no == payload.shipment_no)).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail='Shipment number already exists')
@@ -135,7 +138,9 @@ def update_shipment_status(
     payload: ShipmentStatusUpdate,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     shipment = db.get(Shipment, shipment_id)
     if not shipment:
         raise HTTPException(status_code=404, detail='Shipment not found')

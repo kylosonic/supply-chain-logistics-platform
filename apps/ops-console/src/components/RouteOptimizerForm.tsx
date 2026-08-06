@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Panel } from './ui/Panel';
 import { StatusBadge } from './ui/StatusBadge';
@@ -10,6 +11,7 @@ export function RouteOptimizerForm({
 }: {
   onOptimized?: (route: RouteOptimizeResponse) => void;
 }) {
+  const queryClient = useQueryClient();
   const [previousResult, setPreviousResult] = useState<RouteOptimizeResponse | null>(null);
   const [payload, setPayload] = useState({
     route_name: 'Daily Optimized Route',
@@ -59,6 +61,8 @@ export function RouteOptimizerForm({
       setPreviousResult(result);
       setResult(response);
       onOptimized?.(response);
+      // NB-30.4: m6/activation state reflects without a page reload.
+      queryClient.invalidateQueries({ queryKey: ['activation'] });
     } catch (err: any) {
       setError(err?.response?.data?.detail || err.message || 'Failed to optimize route');
     } finally {

@@ -6,11 +6,12 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
-from app.api.security import get_current_user, require_roles
+from app.api.security import get_current_user, require_roles, require_writable_workspace
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.models.inventory import Inventory
 from app.models.item import Item
+from app.models.membership import OrganizationMembership
 from app.models.shipment import Shipment
 from app.models.user import User
 from app.models.warehouse import Warehouse
@@ -39,7 +40,9 @@ def create_alert(
     payload: AlertCreate,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     alert = Alert(
         alert_type=payload.alert_type,
         severity=payload.severity,
@@ -71,7 +74,9 @@ def scan_alerts(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     generated: list[Alert] = []
 
     low_stock_rows = db.execute(
@@ -166,7 +171,9 @@ def acknowledge_alert(
     payload: AlertAction,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
         raise HTTPException(status_code=403, detail='Insufficient role')
     alert = db.get(Alert, alert_id)
@@ -202,7 +209,9 @@ def resolve_alert(
     payload: AlertAction,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
         raise HTTPException(status_code=403, detail='Insufficient role')
     alert = db.get(Alert, alert_id)
@@ -238,7 +247,9 @@ def auto_resolve_alert(
     alert_id: str,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
         raise HTTPException(status_code=403, detail='Insufficient role')
     alert = db.get(Alert, alert_id)

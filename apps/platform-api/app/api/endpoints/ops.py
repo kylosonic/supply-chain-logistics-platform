@@ -5,13 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc, select, text
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles
+from app.api.security import require_roles, require_writable_workspace
 from app.core.config import settings
 from app.core.observability import app_metrics
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.models.audit_event import AuditEvent
 from app.models.item import Item
+from app.models.membership import OrganizationMembership
 from app.models.replenishment import ReplenishmentPlan
 from app.models.route_history import RouteOptimizationRun
 from app.models.shipment import Shipment
@@ -154,7 +155,9 @@ def update_live_eta(
     payload: DockAppointmentPayload,
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     appointment = db.execute(
         select(DockAppointment).where(
             DockAppointment.warehouse_id == payload.warehouse_id,

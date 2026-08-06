@@ -1,3 +1,4 @@
+import { ActivationBanner } from '../components/ActivationBanner';
 import { CsvUploadPanel } from '../components/CsvUploadPanel';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
@@ -10,6 +11,8 @@ export function UploadPage() {
         title="Load a workspace in the right operational order"
         description="Bring warehouses, items, fleet assets, inventory, and orders into the system in sequence so routing, forecasting, and exception logic have a stable base."
       />
+
+      <ActivationBanner mode="checklist" />
 
       <Panel
         eyebrow="Import sequence"

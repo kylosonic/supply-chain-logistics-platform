@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import get_current_membership, get_current_user, require_org_roles
+from app.api.security import (
+    get_current_membership,
+    get_current_user,
+    require_org_roles,
+    require_writable_workspace,
+)
 from app.db.session import get_db
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization
@@ -44,6 +49,7 @@ def create_provider_key(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
     membership: OrganizationMembership = Depends(require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
     duplicate = db.execute(
         select(ProviderApiKey).where(
@@ -90,6 +96,7 @@ def revoke_provider_key(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
     membership: OrganizationMembership = Depends(require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
     key = db.get(ProviderApiKey, key_id)
     if not key or key.organization_id != membership.organization_id:
@@ -119,7 +126,9 @@ def test_provider_key(
     key_id: str,
     db: Session = Depends(get_db),
     membership: OrganizationMembership = Depends(get_current_membership),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     key = db.get(ProviderApiKey, key_id)
     if not key or key.organization_id != membership.organization_id:
         raise HTTPException(status_code=404, detail='Provider key not found')
@@ -164,6 +173,7 @@ def set_provider_preference(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
     membership: OrganizationMembership = Depends(require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
     organization = db.get(Organization, membership.organization_id)
     if not organization:

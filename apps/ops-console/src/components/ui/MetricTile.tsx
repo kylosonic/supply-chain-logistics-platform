@@ -5,6 +5,7 @@ type MetricTileProps = {
   value: string | number;
   detail: string;
   tone?: MetricTone;
+  cta?: { label: string; href: string };
 };
 
 const toneClasses: Record<MetricTone, string> = {
@@ -23,7 +24,7 @@ const dotColors: Record<MetricTone, string> = {
   info: 'bg-sky-400',
 };
 
-export function MetricTile({ title, value, detail, tone = 'neutral' }: MetricTileProps) {
+export function MetricTile({ title, value, detail, tone = 'neutral', cta }: MetricTileProps) {
   return (
     <article
       className={`hover-lift top-highlight animate-scale-in rounded-[24px] border px-5 py-5 shadow-[0_18px_48px_rgba(2,12,20,0.22)] ${toneClasses[tone]}`}
@@ -34,6 +35,14 @@ export function MetricTile({ title, value, detail, tone = 'neutral' }: MetricTil
       </div>
       <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{value}</p>
       <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
+      {cta ? (
+        <a
+          href={cta.href}
+          className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline"
+        >
+          {cta.label} →
+        </a>
+      ) : null}
     </article>
   );
 }

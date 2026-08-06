@@ -15,19 +15,21 @@ def test_company_signup_and_onboarding_flow(client: TestClient):
     assert signup.status_code == 201
     payload = signup.json()
     assert payload['organization']['name'] == 'Acme Logistics'
-    assert payload['organization']['subscription_tier'] == 'scale'
+    assert payload['organization']['subscription_tier'] == 'free'
 
     token = payload['access_token']
     auth = {'Authorization': f'Bearer {token}'}
 
     subscription_me = client.get('/api/v1/subscriptions/me', headers=auth)
     assert subscription_me.status_code == 200
-    assert subscription_me.json()['tier'] == 'scale'
+    assert subscription_me.json()['tier'] == 'free'
+    assert subscription_me.json()['billing_phase'] == 'free'
 
     select_tier = client.post('/api/v1/subscriptions/select-tier', headers=auth, json={'tier': 'enterprise'})
     assert select_tier.status_code == 200
     assert select_tier.json()['tier'] == 'enterprise'
-    assert select_tier.json()['status'] == 'active'
+    assert select_tier.json()['status'] == 'trialing'
+    assert select_tier.json()['billing_phase'] == 'trial'
 
     create_key = client.post(
         '/api/v1/providers/keys',

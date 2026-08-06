@@ -1,40 +1,22 @@
 import {
-  Activity,
   ArrowUpRight,
   BadgeCheck,
-  BrainCircuit,
   Boxes,
   Cable,
-  Command,
-  Compass,
   Cpu,
-  Fingerprint,
-  Gauge,
-  Glasses,
-  Layers3,
   type LucideIcon,
+  Layers3,
   Orbit,
   Radar,
-  Route,
   ShieldCheck,
-  Sparkles,
   TimerReset,
-  Waypoints,
   Workflow,
-  Zap,
 } from 'lucide-react';
 
 export type NavItem = {
   label: string;
   href: string;
   description: string;
-};
-
-export type StatItem = {
-  value: number;
-  suffix?: string;
-  label: string;
-  detail: string;
 };
 
 export type FeatureCard = {
@@ -52,25 +34,140 @@ export type TimelineItem = {
 
 export type PricingTier = {
   name: string;
-  price: string;
-  eyebrow: string;
+  price_etb: number;
+  billing_cycle: 'per month' | 'per quarter';
+  included_units: {
+    delivery_tasks: number | null;
+    route_optimizations: number | null;
+  };
+  overage_rates: {
+    delivery_tasks: number | null;
+    route_optimizations: number | null;
+  };
   summary: string;
-  bullets: string[];
-  cta: string;
-};
-
-export type Testimonial = {
-  company: string;
-  quote: string;
-  person: string;
-  role: string;
-  avatarColor: string;
 };
 
 export type FaqItem = {
   question: string;
   answer: string;
 };
+
+// ---------------------------------------------------------------------------
+// Locked copy (blueprint §5 — [EXACT] strings, byte-identical)
+// ---------------------------------------------------------------------------
+
+export const heroHeadline = 'Run your first optimized route in 5 minutes. Free.';
+
+export const heroParagraph =
+  'Sign up and your workspace loads with sample data — warehouses, fleet, inventory, orders, all ready. Optimize your first route immediately. Upload your real CSVs when you\'re ready. Pay by bank transfer to CBE or Dashen when you outgrow the free tier. No card, no commitment.';
+
+export const startFreeCta = 'Start free';
+
+export const howItWorksHeading = 'How it works in 5 minutes';
+export const showLabel = 'Show';
+export const hideLabel = 'Hide';
+
+export const howItWorksSteps = [
+  'Sign up free — your workspace loads with sample data in under a minute.',
+  'Run your first route optimization on the sample data — see the map, the stops, the schedule.',
+  'Upload your real CSVs (warehouses, items, fleet, inventory, orders) when you\'re ready. Pay by bank transfer to CBE or Dashen when you outgrow the free tier.',
+] as const;
+
+export const pricingTiers: PricingTier[] = [
+  {
+    name: 'Starter',
+    price_etb: 4500,
+    billing_cycle: 'per month',
+    included_units: { delivery_tasks: 2500, route_optimizations: 50 },
+    overage_rates: { delivery_tasks: 0.2, route_optimizations: 1.5 },
+    summary: 'First lift off Free tier',
+  },
+  {
+    name: 'Scale',
+    price_etb: 10000,
+    billing_cycle: 'per quarter',
+    included_units: { delivery_tasks: 5000, route_optimizations: 250 },
+    overage_rates: { delivery_tasks: 0.16, route_optimizations: 1.0 },
+    summary: 'Mid-size dispatch shop',
+  },
+  {
+    name: 'Enterprise',
+    price_etb: 45000,
+    billing_cycle: 'per quarter',
+    included_units: { delivery_tasks: null, route_optimizations: null },
+    overage_rates: { delivery_tasks: null, route_optimizations: null },
+    summary: 'Unlimited usage, dedicated support',
+  },
+];
+
+export const freeLine = 'Free forever — 2,500 delivery tasks / month, no payment ever. Start here.';
+
+export const partialPaymentStory =
+  'Partial payments welcome. Pay what your cash flow allows — send the receipt for each transfer, and your workspace unlocks when the full balance clears. If you overpay within 1,000 ETB, the surplus applies as credit to your next invoice.';
+
+export const trustStripLine =
+  'Bank transfer to CBE or Dashen. No card required. Partial payments welcome. No hidden fees, no annual lock-in.';
+
+export const verificationLine = 'Bank transfer to CBE or Dashen — receipt verified within 24 hours.';
+
+export const signupFormSubline = 'Start free, no card required.';
+
+export const signupFormNote = 'No card required. Your workspace loads with sample data.';
+
+export const signupSuccessMessage = 'Workspace created — sample data loaded.';
+
+export const networkFailureMessage =
+  'Could not create the company workspace. Check your connection and try again.';
+
+export const afterSignupSteps = [
+  {
+    label: '01',
+    title: 'Your workspace loads with sample data',
+    detail: 'Warehouses, fleet, inventory, and orders are all ready. No uploads needed to start.',
+  },
+  {
+    label: '02',
+    title: 'Run your first route optimization',
+    detail: 'See the map, the stops, and the schedule on the sample data.',
+  },
+  {
+    label: '03',
+    title: "Upload your real CSVs when you're ready",
+    detail: 'Pay by bank transfer to CBE or Dashen when you outgrow the free tier.',
+  },
+];
+
+export const faqItems: FaqItem[] = [
+  {
+    question: 'Do you offer a free trial?',
+    answer:
+      'The Free tier is free forever — 2,500 delivery tasks per month, no payment ever. When you upgrade to a paid tier from inside your workspace, the first 7 days on that tier are a trial at no charge.',
+  },
+  {
+    question: 'What does the Starter tier include?',
+    answer:
+      'Starter costs 4,500 ETB per month. It includes 2,500 delivery tasks and 50 route optimizations. Extra delivery tasks cost 0.20 ETB each, and extra route optimizations cost 1.50 ETB each.',
+  },
+  {
+    question: 'What does the Scale tier include?',
+    answer:
+      'Scale costs 10,000 ETB per quarter. It includes 5,000 delivery tasks and 250 route optimizations. Extra delivery tasks cost 0.16 ETB each, and extra route optimizations cost 1.00 ETB each.',
+  },
+  {
+    question: 'What does the Enterprise tier include?',
+    answer:
+      'Enterprise costs 45,000 ETB per quarter with unlimited usage and no overage rates. It includes dedicated support.',
+  },
+  {
+    question: 'How do payments work?',
+    answer:
+      'Pay by bank transfer to CBE or Dashen — receipt verified within 24 hours. Partial payments are welcome: pay what your cash flow allows, send the receipt for each transfer, and your workspace unlocks when the full balance clears. If you overpay within 1,000 ETB, the surplus applies as credit to your next invoice.',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Site structure
+// ---------------------------------------------------------------------------
 
 export const externalLinks = {
   console: process.env.NEXT_PUBLIC_APP_CONSOLE_URL || 'http://localhost',
@@ -87,6 +184,11 @@ export const navigation: NavItem[] = [
   { label: 'Contact', href: '/contact', description: 'Get in touch' },
 ];
 
+/**
+ * Footer link data — dead links removed for v1 (blueprint §1.12): no
+ * `/privacy`, `/terms`, `/security` routes exist, and About/Blog/Careers/
+ * Community pointed at `#`.
+ */
 export const footerNavigation = {
   platform: [
     { label: 'Control Tower', href: '/platform#control-tower' },
@@ -98,74 +200,9 @@ export const footerNavigation = {
     { label: 'Documentation', href: externalLinks.docs },
     { label: 'API Reference', href: externalLinks.docs + '/api' },
     { label: 'Desktop App', href: externalLinks.desktop },
-    { label: 'Community', href: '#' },
   ],
-  company: [
-    { label: 'About', href: '#' },
-    { label: 'Blog', href: '#' },
-    { label: 'Careers', href: '#' },
-    { label: 'Contact', href: '/contact' },
-  ],
-  legal: [
-    { label: 'Privacy Policy', href: '/privacy' },
-    { label: 'Terms of Service', href: '/terms' },
-    { label: 'Security', href: '/security' },
-  ],
+  company: [{ label: 'Contact', href: '/contact' }],
 };
-
-export const homeStats: StatItem[] = [
-  {
-    value: 48,
-    suffix: 'hrs',
-    label: 'Faster pilot activation',
-    detail: 'Move from workspace creation to a controlled launch window in two days instead of weeks.',
-  },
-  {
-    value: 87,
-    suffix: '%',
-    label: 'Decisions with context',
-    detail: 'Route health, workload, launch readiness, and provider settings stay visible in the same workflow.',
-  },
-  {
-    value: 5,
-    suffix: 'x',
-    label: 'Less interface switching',
-    detail: 'Give operators one place to review exceptions, compare actions, and record decisions.',
-  },
-  {
-    value: 1,
-    suffix: ' unified workflow',
-    label: 'Shared operating model',
-    detail: 'Plan, respond, approve, and audit work inside a single connected control layer.',
-  },
-];
-
-export const flagshipFeatures: FeatureCard[] = [
-  {
-    icon: Route,
-    title: 'Route planning with live exceptions',
-    description: 'Plan routes and react to service issues from the same operational view.',
-    detail: 'Keep late shipments, capacity risks, and route changes visible while a dispatcher is deciding what to do next.',
-  },
-  {
-    icon: BrainCircuit,
-    title: 'AI assistance with visible controls',
-    description: 'Support decisions with models without hiding who approved what or which provider was used.',
-    detail: 'Provider selection, workspace policy, and action history remain part of the operating record.',
-  },
-  {
-    icon: Gauge,
-    title: 'Operational and commercial visibility',
-    description: 'Review service risk, workload pressure, and usage posture together.',
-    detail: 'The product keeps execution quality and platform usage in the same decision context.',
-  },
-  {
-    icon: Command,
-    title: 'Launch workflows for real teams',
-    description: 'Prepare devices, users, and integrations before the first production shift.',
-    detail: 'Track connection health, role sign-off, and launch readiness with a dedicated workstation flow.',
-  },
-];
 
 export const platformStacks: FeatureCard[] = [
   {
@@ -239,120 +276,6 @@ export const technologyLayers: FeatureCard[] = [
   },
 ];
 
-export const testimonials: Testimonial[] = [
-  {
-    company: 'Northstar Distribution',
-    quote:
-      'FreightPilot gives the dispatch team one place to review route risk, operator readiness, and workspace controls without hunting across multiple screens.',
-    person: 'Amina K.',
-    role: 'VP Operations',
-    avatarColor: 'from-cyan-400 to-blue-500',
-  },
-  {
-    company: 'Contour Fulfillment',
-    quote:
-      'It keeps planning, exceptions, and approvals close enough together that supervisors can respond quickly without losing context.',
-    person: 'Julian R.',
-    role: 'Head of Logistics Systems',
-    avatarColor: 'from-violet-400 to-purple-500',
-  },
-  {
-    company: 'Helix Commerce Network',
-    quote:
-      'The launch workflow is practical. We can track sign-off, environment checks, and rollout readiness before opening a new team to live work.',
-    person: 'Marta S.',
-    role: 'Program Director',
-    avatarColor: 'from-amber-400 to-orange-500',
-  },
-];
-
-export const pricingTiers: PricingTier[] = [
-  {
-    name: 'Starter',
-    price: '$399/mo',
-    eyebrow: 'For a single region or pilot team',
-    summary: 'Cover core routing, exception review, and workspace launch for an initial operating footprint.',
-    bullets: ['25 active vehicles', '3 workspace users', '2,500 optimized tasks', 'Desktop launch workstation'],
-    cta: 'Choose Starter',
-  },
-  {
-    name: 'Scale',
-    price: '$1,290/mo',
-    eyebrow: 'For growing multi-site operations',
-    summary: 'Add more users, more vehicles, and tighter operational controls across a broader routing network.',
-    bullets: ['250 active vehicles', '20 workspace users', '5,000 optimized tasks', 'Priority rollout guidance'],
-    cta: 'Choose Scale',
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    eyebrow: 'For enterprise rollout programs',
-    summary: 'Add tailored rollout planning, advanced controls, and deployment options for larger operating environments.',
-    bullets: ['Unlimited regions', 'Dedicated onboarding pod', 'Custom rollout controls', 'Private deployment patterns'],
-    cta: 'Talk to sales',
-  },
-];
-
-export const faqItems: FaqItem[] = [
-  {
-    question: 'Is this a route tool, a control tower, or an AI product?',
-    answer:
-      'It brings those functions together. FreightPilot combines route planning, live issue handling, launch readiness, and provider controls in one operational workspace.',
-  },
-  {
-    question: 'Can we keep our own provider strategy?',
-    answer:
-      'Yes. Teams can manage provider keys, select preferred providers, and keep a bring-your-own-key model instead of being forced into a single vendor.',
-  },
-  {
-    question: 'What is different about the desktop experience?',
-    answer:
-      'The desktop layer supports rollout work directly. It is designed for workstation readiness, controlled sign-off, and operator-specific launch tasks.',
-  },
-  {
-    question: 'How does FreightPilot justify premium positioning?',
-    answer:
-      'The product is positioned around operational clarity, controlled rollout, and accountable decision support rather than visual styling alone.',
-  },
-  {
-    question: 'Does the site reflect real product capability?',
-    answer:
-      'Yes. The website is structured around routing, alerting, launch, usage, and governance workflows that already exist in the product.',
-  },
-];
-
-export const launchSteps: TimelineItem[] = [
-  {
-    label: '01',
-    title: 'Create the company workspace',
-    detail: 'Provision the owner account, choose the operating tier, and assign rollout ownership.',
-  },
-  {
-    label: '02',
-    title: 'Prepare the launch workstation',
-    detail: 'Give operators a desktop entry point that validates device and environment setup before first use.',
-  },
-  {
-    label: '03',
-    title: 'Connect data, providers, and users',
-    detail: 'Load warehouses, items, fleet, inventory, and orders while assigning roles and provider settings.',
-  },
-  {
-    label: '04',
-    title: 'Run the first live window',
-    detail: 'Move through dry-run routing, readiness checks, and a controlled production launch.',
-  },
-];
-
-export const trustSignals = [
-  'Workspace tenancy',
-  'Provider-key masking',
-  'Audit timelines',
-  'Usage metering',
-  'Role-aware launch sign-off',
-  'Scenario history',
-];
-
 export const codeSnippet = `const decision = await freightPilot.route.plan({
   lane: "WH-A -> WEST-HUB",
   objective: "margin_protection",
@@ -367,49 +290,15 @@ if (decision.unassignedCount > 0) {
   });
 }`;
 
-export const premiumBadges = ['Route planning', 'Exception monitoring', 'Workspace launch', 'Provider controls'];
-
-export const deepLinks = {
-  docs: externalLinks.docs,
-  console: externalLinks.console,
-  desktop: externalLinks.desktop,
-};
-
-export const secondaryFeatures: FeatureCard[] = [
-  {
-    icon: Sparkles,
-    title: 'Clear operator context',
-    description: 'Pages are structured so important actions and signals can be found quickly.',
-    detail: 'Spacing, contrast, and hierarchy are used to support reading speed and decision quality.',
-  },
-  {
-    icon: Glasses,
-    title: 'Reduced interface noise',
-    description: 'Visual treatment is present, but it does not compete with the information itself.',
-    detail: 'The site keeps enough atmosphere to feel modern without pushing content into the background.',
-  },
-  {
-    icon: Waypoints,
-    title: 'Structured rollout steps',
-    description: 'The launch flow makes responsibilities and milestones explicit from the start.',
-    detail: 'Teams can see what is complete, what is blocked, and what still needs review.',
-  },
-  {
-    icon: Fingerprint,
-    title: 'Provider and policy controls',
-    description: 'Governance settings are treated as operational controls instead of buried configuration.',
-    detail: 'The product makes it easier to manage provider access and review changes as the team scales.',
-  },
+/** Honest trust signals — each one maps to a verifiable product behavior. */
+export const trustSignals = [
+  'Bank transfer to CBE or Dashen',
+  'No card required',
+  'Sample data on signup',
+  'Partial payments welcome',
+  'Audit timelines',
+  'Usage metering',
 ];
-
-export const pageIntro = {
-  home: {
-    eyebrow: 'FreightPilot platform',
-    title: 'Plan routes, manage exceptions, and launch operations from one control layer.',
-    description:
-      'A multi-page product site that explains the same routing, launch, and governance workflows available in the product itself.',
-  },
-};
 
 export const iconLinks = [
   { label: 'Open console', href: externalLinks.console, icon: ArrowUpRight },
@@ -417,44 +306,4 @@ export const iconLinks = [
   { label: 'Read docs', href: externalLinks.docs, icon: BadgeCheck },
 ];
 
-export const benefitStrip = [
-  'Route planning and dispatch review',
-  'Exception monitoring and handoff',
-  'Provider controls and audit history',
-  'Workspace launch and readiness checks',
-];
-
 export const trustRibbon = ['Audit key changes', 'Control provider access', 'Roll out teams in stages'];
-
-export const platformNarrative = [
-  'FreightPilot keeps planning, exception response, and workspace governance in one product model.',
-  'The site is organized around real operator tasks instead of generic category messaging.',
-  'Each page explains a different workflow while keeping the information hierarchy consistent.',
-];
-
-export const pageCards: FeatureCard[] = [
-  {
-    icon: Compass,
-    title: 'Home',
-    description: 'A concise overview of planning, exceptions, rollout, and provider controls.',
-    detail: 'Use this page to understand the product scope and move into the relevant workflow.',
-  },
-  {
-    icon: Layers3,
-    title: 'Platform',
-    description: 'A page focused on product modules, workflows, and operational responsibilities.',
-    detail: 'Use this page to understand how the product is organized for day-to-day work.',
-  },
-  {
-    icon: Activity,
-    title: 'Technology',
-    description: 'A page centered on providers, governance, and decision support controls.',
-    detail: 'Use this page when teams need to understand how model use is controlled and reviewed.',
-  },
-  {
-    icon: Zap,
-    title: 'Pricing + Launch',
-    description: 'Commercial planning and workspace setup guidance for real rollout work.',
-    detail: 'Use these pages to move from evaluation into a controlled pilot or launch.',
-  },
-];

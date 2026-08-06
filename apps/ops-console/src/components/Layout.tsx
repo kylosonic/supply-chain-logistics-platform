@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import type { PropsWithChildren } from 'react';
 
 import { useAuth } from '../context/AuthContext';
+import { CapPitchBanner } from './ActivationBanner';
 
 const navItems = [
   { to: '/', label: 'Control Tower', code: 'CT', hint: 'Operations overview' },
@@ -11,6 +12,8 @@ const navItems = [
   { to: '/alerts', label: 'Exceptions', code: 'EX', hint: 'Triage and response' },
   { to: '/planning', label: 'Planning', code: 'PL', hint: 'Replenishment rhythm' },
   { to: '/upload', label: 'Data Intake', code: 'DI', hint: 'CSV onboarding' },
+  { to: '/receipts', label: 'Payments', code: 'PY', hint: 'Receipts and wallet' },
+  { to: '/admin/receipts', label: 'Verification Queue', code: 'VQ', hint: 'Receipt verdicts' },
   { to: '/account', label: 'Workspace', code: 'WS', hint: 'Billing and AI keys' },
   { to: '/providers', label: 'Integrations', code: 'IN', hint: 'Carrier API keys' },
 ];
@@ -163,6 +166,10 @@ export function Layout({ children }: PropsWithChildren) {
               ))}
             </nav>
           </header>
+
+          {/* Free-cap + pitch banners render on EVERY page (NB-31.6 / NB-32);
+              the activation/demo banner itself stays page-level. */}
+          <CapPitchBanner />
 
           <main className="space-y-5">{children}</main>
         </div>

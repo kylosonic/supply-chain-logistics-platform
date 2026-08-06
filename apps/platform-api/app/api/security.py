@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from fastapi import Cookie, Depends, Header, HTTPException, Request, status
+from datetime import UTC, datetime
+
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -9,7 +11,9 @@ from app.models.membership import OrganizationMembership
 from app.models.user import User
 from app.repositories import MembershipRepository, UserRepository
 from app.schemas.auth import OrganizationRole, UserRole
+from app.services.activation import freecap
 from app.services.authz import ensure_role
+from app.services.billing import locks
 from app.services.security import decode_access_token
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -72,6 +76,61 @@ def get_current_membership(
     membership = MembershipRepository(db).get_active_membership(user.id, org_id=x_org_id)
     if not membership:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='No active organization membership')
+    return membership
+
+
+def get_optional_membership(
+    x_org_id: str | None = Header(default=None, alias='X-Organization-Id'),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> OrganizationMembership | None:
+    """Soft membership lookup: returns None (never raises) so org-less
+    write calls preserve the existing pass-through contract."""
+    return MembershipRepository(db).get_active_membership(user.id, org_id=x_org_id)
+
+
+def require_writable_workspace(
+    membership: OrganizationMembership | None = Depends(get_optional_membership),
+    db: Session = Depends(get_db),
+) -> OrganizationMembership | None:
+    """Write guard (blueprint §5 + Phase 4 decision #5).
+
+    - Membership None -> pass through (org-less write contract preserved).
+    - Else load the org, run ``locks.assert_workspace_writable`` (phase
+      check + Free-tier meter gate; refreshes workspace state incl. lazy
+      invoice issuance) and raise ``423 Locked`` when either lock holds.
+    - Phase lock wins the banner priority; the 423 detail gains
+      ``free_cap_locked`` + ``free_cap_message`` when the Free cap holds.
+    - Phases free/trial/active + under-cap -> membership returned unchanged.
+    """
+    if membership is None:
+        return membership
+    try:
+        locks.assert_workspace_writable(db, membership, datetime.now(UTC))
+    except locks.WorkspaceLockedError as exc:
+        state = exc.state
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail={
+                'state': state.phase.value,
+                'message': state.banner_message,
+                'days_remaining': state.days_remaining,
+                'can_write': False,
+            },
+        ) from exc
+    except freecap.FreeCapLockedError as exc:
+        cap_state = exc.state
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail={
+                'state': 'free_cap_locked',
+                'message': cap_state.message,
+                'days_remaining': None,
+                'can_write': False,
+                'free_cap_locked': True,
+                'free_cap_message': cap_state.message,
+            },
+        ) from exc
     return membership
 
 

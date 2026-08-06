@@ -7,10 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
-from app.api.security import get_current_user, require_roles
+from app.api.security import get_current_user, require_roles, require_writable_workspace
 from app.db.session import get_db
 from app.models.inventory import Inventory
 from app.models.item import Item
+from app.models.membership import OrganizationMembership
 from app.models.order import HistoricalOrder
 from app.models.replenishment import ReplenishmentPlan
 from app.models.user import User
@@ -66,7 +67,9 @@ def generate_replenishment_plans(
     payload: ReplenishmentGenerateRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
         raise HTTPException(status_code=403, detail='Insufficient role')
 
@@ -150,7 +153,9 @@ def approve_replenishment_plan(
     payload: ReplenishmentApproveRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     if user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail='Admin role required')
     plan = db.get(ReplenishmentPlan, plan_id)
@@ -192,7 +197,9 @@ def reject_replenishment_plan(
     payload: ReplenishmentRejectRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+
     if user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail='Admin role required')
     plan = db.get(ReplenishmentPlan, plan_id)
