@@ -105,6 +105,9 @@ export const freeLine = 'Free forever — 2,500 delivery tasks / month, no payme
 export const partialPaymentStory =
   'Partial payments welcome. Pay what your cash flow allows — send the receipt for each transfer, and your workspace unlocks when the full balance clears. If you overpay within 1,000 ETB, the surplus applies as credit to your next invoice.';
 
+export const paymentPaceStory =
+  'Pay at your bank\'s pace — your first invoice isn\'t due until the start of the next billing period.';
+
 export const trustStripLine =
   'Bank transfer to CBE or Dashen. No card required. Partial payments welcome. No hidden fees, no annual lock-in.';
 
