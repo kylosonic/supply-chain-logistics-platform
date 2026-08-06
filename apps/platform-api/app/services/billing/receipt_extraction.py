@@ -1,20 +1,28 @@
 """AI-assisted receipt extraction (TECH-10 / NB-10).
 
 Provider-agnostic interface with a BYOK resolution chain and a
-zero-confidence fallback. Phase 2 ships exactly ONE adapter (``mock``,
-deterministic and controlled by ``settings.receipt_extraction_mode``);
-real HTTP provider adapters are a NON-GOAL — the interface, key plumbing
-and fallback are real, the wire call is not (blueprint decision #7).
+zero-confidence fallback. PROD-02 ships TWO adapters: ``mock``
+(deterministic, dev/test-only, controlled by
+``settings.receipt_extraction_mode``) and ``openai`` (generic
+OpenAI-compatible chat-completions wire contract — works with OpenAI,
+Groq, Together, or any OpenAI-compatible gateway, keyed on
+``settings.receipt_extraction_base_url`` + ``receipt_extraction_model``).
+Production config validation (``settings.effective_receipt_extraction_mode``)
+forces mode ∈ {``real``, ``zero_confidence``}; the zero-confidence admin-queue
+workflow is the deliberate fallback.
 
 Imports models + audit + ``security.decrypt_provider_key`` only — no
-billing-internal imports.
+billing-internal imports. DAG: models(4), core.config, services.audit,
+services.security (acyclic; never imports app.api).
 """
 
 from __future__ import annotations
 
+import base64
 import json
 from dataclasses import dataclass, field
 
+import httpx
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -96,7 +104,12 @@ def extract_receipt(
     (NB-10.2) and can never fail an upload."""
     key = resolve_extraction_key(db, org)
     result: ExtractionResult
-    if key is None:
+    if settings.effective_receipt_extraction_mode == 'zero_confidence':
+        # PROD-02: deliberate fallback mode — resolve the org key (for audit
+        # `has_key` truth) but NEVER call the provider; the admin queue
+        # manual-review workflow handles the receipt.
+        result = _empty_result(has_key=key is not None, error='zero_confidence_mode')
+    elif key is None:
         result = _empty_result(has_key=False, error='no_ai_key')
     else:
         try:
@@ -163,7 +176,99 @@ def _extract_with_provider(
     ``ProviderAdapterError`` -> zero-confidence fallback upstream."""
     if provider_name == 'mock':
         return _mock_adapter(content_bytes, mock_extraction)
+    if provider_name == 'openai':
+        return _openai_compatible_adapter(content_bytes, api_key)
     raise ProviderAdapterError(f'No extraction adapter registered for provider {provider_name!r}')
+
+
+def _sniff_mime(content_bytes: bytes) -> str:
+    """MIME from magic bytes: PNG/JPEG/PDF, else octet-stream."""
+    if content_bytes.startswith(b'\x89PNG'):
+        return 'image/png'
+    if content_bytes.startswith(b'\xff\xd8\xff'):
+        return 'image/jpeg'
+    if content_bytes.startswith(b'%PDF'):
+        return 'application/pdf'
+    return 'application/octet-stream'
+
+
+def _post_chat_completion(url: str, api_key: str, payload: dict) -> dict:
+    """Chat-completions POST seam (monkeypatchable in tests). Any transport
+    failure, non-2xx, or non-JSON body raises ``ProviderAdapterError`` so the
+    upstream zero-confidence fallback always handles it."""
+    try:
+        response = httpx.post(
+            url,
+            json=payload,
+            headers={'Authorization': f'Bearer {api_key}'},
+            timeout=30.0,
+        )
+    except httpx.HTTPError as exc:
+        raise ProviderAdapterError(f'chat-completions HTTP error: {exc}') from exc
+    if response.status_code >= 300:
+        raise ProviderAdapterError(f'chat-completions returned HTTP {response.status_code}')
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise ProviderAdapterError(f'chat-completions returned non-JSON body: {exc}') from exc
+
+
+def _openai_compatible_adapter(content_bytes: bytes, api_key: str) -> dict:
+    """Generic OpenAI-compatible chat-completions adapter (PROD-02).
+
+    Sends the receipt as a base64 data URI (MIME-sniffed) with a strict-JSON
+    system prompt; parses ``choices[0].message.content`` into the canonical
+    8-field + per-field-confidence contract. Never requires ``response_format``
+    so endpoints without JSON-mode support still work. Missing keys, malformed
+    JSON, or transport errors raise ``ProviderAdapterError``.
+    """
+    mime = _sniff_mime(content_bytes)
+    data_uri = f'data:{mime};base64,{base64.b64encode(content_bytes).decode("ascii")}'
+    payload = {
+        'model': settings.receipt_extraction_model,
+        'messages': [
+            {
+                'role': 'system',
+                'content': (
+                    'You extract bank-transfer receipt data into strict JSON with exactly '
+                    f'the keys: {", ".join(EXTRACTION_FIELDS)}. Include a "confidence" object '
+                    'mapping every key to a confidence value between 0 and 1. '
+                    'Respond with only the JSON object, no prose.'
+                ),
+            },
+            {
+                'role': 'user',
+                'content': [
+                    {'type': 'text', 'text': 'Extract the receipt fields from this image.'},
+                    {'type': 'image_url', 'image_url': {'url': data_uri}},
+                ],
+            },
+        ],
+    }
+    url = f'{settings.receipt_extraction_base_url.rstrip("/")}/chat/completions'
+    response = _post_chat_completion(url, api_key, payload)
+    try:
+        content = response['choices'][0]['message']['content']
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ProviderAdapterError(f'malformed chat-completions response: {exc}') from exc
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise ProviderAdapterError(f'chat-completions content is not JSON: {exc}') from exc
+    missing = [name for name in EXTRACTION_FIELDS if name not in parsed]
+    if missing:
+        raise ProviderAdapterError(f'adapter output missing field {missing[0]!r}')
+    fields = {name: parsed[name] for name in EXTRACTION_FIELDS}
+    conf = parsed.get('confidence')
+    confidence = {
+        name: float(conf[name]) if isinstance(conf, dict) and name in conf else 0.0
+        for name in EXTRACTION_FIELDS
+    }
+    return {
+        'fields': fields,
+        'confidence': confidence,
+        'model_name': response.get('model'),
+    }
 
 
 def _mock_adapter(content_bytes: bytes, mock_extraction: dict | None) -> dict:
