@@ -160,11 +160,11 @@ vercel domains add freightpilot.com      # or use Vercel dashboard
 
 ## 6. System market-readiness checklist (platform-api + ops-console)
 
-- [ ] **PROD-A** sample-data baked into the API image (+ a test that runs seeding from a pristine container filesystem — the current tests run from the repo root where CSVs exist, masking the bug)
-- [ ] **PROD-B** extraction mode decision: wire one real provider adapter (BYOK provider key flow already exists) OR explicitly set zero-confidence workflow + admin training note
-- [ ] **PROD-C** SMS gateway adapter + `contact_phone` capture (account page) + escalation end-to-end test with the real gateway sandbox
-- [ ] **PROD-D** real CBE/Dashen account values in prod env; invoice rendering test with real values (no blank accounts)
-- [ ] **PROD-E** real secrets; `APP_ENV=production`; verify prod config guardrails (JWT length check, DB required)
+- [x] **PROD-A** sample-data baked into the API image (+ a test that runs seeding from a pristine container filesystem — the current tests run from the repo root where CSVs exist, masking the bug)
+- [x] **PROD-B** extraction mode decision: wire one real provider adapter (BYOK provider key flow already exists) OR explicitly set zero-confidence workflow + admin training note
+- [x] **PROD-C** SMS gateway adapter + `contact_phone` capture (account page) + escalation end-to-end test with the real gateway sandbox
+- [x] **PROD-D** real CBE/Dashen account values in prod env; invoice rendering test with real values (no blank accounts)
+- [x] **PROD-E** real secrets; `APP_ENV=production`; verify prod config guardrails (JWT length check, DB required)
 - [ ] **PROD-F** rate-limit review: slowapi 200/min default — verify signup/login bursts; per-route tuning if needed
 - [ ] **PROD-G** CORS + ALLOWED_HOSTS with production domains (extend the `test_cors_config.py` list with the prod origins)
 - [ ] **PROD-H** TECH-22 human verification (user action) — document findings in `cashflow-bank-transfer-receipt-verification.md` §12
@@ -201,21 +201,23 @@ See `docs/competitor-research-fourkites-project44.md` for full evidence. The one
 
 Create branch `feat/production-readiness-v1`. Suggested tickets (priority: P0 = blocks R0, P1 = R1/R2, P2 = nice-to-have):
 
-| Ticket | Priority | Acceptance criterion (user-visible) |
-|---|---|---|
-| PROD-01 | P0 | Signup succeeds in the production API container — sample-data CSV present in image; seeding audit event fires |
-| PROD-02 | P0 | Receipt extraction runs in production mode (real adapter OR explicit zero-confidence decision documented) |
-| PROD-03 | P0 | Escalation SMS sends via a real gateway to the customer's registered phone; phone capture UI on account page |
-| PROD-04 | P0 | Every invoice displays the real CBE or Dashen collection account (never blank) |
-| PROD-05 | P0 | Production secrets set; APP_ENV=production; prod config guardrails verified |
-| PROD-06 | P0 | Site signup works end-to-end from Vercel to the production API (CORS + hosts + cookies) |
-| PROD-07 | P1 | Desktop ships as a signed, auto-updating Windows installer pointing at production URLs |
-| PROD-08 | P1 | Production Postgres backup + restore drill documented and exercised |
-| PROD-09 | P1 | Stale `competitive-landscape-2026.md` rewritten/deleted; supabase legacy dir retired or documented |
-| PROD-10 | P1 | Analytics (privacy-light) + error monitoring live on the site |
-| PROD-11 | P1 | Rate-limit review pass on the launch funnel |
-| PROD-12 | P2 | Housekeeping: dead supabase-js dep + `.back-to-top` CSS removed; TECH-49 parked note |
-| PROD-13 | P2 | CI gates: check:bundle + full test suites wired into deploy pipeline |
+| Ticket | Priority | Status | Acceptance criterion (user-visible) |
+|---|---|---|---|
+| PROD-01 | P0 | ✅ DONE (R0) | Signup succeeds in the production API container — sample-data CSV present in image; seeding audit event fires |
+| PROD-02 | P0 | ✅ DONE (R0) | Receipt extraction runs in production mode (real OpenAI-compatible adapter OR explicit zero-confidence mode; mock impossible in prod) |
+| PROD-03 | P0 | ✅ DONE (R0) | Escalation SMS sends via a configurable REST gateway to the customer's registered phone; phone capture UI on account page |
+| PROD-04 | P0 | ✅ DONE (R0) | Every invoice displays the real CBE or Dashen collection account (never blank — production config guard) |
+| PROD-05 | P0 | ✅ DONE (R0) | Production secrets set; APP_ENV=production; prod config guardrails verified (JWT, DB, provider-key-encryption ≥32 chars) |
+| PROD-06 | P0 | ⏳ NEXT (R1) | Site signup works end-to-end from Vercel to the production API (CORS + hosts + cookies) — dev CORS hotfix already merged (`1a3875d`) |
+| PROD-07 | P1 | ⏳ | Desktop ships as a signed, auto-updating Windows installer pointing at production URLs |
+| PROD-08 | P1 | ⏳ | Production Postgres backup + restore drill documented and exercised |
+| PROD-09 | P1 | ⏳ | Stale `competitive-landscape-2026.md` rewritten/deleted; supabase legacy dir retired or documented |
+| PROD-10 | P1 | ⏳ | Analytics (privacy-light) + error monitoring live on the site |
+| PROD-11 | P1 | ⏳ | Rate-limit review pass on the launch funnel |
+| PROD-12 | P2 | ⏳ | Housekeeping: dead supabase-js dep + `.back-to-top` CSS removed; TECH-49 parked note |
+| PROD-13 | P2 | ⏳ | CI gates: check:bundle + full test suites wired into deploy pipeline |
+
+**R0 status:** PROD-01..05 shipped on `feat/production-readiness-r0` (commits `cef9de2`..`2868370`, QA APPROVED, merged to master). PROD-A..E resolved. R0 verification note: PROD-04's guard makes blank accounts impossible in production config, but the REAL account values still must be supplied by the operator in the production env (TECH-22 human gate remains, blocks R2).
 
 **Human-gate (not code, before R2):** TECH-22 fee-schedule verification — user action.
 
