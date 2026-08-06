@@ -14,6 +14,7 @@ from app.db.session import get_db
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization
 from app.models.usage_meter import OrganizationUsageCounter
+from app.models.user import User
 from app.schemas.auth import OrganizationRole, SubscriptionTier
 from app.schemas.billing import BillingCycle
 from app.schemas.subscription import (
@@ -22,6 +23,7 @@ from app.schemas.subscription import (
     SelectTierRequest,
     SubscriptionRead,
     ThresholdLevel,
+    UpdateContactPhoneRequest,
     UsageMeterRead,
     UsageMeterRecordRequest,
     UsageMetric,
@@ -30,6 +32,7 @@ from app.schemas.subscription import (
 from app.services.audit import record_audit_event
 from app.services.billing import lifecycle
 from app.services.billing import pricing
+from app.services.billing.sms import mask_phone
 from app.services.metering import current_usage_window
 
 router = APIRouter()
@@ -338,3 +341,39 @@ def select_tier(
         payload.tier.value,
         datetime.now(UTC),
     )
+
+
+@router.post('/me/contact-phone', response_model=SubscriptionRead)
+def update_contact_phone(
+    payload: UpdateContactPhoneRequest,
+    db: Session = Depends(get_db),
+    membership: OrganizationMembership = Depends(
+        require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)
+    ),
+):
+    """Set the escalation SMS contact phone (PROD-03, adjudication #5).
+
+    OWNER/ADMIN only, deliberately WITHOUT ``require_writable_workspace``:
+    the escalation phone must be settable while the workspace is in
+    limbo/grace — that is exactly when escalation SMS matters.
+    """
+    organization = db.get(Organization, membership.organization_id)
+    if not organization:
+        raise HTTPException(status_code=404, detail='Organization not found')
+
+    organization.contact_phone = payload.contact_phone
+    db.add(organization)
+    actor = db.get(User, membership.user_id)
+    record_audit_event(
+        db,
+        event_type='organization.contact_phone_updated',
+        entity_type='organization',
+        entity_id=organization.id,
+        actor=actor,
+        organization_id=organization.id,
+        description='Organization escalation contact phone updated',
+        payload={'contact_phone': mask_phone(payload.contact_phone)},
+    )
+    db.commit()
+    db.refresh(organization)
+    return lifecycle.subscription_read(db, organization)

@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     wallet_auto_forward_tolerance_etb: Decimal = Decimal('1000.00')
     reversal_undo_window_hours: int = 24
     sms_brand_name: str = 'FreightPilot'
+    sms_gateway_url: str = ''
+    sms_gateway_api_key: str = ''
+    sms_sender_name: str = 'FreightPilot'
     sample_data_dir: str = 'sample-data'
 
     @property

@@ -7,6 +7,7 @@ import { DashboardPage } from './DashboardPage';
 import { LoginPage } from './LoginPage';
 import { ReceiptsPage } from './ReceiptsPage';
 import { AdminReceiptsPage } from './AdminReceiptsPage';
+import { AccountPage } from './AccountPage';
 import { WorkspaceResetDangerZone } from '../components/WorkspaceResetDangerZone';
 import type { ActivationState } from '../types/api';
 
@@ -218,6 +219,20 @@ describe('ops console surface smoke', () => {
     expect(strip(html)).toContain('You&#x27;re 0% through onboarding');
     expect(html).toContain('data-testid="activation-banner"');
     expect(html).toContain('href="/upload"');
+  });
+
+  it('renders the account page with the escalation contact phone field (PROD-03)', () => {
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/account">
+          <AccountPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(strip(html)).toContain('Escalation contact');
+    expect(html).toContain('placeholder="Escalation phone"');
+    expect(html).toContain('Save phone number');
   });
 
   it('renders the admin danger zone with typed-confirmation reset (disabled until match)', () => {

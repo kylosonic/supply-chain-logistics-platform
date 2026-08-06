@@ -25,6 +25,13 @@ export async function selectTier(tier: SubscriptionTier): Promise<CurrentSubscri
   return data;
 }
 
+export async function updateContactPhone(contactPhone: string): Promise<CurrentSubscription> {
+  const { data } = await api.post<CurrentSubscription>('/subscriptions/me/contact-phone', {
+    contact_phone: contactPhone,
+  });
+  return data;
+}
+
 export async function listProviderKeys(): Promise<ProviderKey[]> {
   const { data } = await api.get<ProviderKey[]>('/providers/keys');
   return data;
