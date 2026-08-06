@@ -6,7 +6,7 @@ import { MotionSection } from '@/components/site/motion-section';
 import { PageHero } from '@/components/site/page-hero';
 import { SectionHeading } from '@/components/site/section-heading';
 import { SpotlightCard } from '@/components/site/spotlight-card';
-import { codeSnippet, externalLinks, technologyLayers, trustRibbon } from '@/lib/site-content';
+import { codeSnippet, startFreeCta, technologyLayers, trustRibbon } from '@/lib/site-content';
 
 export const metadata: Metadata = {
   title: 'Technology',
@@ -24,14 +24,9 @@ export default function TechnologyPage() {
         title="AI assistance with visible controls and audit history"
         description="FreightPilot treats signal handling, model routing, workspace policy, and auditability as operational controls that need to stay visible to the team."
         actions={
-          <>
-            <MagneticLink href="/pricing" variant="primary">
-              Explore pricing
-            </MagneticLink>
-            <MagneticLink href={externalLinks.docs} variant="secondary" external>
-              Review docs
-            </MagneticLink>
-          </>
+          <MagneticLink href="/launch" variant="primary">
+            {startFreeCta}
+          </MagneticLink>
         }
         aside={
           <SpotlightCard>

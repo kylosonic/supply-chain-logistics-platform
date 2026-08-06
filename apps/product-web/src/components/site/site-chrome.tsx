@@ -3,29 +3,32 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, m, useScroll } from 'framer-motion';
-import { ArrowUp, ArrowUpRight, Dot, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AnimatePresence, m } from 'framer-motion';
+import { Dot, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
-import { externalLinks, footerNavigation, navigation } from '@/lib/site-content';
+import { externalLinks, footerNavigation, navigation, startFreeCta } from '@/lib/site-content';
 
 import { MagneticLink } from './magnetic-link';
 
+const footerColumnTitles: Record<string, string> = {
+  platform: 'Platform',
+  resources: 'Resources',
+  company: 'Company',
+};
+
+/**
+ * Site chrome (nav + footer).
+ *
+ * Slimmed per TECH-45: no `useScroll`-driven nav scale, no back-to-top motion
+ * (scroll-triggered framer-motion removed); the nav holds the site's single
+ * primary CTA ("Start free" → /launch); the footer "Contact Sales" button is
+ * now a plain "Contact" text link; dead footer columns are gone.
+ */
 export function SiteChrome({ children }: PropsWithChildren) {
   const pathname = usePathname();
-  const { scrollY } = useScroll();
-  const [compact, setCompact] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = scrollY.on('change', (value) => {
-      setCompact(value > 24);
-      setShowBackToTop(value > 600);
-    });
-    return () => unsubscribe();
-  }, [scrollY]);
 
   useEffect(() => {
     let frame = 0;
@@ -77,14 +80,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
       <div className="pointer-events-none fixed inset-0 z-0 opacity-15 sm:opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:40px_40px]" />
 
       <header className="sticky top-0 z-40 px-3 pt-2.5 sm:px-6 sm:pt-4 lg:px-8">
-        <m.div
-          className={cn(
-            'mx-auto flex w-full max-w-[1380px] items-center justify-between gap-3 rounded-[28px] border border-white/10 bg-black/35 px-4 py-2.5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.32)] sm:gap-4 sm:rounded-full sm:py-3',
-            compact ? 'max-w-[1320px] px-4 py-2' : 'sm:px-5 sm:py-3',
-          )}
-          animate={{ scale: compact ? 0.985 : 1 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        >
+        <div className="mx-auto flex w-full max-w-[1380px] items-center justify-between gap-3 rounded-[28px] border border-white/10 bg-black/35 px-4 py-2.5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.32)] sm:gap-4 sm:rounded-full sm:px-5 sm:py-3">
           <Link href="/" className="inline-flex items-center gap-3 no-underline">
             <span className="inline-grid h-8 w-8 place-items-center rounded-[14px] border border-white/15 bg-white/[0.08] font-display text-sm font-semibold text-white shadow-[0_12px_40px_rgba(96,165,250,0.15)] sm:h-10 sm:w-10 sm:rounded-[16px]">
               FP
@@ -120,7 +116,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
               Docs
             </MagneticLink>
             <MagneticLink href="/launch" variant="primary">
-              Launch FreightPilot
+              {startFreeCta}
             </MagneticLink>
           </div>
 
@@ -155,7 +151,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
               ))}
             </span>
           </button>
-        </m.div>
+        </div>
       </header>
 
       <AnimatePresence>
@@ -197,7 +193,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
                 <MagneticLink href={externalLinks.docs} variant="secondary" external>
                   Open docs
                 </MagneticLink>
-                <MagneticLink href={externalLinks.console} variant="primary" external>
+                <MagneticLink href={externalLinks.console} variant="secondary" external>
                   Open console
                 </MagneticLink>
               </div>
@@ -224,93 +220,42 @@ export function SiteChrome({ children }: PropsWithChildren) {
               Built to give operators one place to plan routes, handle exceptions, manage provider controls, and launch new workspaces securely and reliably.
             </p>
             <div className="flex gap-4 pt-2">
-              <MagneticLink href="/contact" variant="primary">
-                Contact Sales
-              </MagneticLink>
+              <Link href="/contact" className="text-sm font-medium text-white/72 underline-offset-4 transition hover:text-white hover:underline">
+                Contact
+              </Link>
             </div>
           </div>
-          
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-            <div className="space-y-4">
-              <h4 className="font-display text-sm text-white">Platform</h4>
-              <ul className="space-y-3">
-                {footerNavigation.platform.map((item) => (
-                  <li key={item.label}>
-                    <Link href={item.href} className="text-sm text-white/60 transition hover:text-white">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="space-y-4">
-              <h4 className="font-display text-sm text-white">Resources</h4>
-              <ul className="space-y-3">
-                {footerNavigation.resources.map((item) => (
-                  <li key={item.label}>
-                    <Link href={item.href} className="text-sm text-white/60 transition hover:text-white" {...(item.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="space-y-4">
-              <h4 className="font-display text-sm text-white">Company</h4>
-              <ul className="space-y-3">
-                {footerNavigation.company.map((item) => (
-                  <li key={item.label}>
-                    <Link href={item.href} className="text-sm text-white/60 transition hover:text-white">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="space-y-4">
-              <h4 className="font-display text-sm text-white">Legal</h4>
-              <ul className="space-y-3">
-                {footerNavigation.legal.map((item) => (
-                  <li key={item.label}>
-                    <Link href={item.href} className="text-sm text-white/60 transition hover:text-white">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            {Object.entries(footerNavigation).map(([key, items]) => {
+              if (items.length === 0) return null;
+              return (
+                <div key={key} className="space-y-4">
+                  <h4 className="font-display text-sm text-white">{footerColumnTitles[key] ?? key}</h4>
+                  <ul className="space-y-3">
+                    {items.map((item) => (
+                      <li key={item.label}>
+                        <Link
+                          href={item.href}
+                          className="text-sm text-white/60 transition hover:text-white"
+                          {...(item.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                        >
+                          {item.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Legal footer row */}
         <div className="section-shell mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-xs text-white/40 sm:flex-row">
           <p>© {currentYear} FreightPilot. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <span className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-              All systems operational
-            </span>
-          </div>
         </div>
       </footer>
-
-      {/* Back-to-top button */}
-      <AnimatePresence>
-        {showBackToTop ? (
-          <m.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.25 }}
-            type="button"
-            className="back-to-top"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            aria-label="Back to top"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </m.button>
-        ) : null}
-      </AnimatePresence>
     </div>
   );
 }

@@ -12,14 +12,16 @@ const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://freightpilot.com';
 
+const siteDescription =
+  'Sign up and your workspace loads with sample data — warehouses, fleet, inventory, orders, all ready. Optimize your first route immediately.';
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'FreightPilot | AI Logistics Operations Platform',
+    default: 'FreightPilot — Run your first optimized route in 5 minutes. Free.',
     template: '%s | FreightPilot',
   },
-  description:
-    'FreightPilot gives logistics teams a single workspace for route planning, live exception management, operator launch readiness, and AI-assisted decision support.',
+  description: siteDescription,
   keywords: [
     'logistics platform',
     'route optimization',
@@ -36,23 +38,21 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: siteUrl,
     siteName: 'FreightPilot',
-    title: 'FreightPilot | AI Logistics Operations Platform',
-    description:
-      'Plan routes, manage exceptions, and launch operations from one control layer. A workspace for logistics teams that need planning, execution, and governance in one product.',
+    title: 'FreightPilot — Run your first optimized route in 5 minutes. Free.',
+    description: siteDescription,
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'FreightPilot — AI Logistics Operations Platform',
+        alt: 'FreightPilot — Run your first optimized route in 5 minutes. Free.',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FreightPilot | AI Logistics Operations Platform',
-    description:
-      'Plan routes, manage exceptions, and launch operations from one control layer.',
+    title: 'FreightPilot — Run your first optimized route in 5 minutes. Free.',
+    description: siteDescription,
     images: ['/og-image.png'],
   },
   robots: {

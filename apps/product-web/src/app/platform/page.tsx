@@ -6,7 +6,7 @@ import { MotionSection } from '@/components/site/motion-section';
 import { PageHero } from '@/components/site/page-hero';
 import { SectionHeading } from '@/components/site/section-heading';
 import { SpotlightCard } from '@/components/site/spotlight-card';
-import { externalLinks, operatingLoop, platformStacks } from '@/lib/site-content';
+import { operatingLoop, platformStacks, startFreeCta } from '@/lib/site-content';
 
 export const metadata: Metadata = {
   title: 'Platform',
@@ -24,14 +24,9 @@ export default function PlatformPage() {
         title="A platform organized around real logistics work"
         description="FreightPilot brings route decisions, live exceptions, shipment flow, workspace controls, and rollout tasks into one operating system."
         actions={
-          <>
-            <MagneticLink href="/launch" variant="primary">
-              Launch the workspace
-            </MagneticLink>
-            <MagneticLink href={externalLinks.console} variant="secondary" external>
-              Open control tower
-            </MagneticLink>
-          </>
+          <MagneticLink href="/launch" variant="primary">
+            {startFreeCta}
+          </MagneticLink>
         }
         aside={
           <div className="grid gap-4">
