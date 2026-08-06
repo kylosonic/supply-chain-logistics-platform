@@ -39,3 +39,29 @@ def test_production_extraction_mode_rejects_mock():
 def test_production_extraction_mode_accepts_real():
     s = _prod_settings()
     assert s.effective_receipt_extraction_mode == 'real'
+
+
+# --- PROD-04: CBE/Dashen collection-account guards --------------------------
+
+def test_production_cbe_holder_required():
+    s = _prod_settings(cbe_account_holder='')
+    with pytest.raises(ValueError, match='CBE_ACCOUNT_HOLDER'):
+        s.effective_cbe_account_holder
+
+
+def test_production_cbe_number_required():
+    s = _prod_settings(cbe_account_number='')
+    with pytest.raises(ValueError, match='CBE_ACCOUNT_NUMBER'):
+        s.effective_cbe_account_number
+
+
+def test_production_dashen_holder_required():
+    s = _prod_settings(dashen_account_holder='')
+    with pytest.raises(ValueError, match='DASHEN_ACCOUNT_HOLDER'):
+        s.effective_dashen_account_holder
+
+
+def test_production_dashen_number_required():
+    s = _prod_settings(dashen_account_number='')
+    with pytest.raises(ValueError, match='DASHEN_ACCOUNT_NUMBER'):
+        s.effective_dashen_account_number

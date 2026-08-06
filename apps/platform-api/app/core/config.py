@@ -87,6 +87,38 @@ class Settings(BaseSettings):
             )
         return self.receipt_extraction_mode
 
+    @property
+    def effective_cbe_account_holder(self) -> str:
+        if self.app_env in ('development', 'test'):
+            return self.cbe_account_holder
+        if not self.cbe_account_holder:
+            raise ValueError('CBE_ACCOUNT_HOLDER is required in non-dev environments')
+        return self.cbe_account_holder
+
+    @property
+    def effective_cbe_account_number(self) -> str:
+        if self.app_env in ('development', 'test'):
+            return self.cbe_account_number
+        if not self.cbe_account_number:
+            raise ValueError('CBE_ACCOUNT_NUMBER is required in non-dev environments')
+        return self.cbe_account_number
+
+    @property
+    def effective_dashen_account_holder(self) -> str:
+        if self.app_env in ('development', 'test'):
+            return self.dashen_account_holder
+        if not self.dashen_account_holder:
+            raise ValueError('DASHEN_ACCOUNT_HOLDER is required in non-dev environments')
+        return self.dashen_account_holder
+
+    @property
+    def effective_dashen_account_number(self) -> str:
+        if self.app_env in ('development', 'test'):
+            return self.dashen_account_number
+        if not self.dashen_account_number:
+            raise ValueError('DASHEN_ACCOUNT_NUMBER is required in non-dev environments')
+        return self.dashen_account_number
+
     @field_validator('cors_origins', mode='before')
     @classmethod
     def parse_cors_origins(cls, value: list[str] | str) -> list[str]:
