@@ -13,7 +13,14 @@ class Settings(BaseSettings):
     jwt_algorithm: str = 'HS256'
     jwt_access_token_expire_minutes: int = 120
     provider_key_encryption_secret: str = ''
-    cors_origins: list[str] = ['http://localhost:5173']
+    cors_origins: list[str] = [
+        'http://localhost',
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:8081',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:8081',
+    ]
     allowed_hosts: list[str] = ['localhost', '127.0.0.1', 'testserver']
     cbe_account_holder: str = ''
     cbe_account_number: str = ''
