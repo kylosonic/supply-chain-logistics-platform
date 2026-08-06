@@ -9,6 +9,7 @@ import { SpotlightCard } from '@/components/site/spotlight-card';
 import {
   faqItems,
   partialPaymentStory,
+  paymentPaceStory,
   pricingTiers,
   startFreeCta,
   verificationLine,
@@ -123,6 +124,7 @@ export default function PricingPage() {
             description="No card is ever required. Partial payments are welcome at any point."
           />
           <p className="mt-8 max-w-[46rem] text-sm leading-8 text-white/72">{partialPaymentStory}</p>
+          <p className="mt-4 text-sm leading-8 text-white/72">{paymentPaceStory}</p>
           <p className="mt-4 text-sm font-semibold text-white">{verificationLine}</p>
         </SpotlightCard>
       </section>
