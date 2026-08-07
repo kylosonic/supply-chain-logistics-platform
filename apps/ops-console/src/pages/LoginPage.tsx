@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 import { register as registerApi } from '../services/authApi';
+import { bootstrapErrorMessage } from '../services/authErrors';
 
 function getErrorMessage(err: unknown, fallback: string): string {
   if (typeof err === 'object' && err !== null && 'response' in err) {
@@ -20,8 +21,10 @@ function getErrorMessage(err: unknown, fallback: string): string {
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
   const signupUrl = import.meta.env.VITE_SIGNUP_URL || 'http://localhost:8081#signup';
-  const [identifier, setIdentifier] = useState('admin@testco.com');
-  const [password, setPassword] = useState('admin12345');
+  const [identifier, setIdentifier] = useState(() =>
+    import.meta.env.PROD ? '' : 'admin@testco.com',
+  );
+  const [password, setPassword] = useState(() => (import.meta.env.PROD ? '' : 'admin12345'));
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(false);
@@ -50,7 +53,7 @@ export function LoginPage() {
       await registerApi(identifier, password, 'admin');
       await login(identifier, password);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to create initial admin'));
+      setError(bootstrapErrorMessage(err, 'Failed to create initial admin'));
     } finally {
       setIsBootstrapping(false);
     }
@@ -90,7 +93,7 @@ export function LoginPage() {
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300/80">Control tower login</p>
             <h2 className="font-['Space_Grotesk'] text-3xl font-semibold text-slate-50">Sign in to your workspace</h2>
-            <p className="text-sm leading-6 text-slate-400">Use your company email or username. Demo credentials remain prefilled for local validation.</p>
+            <p className="text-sm leading-6 text-slate-400">Use your company email or username.</p>
           </div>
 
           <form className="space-y-4" onSubmit={onSubmit}>
@@ -133,7 +136,7 @@ export function LoginPage() {
                 {isBootstrapping ? (
                   <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
                 ) : null}
-                {isBootstrapping ? 'Creating admin...' : 'Create initial admin'}
+                {isBootstrapping ? 'Creating admin...' : 'Create initial admin (first-time setup)'}
               </button>
             </div>
           </form>
