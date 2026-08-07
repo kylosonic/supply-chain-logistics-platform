@@ -1,6 +1,6 @@
 # Live Launch — Origin Trust, Data Access Continuity & Deployment Hygiene — Living Behaviors
 
-> ⚠️ **NOT YET IMPLEMENTED** — Locked in on 2026-08-07 following the pre-launch operational review. Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics. Pending execution by `@build`/`@fixer` and verification by `@qa` against tickets NB-48 through NB-53 in the gap ledger.
+> ✅ **IMPLEMENTED** — Shipped 2026-08-07 in the launch-readiness batch (TECH-51..59; commits `0e28371` `5b9607a` `157cbb5` `d68edf2`, merged to `master`). Live-verified: both origins trusted (preflight echo), own public address accepted (`/health` 200), credential rotation with zero data loss, smoke-test orgs removed, launch flow green end-to-end (signup → seeded workspace → route optimization 200 → milestone 6). Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
 
 ## 1. Why this feature exists
 

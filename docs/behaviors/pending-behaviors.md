@@ -510,7 +510,7 @@ Source behavior doc: [`live-launch-origin-trust-and-readiness.md`](./live-launch
   2. Both official web addresses can reach the platform by its public address without security-blocked or unrecognized-host errors.
   3. Direct visits to the platform's public address are accepted.
 
-### NB-50 — Data-store connection secret rotated without interrupting the live product — [OPEN]
+### NB-50 — Data-store connection secret rotated without interrupting the live product — [IMPLEMENTED]
 - **Priority:** P0 (launch blocker)
 - **Feature area:** Live launch, data access continuity
 - **Acceptance criteria:**
@@ -528,7 +528,7 @@ Source behavior doc: [`live-launch-origin-trust-and-readiness.md`](./live-launch
   3. Immediately after the merge-triggered publication, the live platform still passes the trust rules (NB-48, NB-49) and the health indicator still reports the data store reachable (NB-50).
   4. The trust configuration was live and verified BEFORE the merge publication — configuration changes and code changes are never published for the first time in the same moment.
 
-### NB-52 — Smoke-test workspace fully removed from the live environment — [OPEN]
+### NB-52 — Smoke-test workspace fully removed from the live environment — [IMPLEMENTED]
 - **Priority:** P0 (launch blocker)
 - **Feature area:** Workspace hygiene
 - **Acceptance criteria:**
@@ -537,7 +537,7 @@ Source behavior doc: [`live-launch-origin-trust-and-readiness.md`](./live-launch
   3. Before removal, the maintainer reviewed a complete listing of the records to be removed, and that listing contained only smoke-test data — never customer data.
   4. No other workspace or customer record is affected by the removal.
 
-### NB-53 — Live launch flow verified end-to-end from both official addresses — [OPEN]
+### NB-53 — Live launch flow verified end-to-end from both official addresses — [IMPLEMENTED]
 - **Priority:** P0 (launch blocker)
 - **Feature area:** Live launch verification
 - **Acceptance criteria:**
