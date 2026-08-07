@@ -37,7 +37,9 @@ html {
 
 body {
   min-height: 100vh;
-  background: #0a0f16;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(56, 189, 248, 0.07), transparent 45%),
+    #0a0f16;
   color: white;
   overflow-x: hidden;
 }
