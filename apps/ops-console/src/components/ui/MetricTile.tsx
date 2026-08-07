@@ -8,14 +8,6 @@ type MetricTileProps = {
   cta?: { label: string; href: string };
 };
 
-const toneClasses: Record<MetricTone, string> = {
-  neutral: 'border-slate-800/80 bg-slate-950/72',
-  success: 'border-emerald-500/25 bg-emerald-950/20',
-  warning: 'border-amber-500/25 bg-amber-950/20',
-  danger: 'border-rose-500/25 bg-rose-950/20',
-  info: 'border-sky-500/25 bg-sky-950/20',
-};
-
 const dotColors: Record<MetricTone, string> = {
   neutral: 'bg-slate-500',
   success: 'bg-emerald-400',
@@ -25,21 +17,21 @@ const dotColors: Record<MetricTone, string> = {
 };
 
 export function MetricTile({ title, value, detail, tone = 'neutral', cta }: MetricTileProps) {
+  const isPulsing = tone === 'danger' || tone === 'warning';
+
   return (
-    <article
-      className={`hover-lift top-highlight animate-scale-in rounded-[24px] border px-5 py-5 shadow-[0_18px_48px_rgba(2,12,20,0.22)] ${toneClasses[tone]}`}
-    >
+    <article className="hover-lift animate-scale-in rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-4">
       <div className="flex items-center gap-2">
-        <span className={`inline-block h-1.5 w-1.5 rounded-full ${dotColors[tone]}`} style={{ animation: tone === 'danger' || tone === 'warning' ? 'pulseRing 2s ease-in-out infinite' : 'none' }} />
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{title}</p>
+        <span
+          className={`inline-block h-1.5 w-1.5 rounded-full ${dotColors[tone]}`}
+          style={isPulsing ? { animation: 'pulseRing 2s ease-in-out infinite' } : undefined}
+        />
+        <p className="text-xs font-medium text-slate-500">{title}</p>
       </div>
-      <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
+      <p className="mt-2 font-mono text-2xl font-medium tabular-nums tracking-tight text-slate-100">{value}</p>
+      <p className="mt-1.5 text-sm leading-5 text-slate-400">{detail}</p>
       {cta ? (
-        <a
-          href={cta.href}
-          className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline"
-        >
+        <a href={cta.href} className="mt-2 inline-block text-sm font-medium text-sky-400 underline-offset-4 hover:underline">
           {cta.label} →
         </a>
       ) : null}

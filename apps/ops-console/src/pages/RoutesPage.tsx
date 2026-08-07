@@ -129,7 +129,7 @@ export function RoutesPage() {
       >
         <div className="space-y-3">
           {history.slice(0, 6).map((run, index) => (
-            <article key={run.id} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4" style={{ animationDelay: `${index * 0.04}s` }}>
+            <article key={run.id} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4" style={{ animationDelay: `${index * 0.04}s` }}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">

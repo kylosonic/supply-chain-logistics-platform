@@ -43,7 +43,7 @@ function ResolveDialog({
   return (
     <div className="animate-fade-in fixed inset-0 z-50 grid place-items-center bg-slate-950/70 backdrop-blur-sm">
       <div className="animate-scale-in w-full max-w-lg rounded-[28px] border border-slate-800/80 bg-slate-950 p-6 shadow-[0_32px_100px_rgba(2,12,20,0.6)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300/80">Resolution</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-emerald-300/70">Resolution</p>
         <h3 className="mt-2 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">
           Resolve: {alertTitle}
         </h3>
@@ -66,7 +66,7 @@ function ResolveDialog({
           <button
             type="button"
             onClick={() => onConfirm(note.trim() || undefined)}
-            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-lg bg-emerald-500 px-5 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400"
           >
             Resolve alert
           </button>
@@ -183,7 +183,7 @@ export function AlertsPage() {
           <button
             onClick={onScan}
             disabled={isScanning}
-            className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:opacity-60"
+            className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 disabled:opacity-60"
           >
             {isScanning ? (
               <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
@@ -232,7 +232,7 @@ export function AlertsPage() {
                 <option value="high">high</option>
                 <option value="critical">critical</option>
               </select>
-              <button className="glow-ring inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105">
+              <button className="glow-ring inline-flex min-h-12 items-center justify-center rounded-lg bg-sky-500 px-5 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400">
                 Create alert
               </button>
             </div>
@@ -273,7 +273,7 @@ export function AlertsPage() {
             {alerts.map((alert, index) => (
               <article
                 key={alert.id}
-                className={`animate-fade-in hover-lift rounded-[22px] border border-l-[3px] border-slate-800 bg-slate-900/70 p-4 ${severityBorderAccent[alert.severity] ?? ''}`}
+                className={`animate-fade-in hover-lift rounded-xl border border-l-[3px] border-slate-800/60 bg-slate-900/40 p-4 ${severityBorderAccent[alert.severity] ?? ''}`}
                 style={{ animationDelay: `${index * 0.04}s` }}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">

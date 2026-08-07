@@ -183,7 +183,7 @@ export function ProvidersPage() {
 
                 <button
                   disabled={isSubmitting}
-                  className="glow-ring mt-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="glow-ring mt-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? 'Validating connection...' : 'Securely Save Key'}
                 </button>

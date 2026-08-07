@@ -35,7 +35,7 @@ export function CapPitchBanner() {
         </p>
         <Link
           to="/account"
-          className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-rose-300 via-rose-400 to-orange-300 px-4 text-sm font-semibold text-rose-950 transition hover:brightness-105"
+          className="glow-ring inline-flex min-h-10 items-center justify-center rounded-lg bg-rose-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-rose-500"
         >
           Upgrade now
         </Link>
@@ -104,7 +104,7 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
       <div
         role="banner"
         data-testid="activation-banner"
-        className="flex flex-wrap items-center justify-between gap-3 rounded-[26px] border border-sky-500/25 bg-sky-950/25 px-5 py-4"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-500/20 bg-sky-950/30 px-5 py-4"
       >
         <div>
           {n < 5 ? (
@@ -121,14 +121,14 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
           )}
           <div className="mt-2 h-1.5 w-full max-w-[420px] overflow-hidden rounded-full bg-slate-800">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300"
+              className="h-full rounded-lg bg-sky-500"
               style={{ width: `${pct}%` }}
             />
           </div>
         </div>
         <Link
           to={state.banner.cta ?? '/upload'}
-          className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+          className="glow-ring inline-flex min-h-10 items-center justify-center rounded-lg bg-sky-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400"
         >
           {n < 5 ? 'Continue setup' : 'Run your first route'}
         </Link>
@@ -140,7 +140,7 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
     <div
       role="banner"
       data-testid="activation-checklist"
-      className="rounded-[26px] border border-sky-500/25 bg-sky-950/25 p-5"
+      className="rounded-xl border border-sky-500/20 bg-sky-950/30 p-5"
     >
       {n < 5 ? (
         <p className="text-sm font-semibold leading-6 text-sky-100">
@@ -155,7 +155,7 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
           </p>
           <Link
             to="/routes"
-            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+            className="glow-ring inline-flex min-h-10 items-center justify-center rounded-lg bg-sky-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400"
           >
             Run your first route
           </Link>
@@ -174,7 +174,7 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
             <div
               key={milestone.category}
               data-testid={`milestone-chip-${milestone.category}`}
-              className={`rounded-[18px] border px-3 py-3 ${chipTone}`}
+              className={`rounded-lg border px-3 py-3 ${chipTone}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em]">
@@ -195,7 +195,7 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
 
       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-800">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300"
+          className="h-full rounded-lg bg-sky-500"
           style={{ width: `${pct}%` }}
         />
       </div>

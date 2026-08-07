@@ -55,7 +55,7 @@ export function WorkspaceResetDangerZone({
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-md rounded-[28px] border border-rose-500/30 bg-slate-950 p-6 shadow-[0_24px_80px_rgba(2,12,20,0.5)]">
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/25 bg-slate-900/60 p-6">
             <h3 className="font-['Space_Grotesk'] text-xl font-semibold text-rose-100">
               Reset workspace to sample data?
             </h3>

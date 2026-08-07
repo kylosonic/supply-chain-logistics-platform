@@ -127,7 +127,7 @@ export function RouteOptimizerForm({
 
         <button
           disabled={isSubmitting}
-          className="glow-ring col-span-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 lg:col-span-2"
+          className="glow-ring col-span-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 lg:col-span-2"
         >
           {isSubmitting ? (
             <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
@@ -155,7 +155,7 @@ export function RouteOptimizerForm({
               { label: 'Duration', value: `${result.estimated_duration_min} min` },
               { label: 'Stops', value: String(result.stops.length) },
             ].map((stat) => (
-              <div key={stat.label} className="hover-lift rounded-[20px] border border-slate-800 bg-slate-950/70 p-4 transition">
+              <div key={stat.label} className="hover-lift rounded-lg border border-slate-800/60 bg-slate-900/40 p-4 transition">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{stat.label}</p>
                 <p className="mt-3 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{stat.value}</p>
               </div>

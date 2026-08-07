@@ -105,7 +105,7 @@ export function CsvUploadPanel() {
   return (
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {uploadSpecs.map((spec, index) => (
-          <article key={spec.key} className="animate-fade-in hover-lift rounded-[26px] border border-slate-800/80 bg-slate-950/72 p-5 shadow-[0_24px_80px_rgba(2,12,20,0.28)] transition" style={{ animationDelay: `${index * 0.06}s` }}>
+          <article key={spec.key} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-5 transition" style={{ animationDelay: `${index * 0.06}s` }}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300/80">Step {index + 1}</p>
@@ -134,7 +134,7 @@ export function CsvUploadPanel() {
                 <button
                   disabled={!files[spec.key] || activeKind !== null || freeCapLocked}
                   onClick={() => submit(spec.key)}
-                  className="glow-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="glow-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {activeKind === spec.key ? 'Uploading...' : freeCapLocked ? 'Writes locked (Free cap)' : spec.actionLabel}
                 </button>

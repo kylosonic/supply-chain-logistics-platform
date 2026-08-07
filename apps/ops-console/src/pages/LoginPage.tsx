@@ -60,100 +60,89 @@ export function LoginPage() {
   }
 
   return (
-    <div className="mx-auto grid min-h-screen w-full max-w-[1400px] items-center gap-6 px-4 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-6">
-      <section className="animate-slide-up top-highlight overflow-hidden rounded-[34px] border border-slate-800/80 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_24%),linear-gradient(160deg,rgba(6,14,21,0.96),rgba(11,29,40,0.92))] p-8 shadow-[0_28px_90px_rgba(2,12,20,0.4)]">
-        <div className="max-w-2xl space-y-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300/80">FreightPilot workspace</p>
-          <h1 className="font-['Space_Grotesk'] text-[clamp(2.5rem,4vw,4.2rem)] font-semibold leading-none text-slate-50">
-            Operator access to routes, exceptions, launch readiness, and billing control.
-          </h1>
-          <p className="max-w-2xl text-sm leading-7 text-slate-300">
-            Sign in with your company credentials to enter the command tower. If your workspace is new, create the
-            company account from the product site first and return here for live operations.
-          </p>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              { eyebrow: 'Routes', title: 'Optimize', detail: 'Model route decisions with cost and schedule context visible.' },
-              { eyebrow: 'Exceptions', title: 'Respond', detail: 'Triage alerts and delayed shipments before they age into cost.' },
-              { eyebrow: 'Workspace', title: 'Govern', detail: 'Manage billing tiers, AI provider keys, and launch readiness signals.' },
-            ].map((card) => (
-              <article key={card.eyebrow} className="hover-lift rounded-[24px] border border-slate-800 bg-slate-950/55 p-4 transition">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{card.eyebrow}</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{card.title}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-400">{card.detail}</p>
-              </article>
-            ))}
+    <div className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
+          <span className="inline-grid h-10 w-10 place-items-center rounded-lg bg-sky-500 font-['Space_Grotesk'] text-sm font-bold text-slate-950">
+            FP
+          </span>
+          <div className="space-y-1">
+            <h1 className="font-['Space_Grotesk'] text-xl font-semibold tracking-tight text-slate-100">
+              Sign in to your workspace
+            </h1>
+            <p className="text-sm text-slate-400">
+              FreightPilot operations console
+            </p>
           </div>
         </div>
-      </section>
 
-      <section className="animate-slide-up overflow-hidden rounded-[34px] border border-slate-800/80 bg-slate-950/76 p-8 shadow-[0_24px_80px_rgba(2,12,20,0.36)] backdrop-blur" style={{ animationDelay: '0.1s' }}>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300/80">Control tower login</p>
-            <h2 className="font-['Space_Grotesk'] text-3xl font-semibold text-slate-50">Sign in to your workspace</h2>
-            <p className="text-sm leading-6 text-slate-400">Use your company email or username.</p>
-          </div>
-
-          <form className="space-y-4" onSubmit={onSubmit}>
-            <label className="grid gap-2 text-sm text-slate-300">
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <div className="space-y-1.5">
+            <label htmlFor="identifier" className="block text-sm font-medium text-slate-300">
               Company email or username
-              <input
-                className="glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-slate-100 outline-none transition focus:border-sky-400/50"
-                placeholder="Company email or username"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-              />
             </label>
-            <label className="grid gap-2 text-sm text-slate-300">
-              Password
-              <input
-                className="glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-slate-100 outline-none transition focus:border-sky-400/50"
-                placeholder="Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </label>
-
-            <div className="grid gap-3 pt-2">
-              <button
-                disabled={isSubmitting}
-                className="glow-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-4 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSubmitting ? (
-                  <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
-                ) : null}
-                {isSubmitting ? 'Signing in...' : 'Enter control tower'}
-              </button>
-              <button
-                type="button"
-                disabled={isBootstrapping}
-                onClick={onBootstrapInitialAdmin}
-                className="glow-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isBootstrapping ? (
-                  <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
-                ) : null}
-                {isBootstrapping ? 'Creating admin...' : 'Create initial admin (first-time setup)'}
-              </button>
-            </div>
-          </form>
-
-          {error ? (
-            <div className="animate-fade-in rounded-2xl border border-rose-500/25 bg-rose-950/18 px-4 py-3 text-sm text-rose-200">{error}</div>
-          ) : null}
-
-          <div className="rounded-[24px] border border-slate-800 bg-slate-900/60 p-4 text-sm leading-6 text-slate-400">
-            <p>New workspace?</p>
-            <p className="mt-2">Create the company account on the product site, choose your tier, then return here to continue in the desktop or web control tower.</p>
-            <a href={signupUrl} className="mt-3 inline-flex font-semibold text-sky-300 no-underline transition hover:text-sky-200" target="_blank" rel="noreferrer">
-              Create company account →
-            </a>
+            <input
+              id="identifier"
+              className="w-full rounded-lg border border-slate-700/60 bg-slate-900 px-3.5 py-2.5 text-sm text-slate-100 outline-none transition-colors focus:border-sky-500/60"
+              placeholder="you@company.com"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              autoComplete="username"
+            />
           </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="block text-sm font-medium text-slate-300">
+              Password
+            </label>
+            <input
+              id="password"
+              className="w-full rounded-lg border border-slate-700/60 bg-slate-900 px-3.5 py-2.5 text-sm text-slate-100 outline-none transition-colors focus:border-sky-500/60"
+              placeholder="••••••••"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+
+          <button
+            disabled={isSubmitting}
+            className="w-full rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? 'Signing in...' : 'Enter control tower'}
+          </button>
+        </form>
+
+        <div className="mt-6 border-t border-slate-800/60 pt-4 text-center">
+          <p className="text-xs text-slate-500">New workspace? Create the company account on the product site first.</p>
+          <a
+            href={signupUrl}
+            className="mt-1.5 inline-block text-sm font-medium text-sky-400 underline-offset-4 hover:underline"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Create company account →
+          </a>
         </div>
-      </section>
+
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            disabled={isBootstrapping}
+            onClick={onBootstrapInitialAdmin}
+            className="text-xs font-medium text-slate-500 underline-offset-4 transition-colors hover:text-slate-300 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isBootstrapping ? 'Creating admin...' : 'Create initial admin (first-time setup)'}
+          </button>
+        </div>
+
+        {error ? (
+          <div className="mt-5 rounded-lg border border-rose-500/25 bg-rose-950/30 px-3.5 py-3 text-sm text-rose-300">
+            {error}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

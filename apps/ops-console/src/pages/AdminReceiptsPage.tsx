@@ -104,7 +104,7 @@ function ReversalActionButtons({ row, onUndo, onReverse }: ReversalActionButtons
           type="button"
           disabled={!canSubmit}
           onClick={onSubmit}
-          className="inline-flex min-h-9 items-center justify-center rounded-full bg-amber-400 px-4 text-xs font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex min-h-9 items-center justify-center rounded-full bg-amber-400 px-4 text-xs font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isReverse ? 'Confirm reverse' : 'Confirm undo'}
         </button>
@@ -428,7 +428,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
 
       {/* Verdict actions */}
       <div className="grid gap-3">
-        <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Verdict</label>
+        <label className="text-xs font-medium uppercase tracking-wide text-slate-500">Verdict</label>
         <div className="flex flex-wrap gap-2">
           {(['verify', 'reject_wrong_bank', 'reject_duplicate', 'reject_illegible', 'escalate'] as Verdict[]).map((v) => (
             <button
@@ -510,7 +510,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
         <button
           type="submit"
           disabled={busy || !verdict || (verdict === 'escalate' && !note.trim())}
-          className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex min-h-12 items-center justify-center rounded-lg bg-sky-500 px-5 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? 'Rendering…' : 'Render decision'}
         </button>

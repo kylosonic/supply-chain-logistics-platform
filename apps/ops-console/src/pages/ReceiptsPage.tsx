@@ -100,7 +100,7 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
                   onDispute(disputeText.trim());
                   setShowDispute(false);
                 }}
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-amber-400 px-4 text-xs font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-10 items-center justify-center rounded-full bg-amber-400 px-4 text-xs font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Submit dispute
               </button>
@@ -199,7 +199,7 @@ export function ReceiptsPage() {
             <button
               type="submit"
               disabled={!selectedFile || uploading}
-              className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-12 items-center justify-center rounded-lg bg-sky-500 px-5 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uploading ? 'Uploading…' : 'Upload receipt'}
             </button>
@@ -217,7 +217,7 @@ export function ReceiptsPage() {
           {wallet ? (
             <>
               <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Available balance</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Available balance</p>
                 <p className="mt-2 font-['Space_Grotesk'] text-3xl font-semibold text-slate-50">
                   {wallet.available_etb} ETB
                 </p>

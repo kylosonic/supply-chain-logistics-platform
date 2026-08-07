@@ -19,15 +19,15 @@ export function Panel({ eyebrow, title, description, actions, className, bodyCla
   return (
     <section
       className={joinClasses(
-        'animate-fade-in top-highlight overflow-hidden rounded-[28px] border border-slate-800/80 bg-slate-950/72 shadow-[0_24px_80px_rgba(2,12,20,0.34)] backdrop-blur',
+        'animate-fade-in overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/40',
         className,
       )}
     >
       {hasHeader ? (
-        <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-800/60 bg-gradient-to-r from-transparent via-slate-900/20 to-transparent px-5 py-5">
-          <div className="max-w-3xl space-y-2">
-            {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300/80">{eyebrow}</p> : null}
-            {title ? <h2 className="font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{title}</h2> : null}
+        <header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-800/60 px-5 py-4">
+          <div className="max-w-3xl space-y-1">
+            {eyebrow ? <p className="text-xs font-medium text-slate-500">{eyebrow}</p> : null}
+            {title ? <h2 className="font-['Space_Grotesk'] text-lg font-semibold tracking-tight text-slate-100">{title}</h2> : null}
             {description ? <p className="text-sm leading-6 text-slate-400">{description}</p> : null}
           </div>
           {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}

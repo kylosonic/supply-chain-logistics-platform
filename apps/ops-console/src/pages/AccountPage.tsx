@@ -198,7 +198,7 @@ export function AccountPage() {
   if (loading) {
     return (
       <div className="space-y-5">
-        <div className="skeleton h-[140px] rounded-[30px]" />
+        <div className="skeleton h-[120px] rounded-2xl" />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="skeleton h-[130px] rounded-[24px]" />
@@ -248,12 +248,12 @@ export function AccountPage() {
             </button>
           }
         >
-          <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+          <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
             <p className="text-sm font-semibold text-slate-100">Current plan: {tierLabel}</p>
             <p className="mt-2 text-sm text-slate-400">Organization: {subscription?.organization_name ?? 'Unknown'}</p>
           </div>
 
-          <div className="mt-4 rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+          <div className="mt-4 rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
             <p className="text-sm font-semibold text-slate-100">Usage meter</p>
             <p className="mt-1 text-xs text-slate-500">{metricLabel}</p>
 
@@ -278,7 +278,7 @@ export function AccountPage() {
                 {usage.included_units != null ? (
                   <>
                     <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                      <div className="h-full rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300" style={{ width: `${progressPercent}%` }} />
+                      <div className="h-full rounded-lg bg-sky-500" style={{ width: `${progressPercent}%` }} />
                     </div>
                     <p className="text-xs text-slate-400">
                       Utilization: <span className="font-semibold text-slate-200">{usage.utilization_percent ?? 0}%</span>
@@ -309,7 +309,7 @@ export function AccountPage() {
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {plans.map((plan) => (
-              <div key={plan.tier} className="hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4 transition">
+              <div key={plan.tier} className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{plan.title}</h2>
@@ -341,7 +341,7 @@ export function AccountPage() {
           title="Escalation SMS phone"
           description="Receipt escalations are sent to this number. The workspace can be locked exactly when escalation matters — owners and admins can update it anytime."
         >
-          <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+          <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
             <label htmlFor="contactPhone" className="text-sm font-semibold text-slate-100">
               Contact phone
             </label>
@@ -356,7 +356,7 @@ export function AccountPage() {
               <button
                 type="button"
                 onClick={onSaveContactPhone}
-                className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+                className="inline-flex min-h-12 items-center justify-center rounded-lg bg-sky-500 px-5 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400"
               >
                 Save phone number
               </button>
@@ -372,7 +372,7 @@ export function AccountPage() {
           title="Bring your own provider keys"
           description="Set the preferred provider for dashboard workflows, test active keys, and rotate credentials without leaving the workspace."
         >
-          <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+          <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
             <p className="text-sm font-semibold text-slate-100">Preferred AI provider for the dashboard</p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <select value={preferredKeyId} onChange={(event) => setPreferredKeyId(event.target.value)} className={`${fieldClassName} min-w-[240px]`}>
@@ -386,7 +386,7 @@ export function AccountPage() {
               <button
                 type="button"
                 onClick={onSetPreferredKey}
-                className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+                className="inline-flex min-h-12 items-center justify-center rounded-lg bg-sky-500 px-5 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400"
               >
                 Save preferred provider
               </button>
@@ -399,7 +399,7 @@ export function AccountPage() {
             <input value={keyName} onChange={(event) => setKeyName(event.target.value)} className={fieldClassName} placeholder="Key label" />
             <input value={apiKey} onChange={(event) => setApiKey(event.target.value)} className={fieldClassName} placeholder="API key" />
             <div className="md:col-span-3">
-              <button type="submit" className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-sky-300 via-sky-400 to-teal-300 px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105">
+              <button type="submit" className="inline-flex min-h-12 items-center justify-center rounded-lg bg-sky-500 px-5 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400">
                 Save key
               </button>
             </div>
@@ -407,7 +407,7 @@ export function AccountPage() {
 
           <div className="mt-4 space-y-3">
             {keys.map((key) => (
-              <article key={key.id} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <article key={key.id} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -451,7 +451,7 @@ export function AccountPage() {
       >
         <div className="space-y-3">
           {auditEvents.slice(0, 8).map((event) => (
-            <article key={event.id} className="animate-fade-in hover-lift rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+            <article key={event.id} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
