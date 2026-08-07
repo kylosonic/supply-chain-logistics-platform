@@ -1,6 +1,22 @@
-from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from decimal import Decimal
+from typing import Annotated
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+
+DEFAULT_CORS_ORIGINS = [
+    'http://localhost',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:5174',
+    'http://localhost:8081',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:8081',
+    'https://product-web-chi.vercel.app',
+    'https://ops-console-azure.vercel.app',
+]
 
 
 class Settings(BaseSettings):
@@ -13,22 +29,18 @@ class Settings(BaseSettings):
     jwt_algorithm: str = 'HS256'
     jwt_access_token_expire_minutes: int = 120
     provider_key_encryption_secret: str = ''
-    cors_origins: list[str] = [
-        'http://localhost',
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'http://localhost:5174',
-        'http://localhost:8081',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:5174',
-        'http://127.0.0.1:8081',
+    cors_origins: Annotated[list[str], NoDecode] = DEFAULT_CORS_ORIGINS.copy()
+    allowed_hosts: Annotated[list[str], NoDecode] = [
+        'localhost',
+        '127.0.0.1',
+        'testserver',
+        'platform-api-smoky.vercel.app',
     ]
-    allowed_hosts: list[str] = ['localhost', '127.0.0.1', 'testserver']
     cbe_account_holder: str = ''
     cbe_account_number: str = ''
     dashen_account_holder: str = ''
     dashen_account_number: str = ''
-    blocked_public_email_domains: list[str] = [
+    blocked_public_email_domains: Annotated[list[str], NoDecode] = [
         'gmail.com',
         'yahoo.com',
         'hotmail.com',
@@ -141,7 +153,8 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors_origins(cls, value: list[str] | str) -> list[str]:
         if isinstance(value, str):
-            return [origin.strip() for origin in value.split(',') if origin.strip()]
+            parsed = [origin.strip() for origin in value.split(',') if origin.strip()]
+            return parsed or DEFAULT_CORS_ORIGINS.copy()
         return value
 
     @field_validator('allowed_hosts', mode='before')
