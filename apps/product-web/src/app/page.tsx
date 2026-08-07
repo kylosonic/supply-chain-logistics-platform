@@ -13,7 +13,7 @@ export default function HomePage() {
   return (
     <>
       <section className="section-shell pt-6 sm:pt-10 lg:pt-12" data-section="hero">
-        <div className="glass-panel rounded-[38px] px-6 py-10 sm:px-10 sm:py-14">
+        <div className="glass-panel px-6 py-10 sm:px-10 sm:py-14">
           <div className="max-w-[46rem] space-y-7">
             <p className="kicker">FreightPilot</p>
             <HeroEntrance />

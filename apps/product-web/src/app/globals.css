@@ -3,35 +3,30 @@
 @tailwind utilities;
 
 :root {
-  /* Shared layout bounds and spotlight origin for the site shell. */
+  /* Shared layout bounds for the site shell. */
   color-scheme: dark;
-  --spotlight-x: 50%;
-  --spotlight-y: 12%;
   --site-max-width: 1380px;
 
-  /* Accent palette — used to diversify icon and highlight colors. */
-  --accent-cyan: 165 243 252;
-  --accent-violet: 196 181 253;
-  --accent-amber: 253 224 151;
-  --accent-emerald: 167 243 208;
+  /* Single accent — cyan. Violet/amber/emerald accents removed (calm pass). */
+  --accent-cyan: 103 232 249;
 
-  /* Design tokens — aligned with the FreightPilot design system. */
-  --fp-black: #050505;
-  --fp-surface: #020C14;
-  --fp-elevated: #0F172A;
-  --fp-border: #1E293B;
-  --fp-muted: #475569;
-  --fp-secondary: #94A3B8;
-  --fp-primary: #E2E8F0;
-  --fp-accent: #3B82F6;
-  --fp-accent-hover: #60A5FA;
+  /* Design tokens — shared with the ops console design system. */
+  --fp-black: #0a0f16;
+  --fp-surface: #0d141d;
+  --fp-elevated: #111a26;
+  --fp-border: #1f2a37;
+  --fp-muted: #5b6b7d;
+  --fp-secondary: #8fa1b3;
+  --fp-primary: #dbe4ee;
+  --fp-accent: #38bdf8;
+  --fp-accent-hover: #7dd3fc;
 
   --fp-radius-sm: 6px;
-  --fp-radius-md: 12px;
-  --fp-radius-lg: 18px;
-  --fp-radius-xl: 24px;
-  --fp-radius-2xl: 28px;
-  --fp-radius-3xl: 30px;
+  --fp-radius-md: 10px;
+  --fp-radius-lg: 14px;
+  --fp-radius-xl: 16px;
+  --fp-radius-2xl: 20px;
+  --fp-radius-3xl: 24px;
 
   --fp-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -42,21 +37,10 @@ html {
 
 body {
   min-height: 100vh;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    radial-gradient(circle at 10% 16%, rgba(56, 189, 248, 0.1), transparent 22%),
-    radial-gradient(circle at 88% 12%, rgba(168, 85, 247, 0.12), transparent 24%),
-    radial-gradient(circle at 50% 100%, rgba(34, 211, 238, 0.06), transparent 26%),
-    #050505;
-  background-size: 40px 40px, 40px 40px, auto, auto, auto, auto;
+  background: #0a0f16;
   color: white;
   overflow-x: hidden;
 }
-
-/* Removed redundant body::before dot-pattern overlay.
-   The site-chrome component already renders 3 fixed background layers;
-   stacking a 4th pseudo-element created 7 GPU-composite layers total. */
 
 a,
 button,
@@ -67,7 +51,7 @@ textarea {
 }
 
 ::selection {
-  background: rgba(56, 189, 248, 0.26);
+  background: rgba(56, 189, 248, 0.24);
   color: white;
 }
 
@@ -80,24 +64,18 @@ textarea {
   }
 
   .kicker {
-    @apply text-[11px] font-semibold uppercase tracking-[0.28em];
-    color: rgb(165 243 252 / 0.72);
+    @apply text-[11px] font-medium uppercase tracking-wide;
+    color: rgb(148 163 184 / 0.9);
   }
 
   .glass-panel {
-    @apply relative overflow-hidden backdrop-blur-2xl shadow-luxe;
-    border: 1px solid rgb(255 255 255 / 0.1);
-    background: rgb(255 255 255 / 0.04);
-  }
-
-  .glass-panel::after {
-    content: '';
-    @apply pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent;
-    background-image: linear-gradient(to right, transparent, rgb(255 255 255 / 0.2), transparent);
+    @apply relative overflow-hidden rounded-2xl;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.03);
   }
 
   .pill {
-    @apply inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs uppercase tracking-[0.18em];
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs uppercase tracking-wide;
     border: 1px solid rgb(255 255 255 / 0.12);
     background: rgb(255 255 255 / 0.05);
     color: rgb(255 255 255 / 0.6);
@@ -115,7 +93,6 @@ textarea {
   }
 
   /* ── WCAG-compliant text utilities ── */
-  /* Minimum white/60 for body text to meet 4.5:1 contrast on #050505. */
   .text-muted {
     color: rgb(255 255 255 / 0.68);
   }
@@ -129,17 +106,17 @@ textarea {
   /* ── Section divider ── */
   .divider-glow {
     @apply mx-auto h-px w-full max-w-3xl;
-    background: linear-gradient(to right, transparent, rgb(96 165 250 / 0.35), rgb(168 85 247 / 0.25), transparent);
+    background: linear-gradient(to right, transparent, rgb(148 163 184 / 0.25), transparent);
   }
 
   /* ── Skip to content ── */
   .skip-to-content {
-    @apply fixed left-4 top-4 z-[100] -translate-y-20 rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg transition focus:translate-y-0;
+    @apply fixed left-4 top-4 z-[100] -translate-y-20 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg transition focus:translate-y-0;
   }
 
   /* ── Back-to-top button ── */
   .back-to-top {
-    @apply fixed bottom-6 right-6 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white/70 shadow-luxe backdrop-blur-xl transition hover:border-white/25 hover:text-white;
+    @apply fixed bottom-6 right-6 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white/70 transition hover:border-white/25 hover:text-white;
   }
 }
 

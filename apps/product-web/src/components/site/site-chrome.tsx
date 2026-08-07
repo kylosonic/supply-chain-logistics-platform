@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
-import { Dot, Sparkles } from 'lucide-react';
+import { Dot } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
 import { externalLinks, footerNavigation, navigation, startFreeCta } from '@/lib/site-content';
@@ -75,14 +75,13 @@ export function SiteChrome({ children }: PropsWithChildren) {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      {/* Consolidated into a single performant background layer instead of 3 separate divs */}
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_var(--spotlight-x,50%)_var(--spotlight-y,20%),rgba(59,130,246,0.18),transparent_18%),radial-gradient(circle_at_85%_14%,rgba(167,139,250,0.14),transparent_20%),radial-gradient(circle_at_top_left,rgba(34,211,238,0.06),transparent_25%),radial-gradient(circle_at_bottom_right,rgba(192,132,252,0.06),transparent_24%)]" />
-      <div className="pointer-events-none fixed inset-0 z-0 opacity-15 sm:opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:40px_40px]" />
+      {/* Single restrained background layer — static, no pointer glow, no grid */}
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(56,189,248,0.05),transparent_45%)]" />
 
       <header className="sticky top-0 z-40 px-3 pt-2.5 sm:px-6 sm:pt-4 lg:px-8">
-        <div className="mx-auto flex w-full max-w-[1380px] items-center justify-between gap-3 rounded-[28px] border border-white/10 bg-black/35 px-4 py-2.5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.32)] sm:gap-4 sm:rounded-full sm:px-5 sm:py-3">
+        <div className="mx-auto flex w-full max-w-[1380px] items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 sm:gap-4 sm:px-5 sm:py-3">
           <Link href="/" className="inline-flex items-center gap-3 no-underline">
-            <span className="inline-grid h-8 w-8 place-items-center rounded-[14px] border border-white/15 bg-white/[0.08] font-display text-sm font-semibold text-white shadow-[0_12px_40px_rgba(96,165,250,0.15)] sm:h-10 sm:w-10 sm:rounded-[16px]">
+              <span className="inline-grid h-8 w-8 place-items-center rounded-lg border border-white/15 bg-white/[0.08] font-display text-sm font-semibold text-white sm:h-10 sm:w-10">
               FP
             </span>
             <span className="hidden sm:grid">
@@ -99,12 +98,12 @@ export function SiteChrome({ children }: PropsWithChildren) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/68 transition hover:text-white',
-                    active && 'bg-white/[0.06] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
+                    'relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-white/68 transition hover:text-white',
+                    active && 'bg-white/[0.06] text-white',
                   )}
                   aria-current={active ? 'page' : undefined}
                 >
-                  {active ? <Sparkles className="h-4 w-4 text-cyan-200" /> : <Dot className="h-4 w-4" />}
+                  <Dot className="h-4 w-4 text-cyan-200" />
                   {item.label}
                 </Link>
               );
@@ -172,7 +171,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -18 }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed inset-x-3 top-20 z-30 rounded-[28px] border border-white/10 bg-black/78 p-5 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.38)] sm:inset-x-6 sm:top-24 lg:hidden"
+              className="fixed inset-x-3 top-20 z-30 rounded-2xl border border-white/10 bg-[#0d141d]/95 p-5 sm:inset-x-6 sm:top-24 lg:hidden"
             >
               <div className="grid gap-3">
                 {navigation.map((item) => (
@@ -180,7 +179,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-4 text-white/75 transition hover:text-white',
+                      'rounded-xl border border-white/10 bg-white/[0.04] px-4 py-4 text-white/75 transition hover:text-white',
                       pathname === item.href && 'border-cyan-400/30 bg-cyan-400/10 text-white',
                     )}
                   >
@@ -208,7 +207,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
         <div className="section-shell grid gap-12 lg:grid-cols-[1.5fr_2fr] lg:gap-8">
           <div className="max-w-md space-y-6">
             <Link href="/" className="inline-flex items-center gap-3 no-underline">
-              <span className="inline-grid h-8 w-8 place-items-center rounded-[14px] border border-white/15 bg-white/[0.08] font-display text-sm font-semibold text-white shadow-[0_12px_40px_rgba(96,165,250,0.15)] sm:h-10 sm:w-10 sm:rounded-[16px]">
+            <span className="inline-grid h-8 w-8 place-items-center rounded-lg border border-white/15 bg-white/[0.08] font-display text-sm font-semibold text-white sm:h-10 sm:w-10">
                 FP
               </span>
               <span className="grid">

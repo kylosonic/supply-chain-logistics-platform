@@ -13,7 +13,7 @@ vi.mock('next/navigation', () => ({
 
 import { SiteChrome } from '@/components/site/site-chrome';
 
-const PRIMARY_CLASS = 'bg-gradient-to-r from-sky-400 via-cyan-300 to-violet-300';
+const PRIMARY_CLASS = 'bg-sky-500 text-slate-950 transition-colors hover:bg-sky-400';
 
 function count(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;

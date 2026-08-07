@@ -20,7 +20,7 @@ export function FaqAccordion({ items }: FaqAccordionProps) {
         const answerId = `faq-answer-${index}`;
 
         return (
-          <article key={item.question} className="overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.04] backdrop-blur-xl" role="listitem">
+          <article key={item.question} className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]" role="listitem">
             <h4 className="m-0">
               <button
                 type="button"

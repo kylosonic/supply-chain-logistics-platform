@@ -44,7 +44,7 @@ export function ContactForm() {
 
   if (status === 'success') {
     return (
-      <div className="flex flex-col items-center justify-center space-y-4 rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-12 text-center backdrop-blur-xl">
+      <div className="flex flex-col items-center justify-center space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-12 text-center">
         <CheckCircle2 className="h-12 w-12 text-emerald-400" />
         <div className="space-y-2">
           <h3 className="font-display text-xl text-white">Message sent</h3>

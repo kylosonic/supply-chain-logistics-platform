@@ -24,7 +24,7 @@ export function HowItWorks() {
 
   return (
     <section className="section-shell pt-14 sm:pt-18" data-section="how-it-works">
-      <div className="glass-panel rounded-[38px] px-6 py-8 sm:px-8">
+      <div className="glass-panel px-6 py-8 sm:px-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="max-w-[24ch] font-display text-[clamp(1.75rem,3.6vw,2.9rem)] leading-[0.98] tracking-[-0.02em] text-white">
             {howItWorksHeading}

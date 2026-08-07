@@ -79,7 +79,7 @@ export function SignupForm() {
   });
 
   return (
-    <div className="glass-panel overflow-hidden rounded-[32px] px-5 py-5 sm:px-6 sm:py-6">
+    <div className="glass-panel overflow-hidden px-5 py-5 sm:px-6 sm:py-6">
       <div>
         <p className="kicker">Launch</p>
         <h2 className="mt-4 font-display text-3xl text-white">Start free</h2>
@@ -109,7 +109,7 @@ export function SignupForm() {
         </div>
 
         <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/48">
+          <p className="text-xs font-medium uppercase tracking-wide text-white/48">
             Tier <span className="normal-case text-white/38">— Optional — choose a tier later inside your workspace.</span>
           </p>
           <div className="grid gap-3 lg:grid-cols-3">
@@ -128,7 +128,7 @@ export function SignupForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="group inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-400 via-cyan-300 to-violet-300 px-5 text-sm font-semibold text-slate-950 shadow-[0_18px_60px_rgba(56,189,248,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+          className="group inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-lg bg-sky-500 text-slate-950 transition-colors hover:bg-sky-400 px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
           {isSubmitting ? 'Creating workspace...' : 'Start free'}

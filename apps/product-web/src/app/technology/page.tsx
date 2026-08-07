@@ -78,7 +78,7 @@ export default function TechnologyPage() {
             </div>
           </SpotlightCard>
 
-          <div className="glass-panel overflow-hidden rounded-[34px] px-6 py-6">
+          <div className="glass-panel overflow-hidden px-6 py-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="kicker">Illustrative logic</p>

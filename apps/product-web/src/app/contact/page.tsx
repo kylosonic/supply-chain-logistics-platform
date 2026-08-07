@@ -37,7 +37,7 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <div className="glass-panel rounded-[32px] p-6 sm:p-8 lg:p-10">
+          <div className="glass-panel p-6 sm:p-8 lg:p-10">
             <h3 className="mb-6 font-display text-xl text-white">Send a message</h3>
             <ContactForm />
           </div>

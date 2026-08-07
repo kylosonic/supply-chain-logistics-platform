@@ -24,7 +24,7 @@ export default function LaunchPage() {
         <div className="grid gap-4 lg:grid-cols-[1.02fr_0.98fr]">
           <SignupForm />
 
-          <div className="glass-panel rounded-[34px] px-6 py-7">
+          <div className="glass-panel px-6 py-7">
             <SectionHeading
               eyebrow="After signup"
               title="What happens next"

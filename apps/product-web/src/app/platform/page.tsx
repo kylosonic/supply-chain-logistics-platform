@@ -59,7 +59,7 @@ export default function PlatformPage() {
 
       <MotionSection className="section-shell pt-16 sm:pt-20" delay={0.06}>
         <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="glass-panel rounded-[34px] px-6 py-7">
+          <div className="glass-panel px-6 py-7">
             <SectionHeading
               eyebrow="How it works"
               title="Route decisions stay readable while pressure is high"

@@ -15,7 +15,7 @@ function formatEtb(value: number): string {
 export function PricingSummary() {
   return (
     <section className="section-shell pt-14 sm:pt-18" data-section="pricing-summary">
-      <div className="glass-panel rounded-[38px] px-5 py-8 sm:px-8 sm:py-10">
+      <div className="glass-panel px-5 py-8 sm:px-8 sm:py-10">
         <p className="kicker">Pricing</p>
         <h2 className="mt-4 max-w-[20ch] font-display text-[clamp(1.75rem,3.6vw,2.9rem)] leading-[0.98] tracking-[-0.02em] text-white">
           Simple prices in ETB
@@ -24,7 +24,7 @@ export function PricingSummary() {
         <div className="mt-8 overflow-x-auto">
           <table className="w-full min-w-[600px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-white/10 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">
+              <tr className="border-b border-white/10 text-[11px] font-medium uppercase tracking-wide text-white/48">
                 <th scope="col" className="pb-3 pr-4">Tier</th>
                 <th scope="col" className="pb-3 pr-4">Flat price</th>
                 <th scope="col" className="pb-3 pr-4">Billing cycle</th>

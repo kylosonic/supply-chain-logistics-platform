@@ -18,9 +18,9 @@ type MagneticLinkProps = PropsWithChildren<{
 
 const variantClasses: Record<NonNullable<MagneticLinkProps['variant']>, string> = {
   primary:
-    'bg-gradient-to-r from-sky-400 via-cyan-300 to-violet-300 text-slate-950 shadow-[0_18px_60px_rgba(56,189,248,0.28)]',
+    'bg-sky-500 text-slate-950 transition-colors hover:bg-sky-400',
   secondary:
-    'border border-white/15 bg-white/[0.06] text-white backdrop-blur-xl shadow-[0_18px_50px_rgba(0,0,0,0.25)]',
+    'border border-white/12 bg-white/[0.04] text-white transition-colors hover:bg-white/[0.08]',
   ghost: 'border border-white/10 bg-transparent text-white/78 hover:text-white',
 };
 
@@ -65,7 +65,7 @@ function AnchorShell({
   const { offset, handlers } = useMagnet();
   const content = <LinkContent showIcon={showIcon}>{children}</LinkContent>;
   const sharedClassName = cn(
-    'group inline-flex min-h-12 min-w-0 items-center justify-center overflow-hidden rounded-full px-4 text-sm font-semibold transition will-change-transform sm:px-5',
+    'group inline-flex min-h-12 min-w-0 items-center justify-center overflow-hidden rounded-lg px-4 text-sm font-semibold transition will-change-transform sm:px-5',
     variantClasses[variant],
     className,
   );
