@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.api.security import require_roles, require_writable_workspace
@@ -9,6 +9,7 @@ from app.models.membership import OrganizationMembership
 from app.models.user import User
 from app.schemas.auth import UserRole
 from app.schemas.item import ItemCreate, ItemRead, ItemUpdate
+from app.services.audit import resolve_actor_organization_id
 
 router = APIRouter()
 
@@ -18,9 +19,18 @@ def list_items(
     skip: int = 0,
     limit: int = Query(default=100, le=500),
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    rows = db.execute(select(Item).offset(skip).limit(limit)).scalars().all()
+    organization_id = resolve_actor_organization_id(db, actor)
+    query = select(Item)
+    if organization_id is not None:
+        query = query.where(
+            or_(
+                Item.organization_id == organization_id,
+                Item.organization_id.is_(None),
+            )
+        )
+    rows = db.execute(query.offset(skip).limit(limit)).scalars().all()
     return rows
 
 
@@ -32,11 +42,20 @@ def create_item(
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
 
-    exists = db.execute(select(Item).where(Item.sku == payload.sku)).scalar_one_or_none()
+    exists_query = select(Item).where(Item.sku == payload.sku)
+    if writable is not None:
+        # Equality-only: mirrors the NULL-distinct uq_items_org_sku
+        # semantics — a legacy null-org row with the same sku must NOT
+        # false-409 a first org create (TECH-58).
+        exists_query = exists_query.where(Item.organization_id == writable.organization_id)
+    exists = db.execute(exists_query).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail='SKU already exists')
 
-    item = Item(**payload.model_dump())
+    item = Item(
+        **payload.model_dump(),
+        organization_id=writable.organization_id if writable else None,
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -47,10 +66,15 @@ def create_item(
 def get_item(
     item_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     row = db.get(Item, item_id)
-    if not row:
+    organization_id = resolve_actor_organization_id(db, actor)
+    if not row or (
+        organization_id is not None
+        and row.organization_id is not None
+        and row.organization_id != organization_id
+    ):
         raise HTTPException(status_code=404, detail='Item not found')
     return row
 
@@ -60,12 +84,17 @@ def update_item(
     item_id: str,
     payload: ItemUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
 
     row = db.get(Item, item_id)
-    if not row:
+    organization_id = resolve_actor_organization_id(db, actor)
+    if not row or (
+        organization_id is not None
+        and row.organization_id is not None
+        and row.organization_id != organization_id
+    ):
         raise HTTPException(status_code=404, detail='Item not found')
 
     for key, value in payload.model_dump(exclude_none=True).items():

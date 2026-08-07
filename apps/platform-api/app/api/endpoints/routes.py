@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import asc, select
+from sqlalchemy import asc, or_, select
 from sqlalchemy.orm import Session
 
 from app.api.security import require_roles, require_writable_workspace
@@ -41,7 +41,20 @@ def optimize_routes(
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
-    warehouses = db.execute(select(Warehouse)).scalars().all()
+    # TECH-57: org resolution FIRST — every warehouse query below must be
+    # org-scoped so identical seeded codes across orgs (WH-001..003) can
+    # never collide (MultipleResultsFound -> 500 on persist=true).
+    organization_id = resolve_actor_organization_id(db, actor)
+
+    nodes_query = select(Warehouse)
+    if organization_id is not None:
+        nodes_query = nodes_query.where(
+            or_(
+                Warehouse.organization_id == organization_id,
+                Warehouse.organization_id.is_(None),
+            )
+        )
+    warehouses = db.execute(nodes_query).scalars().all()
     if not warehouses:
         raise HTTPException(status_code=400, detail='No warehouses available')
 
@@ -103,15 +116,22 @@ def optimize_routes(
     )
 
     serialized_stops = [RouteStopOut(**stop).model_dump(mode='json') for stop in result['stops']]
-    organization_id = resolve_actor_organization_id(db, actor)
 
     # NB-27.3: audit the data substrate of the run (decision #4) — real iff
     # the start warehouse AND every delivery-target warehouse row used in
     # the run exist with data_origin='real' (one IN-select, not N queries).
     used_codes = {payload.start_warehouse_code} | {d.warehouse_code for d in payload.deliveries}
-    origin_rows = db.execute(
-        select(Warehouse.code, Warehouse.data_origin).where(Warehouse.code.in_(list(used_codes)))
-    ).all()
+    origin_query = select(Warehouse.code, Warehouse.data_origin).where(
+        Warehouse.code.in_(list(used_codes))
+    )
+    if organization_id is not None:
+        origin_query = origin_query.where(
+            or_(
+                Warehouse.organization_id == organization_id,
+                Warehouse.organization_id.is_(None),
+            )
+        )
+    origin_rows = db.execute(origin_query).all()
     origin_by_code = {row.code: row.data_origin for row in origin_rows}
     run_origin = 'real'
     for code in used_codes:
@@ -148,7 +168,15 @@ def optimize_routes(
     db.add(history_run)
 
     if payload.persist_schedule:
-        start_wh = db.execute(select(Warehouse).where(Warehouse.code == payload.start_warehouse_code)).scalar_one()
+        start_query = select(Warehouse).where(Warehouse.code == payload.start_warehouse_code)
+        if organization_id is not None:
+            start_query = start_query.where(
+                or_(
+                    Warehouse.organization_id == organization_id,
+                    Warehouse.organization_id.is_(None),
+                )
+            )
+        start_wh = db.execute(start_query).scalar_one()
         schedule = RouteSchedule(
             route_name=payload.route_name,
             schedule_date=payload.schedule_date,
@@ -165,7 +193,15 @@ def optimize_routes(
 
         current_time = datetime.now(UTC)
         for stop in result['stops']:
-            row_wh = db.execute(select(Warehouse).where(Warehouse.code == stop['warehouse_code'])).scalar_one_or_none()
+            stop_query = select(Warehouse).where(Warehouse.code == stop['warehouse_code'])
+            if organization_id is not None:
+                stop_query = stop_query.where(
+                    or_(
+                        Warehouse.organization_id == organization_id,
+                        Warehouse.organization_id.is_(None),
+                    )
+                )
+            row_wh = db.execute(stop_query).scalar_one_or_none()
             if not row_wh:
                 continue
             arrival = stop['estimated_arrival']
