@@ -485,7 +485,67 @@ Source behavior doc: [`site-conversion-and-copy.md`](./site-conversion-and-copy.
 - **Acceptance criteria:**
   1. The site renders in English only for v1.
   2. Amharic localization is not implemented in v1 — it is a separate work item to scope later.
-  3. The site copy must be written in clear, simple English that is accessible to a non-native English speaker operating a logistics business in Ethiopia (avoid American-idiomatic marketing phrases; prefer concrete subject-verb-object constructions).
+   3. The site copy must be written in clear, simple English that is accessible to a non-native English speaker operating a logistics business in Ethiopia (avoid American-idiomatic marketing phrases; prefer concrete subject-verb-object constructions).
+
+---
+
+## Feature: Live Launch — Origin Trust, Data Access Continuity & Deployment Hygiene
+
+Source behavior doc: [`live-launch-origin-trust-and-readiness.md`](./live-launch-origin-trust-and-readiness.md)
+
+### NB-48 — Both official web addresses trusted by the live platform — [IMPLEMENTED]
+- **Priority:** P0 (launch blocker)
+- **Feature area:** Live launch, origin trust
+- **Acceptance criteria:**
+  1. When a visitor opens the product from the customer-facing site (https://product-web-chi.vercel.app), every request the page makes to the platform is accepted — the page never shows a browser security-blocked error.
+  2. When the operator opens the ops console (https://ops-console-azure.vercel.app), every request the page makes to the platform is accepted — same rule, same result.
+  3. The security acknowledgment returned to each page names the address the request came from (it echoes the requesting address), so both official addresses are covered and neither is silently broken by the other's configuration.
+  4. Addresses not on the official list remain blocked.
+
+### NB-49 — The platform accepts requests addressed to its own public address — [IMPLEMENTED]
+- **Priority:** P0 (launch blocker)
+- **Feature area:** Live launch, origin trust
+- **Acceptance criteria:**
+  1. When the platform receives a request addressed to its own public address, it accepts it — it never refuses the request for being unrecognized.
+  2. Both official web addresses can reach the platform by its public address without security-blocked or unrecognized-host errors.
+  3. Direct visits to the platform's public address are accepted.
+
+### NB-50 — Data-store connection secret rotated without interrupting the live product — [OPEN]
+- **Priority:** P0 (launch blocker)
+- **Feature area:** Live launch, data access continuity
+- **Acceptance criteria:**
+  1. When the connection secret for the data store is rotated, the health indicator never shows the data store as unreachable at any point during the change.
+  2. Within 60 seconds of the new secret being in place, the health indicator reports the data store reachable (`db: ok`).
+  3. The maintainer can restore the previous connection secret at any moment during rotation (a rollback path exists and is proven).
+  4. Before rotation, every tool that connects to the data store (local development, migration tooling, smoke tests) is inventoried; after rotation, each one still connects successfully.
+
+### NB-51 — Migration fixes merged without regressing live trust or data access — [IMPLEMENTED]
+- **Priority:** P0 (launch blocker)
+- **Feature area:** Live launch, change management
+- **Acceptance criteria:**
+  1. The migration fixes pass `@qa` review against the behavior docs before being committed and merged.
+  2. The fixes are committed atomically (one review-approved unit, no intermediate commits) and merged only after `@qa` sign-off.
+  3. Immediately after the merge-triggered publication, the live platform still passes the trust rules (NB-48, NB-49) and the health indicator still reports the data store reachable (NB-50).
+  4. The trust configuration was live and verified BEFORE the merge publication — configuration changes and code changes are never published for the first time in the same moment.
+
+### NB-52 — Smoke-test workspace fully removed from the live environment — [OPEN]
+- **Priority:** P0 (launch blocker)
+- **Feature area:** Workspace hygiene
+- **Acceptance criteria:**
+  1. The smoke-test workspace no longer appears anywhere in the ops console.
+  2. No orphaned records from that workspace remain anywhere in the system (searches for its data return nothing).
+  3. Before removal, the maintainer reviewed a complete listing of the records to be removed, and that listing contained only smoke-test data — never customer data.
+  4. No other workspace or customer record is affected by the removal.
+
+### NB-53 — Live launch flow verified end-to-end from both official addresses — [OPEN]
+- **Priority:** P0 (launch blocker)
+- **Feature area:** Live launch verification
+- **Acceptance criteria:**
+  1. A visitor starting from the customer-facing site completes the full launch flow: lands, clicks "Start free", signs up, and lands in the ops console with an authenticated session and a sample-data-seeded workspace.
+  2. The newly created workspace and its sample data are visible in the ops console from the operator's address.
+  3. The first route optimization runs successfully on the sample data (activation milestone 6).
+  4. The flow is verified in real browser sessions from BOTH official addresses with no security-blocked requests.
+  5. The verification runs only after NB-48 through NB-52 are complete and verified.
 
 ---
 
@@ -508,3 +568,5 @@ These are explicitly out of scope of v1 but noted here so they are not lost:
 ## Acceptance gate before feature is marked "Implemented"
 
 All `NB-01` through `NB-22` (cashflow), `NB-25` through `NB-35` (activation), and `NB-36` through `NB-46` (site) tickets above (`P0` and `P1`) must be `@qa`-verified against the user-acceptance criteria. `P2` tickets (`NB-23`, `NB-24`, `NB-47`) can ship later but must ship before public launch.
+
+The `NB-48` through `NB-53` (live launch) tickets are `P0` and must be `@qa`-verified against their user-acceptance criteria before the launch flow is considered operational.
