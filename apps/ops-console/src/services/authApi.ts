@@ -1,8 +1,9 @@
-import { api } from './api';
+import { api, setStoredToken } from './api';
 import type { LoginResponse, UserRead } from '../types/auth';
 
 export async function login(identifier: string, password: string): Promise<LoginResponse> {
   const { data } = await api.post<LoginResponse>('/auth/login', { identifier, password });
+  setStoredToken(data.access_token);
   return data;
 }
 

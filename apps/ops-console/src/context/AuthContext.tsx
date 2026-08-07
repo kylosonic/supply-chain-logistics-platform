@@ -2,7 +2,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import { login as loginApi, logout as logoutApi, me as meApi } from '../services/authApi';
 import { getCurrentSubscription } from '../services/billingApi';
-import { clearAuthStorage, getStoredOrgId, setStoredOrgId } from '../services/api';
+import {
+  clearAuthStorage,
+  getStoredOrgId,
+  getStoredToken,
+  setStoredOrgId,
+} from '../services/api';
 import type { UserRead } from '../types/auth';
 
 type AuthContextValue = {
@@ -25,7 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const getToken = useCallback(async (): Promise<string | null> => {
-    if (_cachedToken) return _cachedToken;
+    const stored = getStoredToken();
+    if (stored) return stored;
     try {
       const { data } = await import('../services/api').then((m) =>
         m.api.get<{ access_token: string }>('/auth/token'),
