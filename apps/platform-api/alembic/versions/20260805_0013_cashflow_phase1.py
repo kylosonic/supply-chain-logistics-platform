@@ -15,6 +15,7 @@ from datetime import UTC, datetime, timedelta
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 from app.core.config import settings
 
@@ -45,15 +46,17 @@ def _collection_account_seeds() -> list[dict]:
 
 
 def upgrade() -> None:
+    uuid_type = postgresql.UUID(as_uuid=True)
+
     # --- collection_accounts -------------------------------------------------
     op.create_table(
         'collection_accounts',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
+        sa.Column('id', uuid_type, primary_key=True),
         sa.Column('bank_code', sa.String(length=16), nullable=False),
         sa.Column('bank_name', sa.String(length=64), nullable=False),
         sa.Column('account_holder', sa.String(length=128), nullable=False),
         sa.Column('account_number', sa.String(length=64), nullable=False),
-        sa.Column('is_active', sa.Boolean(), server_default=sa.text('1'), nullable=False),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.CheckConstraint("bank_code IN ('cbe', 'dashen')", name='ck_collection_account_bank_code'),
         sa.UniqueConstraint('bank_code', name='uq_collection_account_bank_code'),
@@ -62,8 +65,8 @@ def upgrade() -> None:
     # --- subscription_invoices ------------------------------------------------
     op.create_table(
         'subscription_invoices',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('organization_id', uuid_type, nullable=False),
         sa.Column('invoice_number', sa.String(length=32), nullable=False),
         sa.Column('tier', sa.String(length=24), nullable=False),
         sa.Column('billing_period_start', sa.Date(), nullable=False),
@@ -74,7 +77,7 @@ def upgrade() -> None:
         sa.Column('due_date', sa.Date(), nullable=False),
         sa.Column('grace_days', sa.Integer(), nullable=False),
         sa.Column('grace_ends_at', sa.Date(), nullable=False),
-        sa.Column('designated_account_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('designated_account_id', uuid_type, nullable=False),
         sa.Column('status', sa.String(length=24), server_default='issued', nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.ForeignKeyConstraint(['designated_account_id'], ['collection_accounts.id'], ondelete='RESTRICT'),
@@ -93,8 +96,8 @@ def upgrade() -> None:
     # --- invoice_line_items ---------------------------------------------------
     op.create_table(
         'invoice_line_items',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('invoice_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('invoice_id', uuid_type, nullable=False),
         sa.Column('kind', sa.String(length=16), nullable=False),
         sa.Column('description', sa.String(length=128), nullable=False),
         sa.Column('quantity', sa.Integer(), nullable=True),
@@ -109,8 +112,8 @@ def upgrade() -> None:
     # --- trial_records ----------------------------------------------------------
     op.create_table(
         'trial_records',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('organization_id', uuid_type, nullable=False),
         sa.Column('tier', sa.String(length=24), nullable=False),
         sa.Column('started_at', sa.DateTime(timezone=True), nullable=False),
         sa.Column('ended_at', sa.DateTime(timezone=True), nullable=True),
@@ -124,8 +127,8 @@ def upgrade() -> None:
     # --- notifications ------------------------------------------------------------
     op.create_table(
         'notifications',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('organization_id', uuid_type, nullable=False),
         sa.Column('kind', sa.String(length=32), nullable=False),
         sa.Column('title', sa.String(length=128), nullable=False),
         sa.Column('message', sa.String(length=512), nullable=False),
@@ -159,14 +162,14 @@ def upgrade() -> None:
         op.bulk_insert(
             sa.table(
                 'collection_accounts',
-                sa.column('id', sa.CHAR(36)),
+                sa.column('id', uuid_type),
                 sa.column('bank_code', sa.String(16)),
                 sa.column('bank_name', sa.String(64)),
                 sa.column('account_holder', sa.String(128)),
                 sa.column('account_number', sa.String(64)),
                 sa.column('is_active', sa.Boolean()),
             ),
-            [{**seed, 'id': str(uuid.uuid4()), 'is_active': True}],
+            [{**seed, 'id': uuid.uuid4(), 'is_active': True}],
         )
 
     # --- backfill existing orgs (no fabricated invoices) ---------------------------
@@ -199,7 +202,10 @@ def _backfill_organizations() -> None:
                     'VALUES (:id, :org_id, :tier, :started, :ended, :created)'
                 ),
                 {
-                    'id': str(uuid.uuid4()),
+                    # Dialect guard: sqlite3 rejects raw uuid.UUID binds, and
+                    # PostgreSQL has no text->uuid assignment cast — so only
+                    # sqlite receives the str() form (fix ①, TECH-54).
+                    'id': str(uuid.uuid4()) if bind.dialect.name == 'sqlite' else uuid.uuid4(),
                     'org_id': org_id,
                     'tier': tier or 'starter',
                     'started': started,

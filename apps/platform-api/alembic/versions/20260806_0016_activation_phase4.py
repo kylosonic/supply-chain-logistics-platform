@@ -30,6 +30,7 @@ branch_labels = None
 depends_on = None
 
 _DATA_TABLES = ('warehouses', 'items', 'fleet_assets', 'inventory', 'historical_orders')
+_UUID = sa.Uuid()
 
 
 def _add_data_origin_columns() -> None:
@@ -96,7 +97,7 @@ def _restore_global_unique_indexes() -> None:
 def _fleet_organization_id() -> None:
     op.add_column(
         'fleet_assets',
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=True),
+        sa.Column('organization_id', _UUID, nullable=True),
     )
     op.create_index('ix_fleet_assets_organization_id', 'fleet_assets', ['organization_id'], unique=False)
 
@@ -115,8 +116,8 @@ def _fleet_organization_id_postgres() -> None:
 def _create_activation_state_table() -> None:
     op.create_table(
         'organization_activation_state',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', _UUID, primary_key=True),
+        sa.Column('organization_id', _UUID, nullable=False),
         sa.Column('m6_completed_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('toast_fired_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('seeded_at', sa.DateTime(timezone=True), nullable=True),
@@ -133,8 +134,8 @@ def _create_activation_state_table() -> None:
 def _create_threshold_crossings_table() -> None:
     op.create_table(
         'threshold_crossings',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', _UUID, primary_key=True),
+        sa.Column('organization_id', _UUID, nullable=False),
         sa.Column('period_start', sa.Date(), nullable=False),
         sa.Column('threshold_level', sa.String(length=8), nullable=False),
         sa.Column('fired_at', sa.DateTime(timezone=True), nullable=False),

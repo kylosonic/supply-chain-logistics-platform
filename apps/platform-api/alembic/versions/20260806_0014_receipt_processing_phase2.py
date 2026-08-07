@@ -14,6 +14,7 @@ backstop (blueprint §11.5).
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision = '20260806_0014'
 down_revision = '20260805_0013'
@@ -22,12 +23,14 @@ depends_on = None
 
 
 def upgrade() -> None:
+    uuid_type = postgresql.UUID(as_uuid=True)
+
     # --- payment_receipts ---------------------------------------------------
     op.create_table(
         'payment_receipts',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
-        sa.Column('invoice_id', sa.CHAR(length=36), nullable=True),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('organization_id', uuid_type, nullable=False),
+        sa.Column('invoice_id', uuid_type, nullable=True),
         sa.Column('file_name', sa.String(length=255), nullable=False),
         sa.Column('content_type', sa.String(length=64), nullable=False),
         sa.Column('file_size_bytes', sa.Integer(), nullable=False),
@@ -45,20 +48,20 @@ def upgrade() -> None:
         sa.Column('verdict', sa.String(length=24), nullable=True),
         sa.Column('rejection_reason', sa.String(length=512), nullable=True),
         sa.Column('admin_note', sa.String(length=512), nullable=True),
-        sa.Column('decision_made_by_user_id', sa.CHAR(length=36), nullable=True),
+        sa.Column('decision_made_by_user_id', uuid_type, nullable=True),
         sa.Column('decided_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('trusted_payer_action', sa.String(length=24), nullable=True),
         sa.Column('large_surplus_decision', sa.String(length=24), nullable=True),
         sa.Column('partial_credit_amount_etb', sa.Numeric(precision=14, scale=2), nullable=True),
         sa.Column('surplus_etb', sa.Numeric(precision=14, scale=2), nullable=True),
-        sa.Column('is_new_sender', sa.Boolean(), server_default=sa.text('0'), nullable=False),
-        sa.Column('is_cash_sender', sa.Boolean(), server_default=sa.text('0'), nullable=False),
+        sa.Column('is_new_sender', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+        sa.Column('is_cash_sender', sa.Boolean(), server_default=sa.text('false'), nullable=False),
         sa.Column(
-            'is_wrong_bank_within_portfolio', sa.Boolean(), server_default=sa.text('0'), nullable=False
+            'is_wrong_bank_within_portfolio', sa.Boolean(), server_default=sa.text('false'), nullable=False
         ),
-        sa.Column('is_large_surplus', sa.Boolean(), server_default=sa.text('0'), nullable=False),
-        sa.Column('is_duplicate', sa.Boolean(), server_default=sa.text('0'), nullable=False),
-        sa.Column('has_zero_confidence', sa.Boolean(), server_default=sa.text('0'), nullable=False),
+        sa.Column('is_large_surplus', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+        sa.Column('is_duplicate', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+        sa.Column('has_zero_confidence', sa.Boolean(), server_default=sa.text('false'), nullable=False),
         sa.Column('low_confidence_fields', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.CheckConstraint(
@@ -106,8 +109,8 @@ def upgrade() -> None:
     # --- receipt_extractions --------------------------------------------------
     op.create_table(
         'receipt_extractions',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('receipt_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('receipt_id', uuid_type, nullable=False),
         sa.Column('provider_name', sa.String(length=64), nullable=True),
         sa.Column('key_id', sa.String(length=64), nullable=True),
         sa.Column('model_name', sa.String(length=64), nullable=True),
@@ -124,12 +127,12 @@ def upgrade() -> None:
     # --- wallet_credits ---------------------------------------------------------
     op.create_table(
         'wallet_credits',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
-        sa.Column('receipt_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('organization_id', uuid_type, nullable=False),
+        sa.Column('receipt_id', uuid_type, nullable=False),
         sa.Column('amount_etb', sa.Numeric(precision=14, scale=2), nullable=False),
         sa.Column('status', sa.String(length=16), server_default='available', nullable=False),
-        sa.Column('applied_to_invoice_id', sa.CHAR(length=36), nullable=True),
+        sa.Column('applied_to_invoice_id', uuid_type, nullable=True),
         sa.Column('applied_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.CheckConstraint('amount_etb > 0', name='ck_wallet_credit_amount_positive'),
@@ -147,9 +150,9 @@ def upgrade() -> None:
     # --- sms_messages ------------------------------------------------------------
     op.create_table(
         'sms_messages',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
-        sa.Column('receipt_id', sa.CHAR(length=36), nullable=True),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('organization_id', uuid_type, nullable=False),
+        sa.Column('receipt_id', uuid_type, nullable=True),
         sa.Column('to_phone', sa.String(length=24), nullable=False),
         sa.Column('body', sa.String(length=200), nullable=False),
         sa.Column('status', sa.String(length=16), server_default='queued', nullable=False),
@@ -169,10 +172,10 @@ def upgrade() -> None:
     # --- trusted_payers -------------------------------------------------------------
     op.create_table(
         'trusted_payers',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('organization_id', uuid_type, nullable=False),
         sa.Column('sender_name', sa.String(length=128), nullable=False),
-        sa.Column('added_by_user_id', sa.CHAR(length=36), nullable=True),
+        sa.Column('added_by_user_id', uuid_type, nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.ForeignKeyConstraint(['added_by_user_id'], ['users.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ondelete='CASCADE'),
@@ -184,14 +187,14 @@ def upgrade() -> None:
     # --- dispute_threads ---------------------------------------------------------------
     op.create_table(
         'dispute_threads',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('receipt_id', sa.CHAR(length=36), nullable=False),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('receipt_id', uuid_type, nullable=False),
+        sa.Column('organization_id', uuid_type, nullable=False),
         sa.Column('dispute_text', sa.String(length=1000), nullable=False),
-        sa.Column('submitted_by_user_id', sa.CHAR(length=36), nullable=True),
+        sa.Column('submitted_by_user_id', uuid_type, nullable=True),
         sa.Column('status', sa.String(length=16), server_default='open', nullable=False),
         sa.Column('resolution', sa.String(length=24), nullable=True),
-        sa.Column('resolved_by_user_id', sa.CHAR(length=36), nullable=True),
+        sa.Column('resolved_by_user_id', uuid_type, nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column('resolved_at', sa.DateTime(timezone=True), nullable=True),
         sa.CheckConstraint("status IN ('open','resolved')", name='ck_dispute_thread_status'),

@@ -36,7 +36,6 @@ FK_DROPS = [
     ('replenishment_plans', 'replenishment_plans_created_by_user_id_fkey'),
     ('replenishment_plans', 'replenishment_plans_approved_by_user_id_fkey'),
     ('route_schedules', 'route_schedules_start_warehouse_id_fkey'),
-    ('route_schedules', 'route_schedules_assigned_asset_id_fkey'),
     ('route_stops', 'route_stops_route_schedule_id_fkey'),
     ('route_stops', 'route_stops_warehouse_id_fkey'),
     ('route_optimization_runs', 'route_optimization_runs_actor_user_id_fkey'),
@@ -74,7 +73,6 @@ FK_ADDS = [
     ('replenishment_plans', 'created_by_user_id', 'users', 'id', 'RESTRICT'),
     ('replenishment_plans', 'approved_by_user_id', 'users', 'id', 'SET NULL'),
     ('route_schedules', 'start_warehouse_id', 'warehouses', 'id', 'RESTRICT'),
-    ('route_schedules', 'assigned_asset_id', 'fleet_assets', 'id', 'SET NULL'),
     ('route_stops', 'route_schedule_id', 'route_schedules', 'id', 'CASCADE'),
     ('route_stops', 'warehouse_id', 'warehouses', 'id', 'RESTRICT'),
     ('route_optimization_runs', 'actor_user_id', 'users', 'id', 'SET NULL'),
@@ -95,7 +93,7 @@ ID_TABLES = [
     'provider_api_keys', 'replenishment_plans', 'route_schedules',
     'route_stops', 'route_optimization_runs', 'shipments',
     'organization_usage_counters', 'users', 'warehouses',
-    'feedback', 'route_history',
+    'feedback',
 ]
 
 FK_COLUMNS = [
@@ -122,7 +120,6 @@ FK_COLUMNS = [
     ('replenishment_plans', 'created_by_user_id'),
     ('replenishment_plans', 'approved_by_user_id'),
     ('route_schedules', 'start_warehouse_id'),
-    ('route_schedules', 'assigned_asset_id'),
     ('route_stops', 'route_schedule_id'),
     ('route_stops', 'warehouse_id'),
     ('route_optimization_runs', 'actor_user_id'),

@@ -16,6 +16,7 @@ CHECK constraints at the DB level.
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision = '20260806_0015'
 down_revision = '20260806_0014'
@@ -33,9 +34,11 @@ def _reversal_columns_sqlite() -> None:
 
 
 def _reversal_columns_postgres() -> None:
+    uuid_type = postgresql.UUID(as_uuid=True)
+
     op.add_column('payment_receipts', sa.Column('reversal_status', sa.String(length=16), nullable=True))
     op.add_column('payment_receipts', sa.Column('reversal_note', sa.String(length=512), nullable=True))
-    op.add_column('payment_receipts', sa.Column('reversed_by_user_id', sa.CHAR(length=36), nullable=True))
+    op.add_column('payment_receipts', sa.Column('reversed_by_user_id', uuid_type, nullable=True))
     op.add_column('payment_receipts', sa.Column('reversed_at', sa.DateTime(timezone=True), nullable=True))
     op.create_check_constraint(
         'ck_payment_receipt_reversal_status',
@@ -58,10 +61,12 @@ def _reversal_columns_postgres() -> None:
 
 
 def _create_fraud_flags_table() -> None:
+    uuid_type = postgresql.UUID(as_uuid=True)
+
     op.create_table(
         'sender_fraud_flags',
-        sa.Column('id', sa.CHAR(length=36), primary_key=True),
-        sa.Column('organization_id', sa.CHAR(length=36), nullable=False),
+        sa.Column('id', uuid_type, primary_key=True),
+        sa.Column('organization_id', uuid_type, nullable=False),
         sa.Column('sender_name', sa.String(length=128), nullable=False),
         sa.Column('fraud_risk_since', sa.DateTime(timezone=True), nullable=False),
         sa.Column('reversal_count', sa.Integer(), server_default=sa.text('1'), nullable=False),

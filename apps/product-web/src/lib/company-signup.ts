@@ -15,7 +15,26 @@ export type CompanySignupResponse = {
   email: string;
 };
 
-const apiBase = process.env.NEXT_PUBLIC_PLATFORM_API_URL || 'http://localhost:8000/api/v1';
+const localApiBase = 'http://localhost:8000/api/v1';
+
+export const missingPlatformApiMessage =
+  'Signup is temporarily unavailable on this deployment. The platform API URL is not configured.';
+
+export function resolvePlatformApiBase(
+  configuredValue: string | undefined = process.env.NEXT_PUBLIC_PLATFORM_API_URL,
+  nodeEnv: string | undefined = process.env.NODE_ENV,
+): string {
+  const trimmed = configuredValue?.trim();
+  if (trimmed) {
+    return trimmed.replace(/\/+$/, '');
+  }
+
+  if (nodeEnv !== 'production') {
+    return localApiBase;
+  }
+
+  throw new Error(missingPlatformApiMessage);
+}
 
 /**
  * Extract the human-readable message from a FastAPI error body.
@@ -61,6 +80,7 @@ function normalizeError(raw: string, fallback: string): string {
 }
 
 export async function companySignup(payload: CompanySignupRequest): Promise<CompanySignupResponse> {
+  const apiBase = resolvePlatformApiBase();
   let response: Response;
   try {
     response = await fetch(`${apiBase}/auth/company-signup`, {
