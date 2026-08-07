@@ -27,9 +27,9 @@ def _parse_migrations() -> dict[str, tuple[str | None, str]]:
     return migrations
 
 
-def test_migration_chain_is_linear_and_head_is_0017():
+def test_migration_chain_is_linear_and_head_is_0018():
     migrations = _parse_migrations()
-    assert len(migrations) >= 15, 'expected the full 0001..0017 chain'
+    assert len(migrations) >= 16, 'expected the full 0001..0018 chain'
 
     # No duplicate revision ids.
     assert len({revision for revision in migrations}) == len(migrations)
@@ -40,10 +40,10 @@ def test_migration_chain_is_linear_and_head_is_0017():
         if down is not None:
             assert down in known, f'{filename}: down_revision {down!r} does not exist'
 
-    # Exactly one head, and it must be 0017.
+    # Exactly one head, and it must be 0018 (drift repair).
     referenced = {down for down, _filename in migrations.values() if down is not None}
     heads = [revision for revision in known if revision not in referenced]
-    assert heads == ['20260806_0017'], f'unexpected head(s): {heads}'
+    assert heads == ['20260808_0018'], f'unexpected head(s): {heads}'
 
-    # 0017 sits directly on 0016.
-    assert migrations['20260806_0017'][0] == '20260806_0016'
+    # 0018 sits directly on 0017.
+    assert migrations['20260808_0018'][0] == '20260806_0017'
