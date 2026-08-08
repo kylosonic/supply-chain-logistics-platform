@@ -71,7 +71,7 @@ export function RouteOptimizerForm({
   }
 
   const fieldClassName =
-    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+    'glow-ring min-h-12 rounded-lg border border-slate-700/60 bg-slate-900 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
   const previousDistanceDelta = previousResult && result ? result.total_distance_km - previousResult.total_distance_km : null;
   const previousCostDelta = previousResult && result ? result.total_cost - previousResult.total_cost : null;
 
@@ -115,12 +115,12 @@ export function RouteOptimizerForm({
           <input className={fieldClassName} type="number" step="0.1" value={payload.cost_per_km} onChange={(e) => setPayload({ ...payload, cost_per_km: Number(e.target.value) })} />
         </label>
 
-        <label className="col-span-1 flex items-center gap-3 rounded-[22px] border border-slate-800 bg-slate-900/60 px-4 py-4 text-sm text-slate-300">
+        <label className="col-span-1 flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/35 px-4 py-4 text-sm text-slate-300">
           <input type="checkbox" checked={payload.persist_schedule} onChange={(e) => setPayload({ ...payload, persist_schedule: e.target.checked })} />
           Persist the optimized route as a saved schedule for the wider team.
         </label>
         
-        <label className="col-span-1 flex items-center gap-3 rounded-[22px] border border-slate-800 bg-slate-900/60 px-4 py-4 text-sm text-slate-300">
+        <label className="col-span-1 flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/35 px-4 py-4 text-sm text-slate-300">
           <input type="checkbox" checked={payload.minimize_carbon_footprint} onChange={(e) => setPayload({ ...payload, minimize_carbon_footprint: e.target.checked })} />
           Minimize Carbon Footprint
         </label>
@@ -139,7 +139,7 @@ export function RouteOptimizerForm({
       {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
 
       {result ? (
-        <div className="animate-slide-up mt-5 space-y-4 rounded-[24px] border border-slate-800 bg-slate-900/60 p-4">
+        <div className="animate-slide-up mt-5 space-y-4 rounded-2xl border border-slate-800/60 bg-slate-900/35 p-5">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={result.objective} tone="info" />
             <StatusBadge label={result.unassigned_deliveries.length === 0 ? 'Fully assigned' : 'Review unassigned'} tone={result.unassigned_deliveries.length === 0 ? 'success' : 'warning'} />
@@ -156,14 +156,14 @@ export function RouteOptimizerForm({
               { label: 'Stops', value: String(result.stops.length) },
             ].map((stat) => (
               <div key={stat.label} className="hover-lift rounded-lg border border-slate-800/60 bg-slate-900/40 p-4 transition">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{stat.label}</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{stat.value}</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">{stat.label}</p>
+                <p className="mt-3 font-mono text-2xl font-medium tabular-nums text-slate-50">{stat.value}</p>
               </div>
             ))}
           </div>
 
           {previousResult ? (
-            <div className="rounded-[20px] border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm text-slate-400">
+            <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
               Compared with the previous scenario:{' '}
               <span className={`font-semibold ${previousDistanceDelta != null && previousDistanceDelta < 0 ? 'text-emerald-300' : 'text-slate-200'}`}>
                 {previousDistanceDelta == null ? 'N/A' : `${previousDistanceDelta >= 0 ? '+' : ''}${previousDistanceDelta.toFixed(1)} km`}
@@ -176,10 +176,10 @@ export function RouteOptimizerForm({
           ) : null}
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Stop sequence</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stop sequence</p>
             <ul className="mt-3 grid gap-2 text-sm text-slate-300">
               {result.stops.map((stop, index) => (
-                <li key={stop.sequence} className="animate-fade-in rounded-[18px] border border-slate-800 bg-slate-950/70 px-4 py-3" style={{ animationDelay: `${index * 0.05}s` }}>
+                <li key={stop.sequence} className="animate-fade-in rounded-lg border border-slate-800/60 bg-slate-900/40 px-4 py-3" style={{ animationDelay: `${index * 0.05}s` }}>
                   <span className="font-semibold text-slate-100">#{stop.sequence}</span> {stop.warehouse_code} · {stop.demand_units} units · {stop.leg_distance_km} km leg
                 </li>
               ))}
@@ -190,3 +190,4 @@ export function RouteOptimizerForm({
     </Panel>
   );
 }
+

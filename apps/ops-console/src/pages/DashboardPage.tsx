@@ -186,7 +186,7 @@ export function DashboardPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {lastLiveUpdate ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-xs font-medium uppercase tracking-wide text-emerald-200">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 Live sync {new Date(lastLiveUpdate).toLocaleTimeString()}
               </span>
@@ -283,7 +283,7 @@ export function DashboardPage() {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge label={item.severity} tone={severityTone(item.severity)} />
-                      <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{item.source_type}</span>
+                      <span className="text-xs uppercase tracking-wide text-slate-500">{item.source_type}</span>
                     </div>
                     <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{item.title}</h3>
                   </div>
@@ -305,19 +305,19 @@ export function DashboardPage() {
           <Panel eyebrow="Execution posture" title="Workspace readiness">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
               <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Inventory position</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Inventory position</p>
                 <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.stock.toLocaleString()}</p>
                 <p className="mt-2 text-sm text-slate-400">Safety stock: {summary.safety.toLocaleString()} units</p>
               </div>
               {milestone >= gateMilestone('utilization') ? (
                 <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Utilization</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Utilization</p>
                   <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.avgUtil}%</p>
                   <p className="mt-2 text-sm text-slate-400">Average capacity pressure.</p>
                 </div>
               ) : (
-                <div className="rounded-[22px] border border-dashed border-slate-700/70 bg-slate-900/40 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Utilization</p>
+                <div className="rounded-xl border border-dashed border-slate-700/60 bg-slate-900/30 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Utilization</p>
                   <p className="mt-2 text-sm text-slate-400">Unlocks after Milestone 4.</p>
                   <a href="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
                     Continue onboarding →
@@ -325,12 +325,12 @@ export function DashboardPage() {
                 </div>
               )}
               <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Pending approvals</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Pending approvals</p>
                 <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.pendingPlans.length}</p>
                 <p className="mt-2 text-sm text-slate-400">Replenishment plans awaiting sign-off.</p>
               </div>
               <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Route schedules</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Route schedules</p>
                 <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{schedules.length}</p>
                 <p className="mt-2 text-sm text-slate-400">Saved optimization output.</p>
               </div>
@@ -395,3 +395,4 @@ export function DashboardPage() {
     </div>
   );
 }
+

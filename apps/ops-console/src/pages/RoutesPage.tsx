@@ -68,7 +68,7 @@ export function RoutesPage() {
         actions={
           <button
             onClick={handleRefresh}
-            className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+            className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-700/60 px-4 text-sm font-medium text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800/50"
           >
             {isRefreshing ? (
               <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
@@ -79,7 +79,7 @@ export function RoutesPage() {
       />
 
       {error ? (
-        <Panel className="border-rose-500/25 bg-rose-950/12">
+        <Panel className="border-rose-500/20 bg-rose-950/20">
           <p className="text-sm text-rose-200">{error}</p>
         </Panel>
       ) : null}
@@ -100,7 +100,7 @@ export function RoutesPage() {
           <RouteMap stops={latestRouteStops} riskZones={riskZones} />
         ) : (
           <Panel eyebrow="Weather risk" title="Weather risk zones map">
-            <div className="grid h-full min-h-[240px] place-items-center rounded-[24px] border border-dashed border-slate-700/80 bg-slate-900/40 p-6 text-center">
+            <div className="grid h-full min-h-[240px] place-items-center rounded-xl border border-dashed border-slate-700/60 bg-slate-900/30 p-6 text-center">
               <div>
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">
                   Unlocks after Milestone 5
@@ -151,7 +151,7 @@ export function RoutesPage() {
           ))}
 
           {history.length === 0 ? (
-            <div className="animate-fade-in rounded-[22px] border border-slate-800 bg-slate-900/40 p-6 text-center">
+            <div className="animate-fade-in rounded-xl border border-slate-800/60 bg-slate-900/35 p-6 text-center">
               <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No optimization history</p>
               <p className="mt-1 text-sm text-slate-500">Run a route optimization above to start building scenario history.</p>
             </div>
@@ -163,3 +163,4 @@ export function RoutesPage() {
     </div>
   );
 }
+

@@ -21,12 +21,12 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
   const [showDispute, setShowDispute] = useState(false);
 
   return (
-    <article className="animate-fade-in rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+    <article className="animate-fade-in rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={receipt.status} tone={statusTone(receipt.status)} />
-            <span className="text-xs uppercase tracking-[0.18em] text-slate-500">
+            <span className="text-xs uppercase tracking-wide text-slate-500">
               {receipt.reference_number ?? 'no reference extracted'}
             </span>
           </div>
@@ -54,7 +54,7 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
       ) : null}
 
       {receipt.reversal_status === 'reversed' ? (
-        <div className="mt-3 rounded-[16px] border border-rose-500/30 bg-rose-950/20 p-3">
+        <div className="mt-3 rounded-lg border border-rose-500/25 bg-rose-950/20 p-3">
           <p className="text-sm text-rose-100">
             This payment was reversed — the credited amount was restored to your invoice balance. See
             your notifications for the full message.
@@ -63,7 +63,7 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
       ) : null}
 
       {receipt.status === 'rejected' && receipt.rejection_reason ? (
-        <div className="mt-3 rounded-[16px] border border-rose-500/30 bg-rose-950/20 p-3">
+        <div className="mt-3 rounded-lg border border-rose-500/25 bg-rose-950/20 p-3">
           <p className="text-sm text-rose-100">{receipt.rejection_reason}</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
@@ -72,14 +72,14 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
                 setShowDispute(false);
                 document.getElementById('receipt-upload-input')?.click();
               }}
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-700 px-4 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-700/60 px-4 text-xs font-medium text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800/50"
             >
               Re-upload
             </button>
             <button
               type="button"
               onClick={() => setShowDispute((v) => !v)}
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-amber-500/30 px-4 text-xs font-semibold text-amber-200 transition hover:border-amber-400/50 hover:bg-amber-950/20"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-amber-500/25 px-4 text-xs font-medium text-amber-200 transition-colors hover:border-amber-400/50 hover:bg-amber-950/20"
             >
               Dispute this decision
             </button>
@@ -100,7 +100,7 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
                   onDispute(disputeText.trim());
                   setShowDispute(false);
                 }}
-                className="inline-flex min-h-10 items-center justify-center rounded-full bg-amber-400 px-4 text-xs font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-10 items-center justify-center rounded-lg bg-amber-400 px-4 text-xs font-medium text-slate-950 transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Submit dispute
               </button>
@@ -172,12 +172,12 @@ export function ReceiptsPage() {
       />
 
       {statusMessage ? (
-        <Panel className="border-sky-500/20 bg-sky-950/12">
+        <Panel className="border-sky-500/20 bg-sky-950/20">
           <p className="text-sm text-sky-100">{statusMessage}</p>
         </Panel>
       ) : null}
       {errorMessage ? (
-        <Panel className="border-rose-500/20 bg-rose-950/12">
+        <Panel className="border-rose-500/20 bg-rose-950/20">
           <p className="text-sm text-rose-100">{errorMessage}</p>
         </Panel>
       ) : null}
@@ -216,7 +216,7 @@ export function ReceiptsPage() {
         >
           {wallet ? (
             <>
-              <div className="rounded-[22px] border border-slate-800 bg-slate-900/70 p-4">
+              <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Available balance</p>
                 <p className="mt-2 font-['Space_Grotesk'] text-3xl font-semibold text-slate-50">
                   {wallet.available_etb} ETB
@@ -230,7 +230,7 @@ export function ReceiptsPage() {
                   {wallet.credits.slice(0, 6).map((credit) => (
                     <div
                       key={`${credit.created_at}-${credit.amount_etb}`}
-                      className="flex items-center justify-between rounded-[16px] border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm"
+                      className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/35 px-4 py-3 text-sm"
                     >
                       <span className="text-slate-300">+{credit.amount_etb} ETB</span>
                       <span className="text-xs text-slate-500">
@@ -272,3 +272,4 @@ export function ReceiptsPage() {
     </div>
   );
 }
+

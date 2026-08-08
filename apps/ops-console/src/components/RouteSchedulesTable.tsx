@@ -14,7 +14,7 @@ function scheduleTone(status: string) {
 
 export function RouteSchedulesTable({ schedules }: Props) {
   return (
-    <div className="overflow-x-auto rounded-[22px] border border-slate-800 bg-slate-900/60">
+    <div className="overflow-x-auto rounded-xl border border-slate-800/60 bg-slate-900/35">
       <table className="min-w-full divide-y divide-slate-800 text-sm">
         <thead className="bg-slate-950/80">
           <tr>
@@ -51,3 +51,4 @@ export function RouteSchedulesTable({ schedules }: Props) {
     </div>
   );
 }
+

@@ -28,7 +28,7 @@ export function CapPitchBanner() {
       <div
         role="banner"
         data-testid="cap-pitch-banner"
-        className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-rose-500/30 bg-rose-950/30 px-5 py-4"
+        className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-500/20 bg-rose-950/25 px-5 py-4"
       >
         <p className="text-sm font-semibold leading-6 text-rose-100">
           {state.free_cap?.message ?? P100_MESSAGE}
@@ -48,7 +48,7 @@ export function CapPitchBanner() {
       <div
         role="banner"
         data-testid="cap-pitch-banner"
-        className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-amber-500/30 bg-amber-950/25 px-5 py-4"
+        className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/20 bg-amber-950/25 px-5 py-4"
       >
         <p className="text-sm font-semibold leading-6 text-amber-100">
           You&apos;ve used 80% of your Free tier tasks. Consider upgrading before writes lock.
@@ -67,7 +67,7 @@ export function CapPitchBanner() {
     <div
       role="banner"
       data-testid="cap-pitch-banner"
-      className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-slate-700/70 bg-slate-900/70 px-5 py-4"
+      className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800/60 bg-slate-900/35 px-5 py-4"
     >
       <p className="text-sm font-semibold leading-6 text-slate-200">
         You&apos;ve used 60% of your Free tier tasks this month.
@@ -104,7 +104,7 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
       <div
         role="banner"
         data-testid="activation-banner"
-        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-500/20 bg-sky-950/30 px-5 py-4"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800/60 bg-slate-900/35 px-5 py-4"
       >
         <div>
           {n < 5 ? (
@@ -140,7 +140,7 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
     <div
       role="banner"
       data-testid="activation-checklist"
-      className="rounded-xl border border-sky-500/20 bg-sky-950/30 p-5"
+      className="rounded-2xl border border-slate-800/60 bg-slate-900/35 p-5"
     >
       {n < 5 ? (
         <p className="text-sm font-semibold leading-6 text-sky-100">
@@ -174,19 +174,19 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
             <div
               key={milestone.category}
               data-testid={`milestone-chip-${milestone.category}`}
-              className={`rounded-lg border px-3 py-3 ${chipTone}`}
+              className={`rounded-xl border px-3 py-3 ${chipTone}`}
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em]">
+                <p className="text-xs font-semibold uppercase tracking-wide">
                   Step {index + 1}
                 </p>
-                <span className="rounded-full border border-slate-700/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em]">
+                <span className="rounded-full border border-slate-700/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
                   {milestone.status}
                 </span>
               </div>
               <p className="mt-2 text-sm font-semibold">{milestone.label}</p>
               {index === n && !state.m6_completed ? (
-                <p className="mt-1 text-[11px] font-semibold text-sky-300">next step →</p>
+                <p className="mt-1 text-[11px] font-semibold text-sky-400">next step →</p>
               ) : null}
             </div>
           );
@@ -205,3 +205,4 @@ export function ActivationBanner({ mode }: { mode: 'compact' | 'checklist' }) {
     </div>
   );
 }
+

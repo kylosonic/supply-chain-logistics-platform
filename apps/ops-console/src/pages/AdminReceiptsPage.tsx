@@ -46,7 +46,7 @@ function ReversalActionButtons({ row, onUndo, onReverse }: ReversalActionButtons
 
   if (row.reversal_status) {
     return (
-      <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+      <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
         {row.reversal_status}
       </span>
     );
@@ -59,7 +59,7 @@ function ReversalActionButtons({ row, onUndo, onReverse }: ReversalActionButtons
           <button
             type="button"
             onClick={() => setMode('undo')}
-            className="rounded-full border border-teal-400/40 bg-teal-950/30 px-3 py-1.5 text-[11px] font-semibold text-teal-100 transition hover:border-teal-300/60"
+            className="rounded-lg border border-teal-400/35 bg-teal-950/25 px-3 py-1.5 text-[11px] font-medium text-teal-100 transition-colors hover:border-teal-300/60"
           >
             Undo (≤24h)
           </button>
@@ -68,7 +68,7 @@ function ReversalActionButtons({ row, onUndo, onReverse }: ReversalActionButtons
           <button
             type="button"
             onClick={() => setMode('reverse')}
-            className="rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-1.5 text-[11px] font-semibold text-amber-100 transition hover:border-amber-400/60"
+            className="rounded-lg border border-amber-500/35 bg-amber-950/25 px-3 py-1.5 text-[11px] font-medium text-amber-100 transition-colors hover:border-amber-400/60"
           >
             Reverse
           </button>
@@ -133,7 +133,7 @@ function AuditEventsDrawer({ receiptId }: { receiptId: string }) {
       {events.map((event) => (
         <div
           key={event.id}
-          className="rounded-[12px] border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs"
+          className="rounded-lg border border-slate-800/60 bg-slate-900/35 px-3 py-2 text-xs"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-mono font-semibold text-sky-200">{event.event_type}</span>
@@ -143,7 +143,7 @@ function AuditEventsDrawer({ receiptId }: { receiptId: string }) {
           </div>
           <p className="mt-1 text-slate-400">{event.description}</p>
           {event.available_actions.length > 0 ? (
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-300">
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-teal-300">
               Actions: {event.available_actions.join(', ')}
             </p>
           ) : null}
@@ -178,7 +178,7 @@ function ReversalsPanel({
           {rows.map((row) => (
             <div
               key={row.id}
-              className="rounded-[16px] border border-slate-800 bg-slate-900/70 p-3"
+              className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -201,7 +201,7 @@ function ReversalsPanel({
                   <button
                     type="button"
                     onClick={() => setExpandedId(expandedId === row.id ? null : row.id)}
-                    className="rounded-full border border-slate-700 px-3 py-1.5 text-[11px] font-semibold text-slate-300 transition hover:border-slate-500"
+                    className="rounded-lg border border-slate-700/60 px-3 py-1.5 text-[11px] font-medium text-slate-300 transition-colors hover:border-slate-500 hover:bg-slate-800/40"
                   >
                     {expandedId === row.id ? 'Hide events' : 'Audit events'}
                   </button>
@@ -323,12 +323,12 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
       {/* Flags */}
       <div className="flex flex-wrap gap-2">
         {item.sender_has_reversed_credit ? (
-          <span className="inline-flex items-center rounded-full border border-violet-500/50 bg-violet-950/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-200">
+          <span className="inline-flex items-center rounded-full border border-violet-500/50 bg-violet-950/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-200">
             {REVERSED_CREDIT_CHIP}
           </span>
         ) : null}
         {item.is_new_sender ? (
-          <span className="inline-flex items-center rounded-full border border-rose-500/50 bg-rose-950/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-200">
+          <span className="inline-flex items-center rounded-full border border-rose-500/50 bg-rose-950/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-rose-200">
             NEW SENDER
           </span>
         ) : null}
@@ -367,9 +367,9 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
       {/* Extracted fields with confidence bars */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {fieldRows.map(([label, value, confidence]) => (
-          <div key={label} className="rounded-[16px] border border-slate-800 bg-slate-900/70 p-3">
+          <div key={label} className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
               <span className="text-xs text-slate-400">{Math.round(confidence * 100)}%</span>
             </div>
             <p className="mt-1 break-all font-mono text-sm text-slate-100">{value ?? '—'}</p>
@@ -385,8 +385,8 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
 
       {/* Fraud badge admin controls — display-only, never blocks (NB-21.4/21.6) */}
       {item.sender_has_reversed_credit ? (
-        <div className="rounded-[16px] border border-violet-500/30 bg-violet-950/20 p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
+        <div className="rounded-lg border border-violet-500/25 bg-violet-950/20 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-violet-200">
             {REVERSED_CREDIT_CHIP}
           </p>
           <p className="mt-1 text-xs text-slate-400">
@@ -399,7 +399,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
             type="button"
             disabled={removing}
             onClick={onRemoveTrustedPayer}
-            className="mt-2 inline-flex min-h-9 items-center justify-center rounded-full border border-rose-500/40 px-4 text-xs font-semibold text-rose-200 transition hover:border-rose-400/60 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-2 inline-flex min-h-9 items-center justify-center rounded-lg border border-rose-500/35 px-4 text-xs font-medium text-rose-200 transition-colors hover:border-rose-400/60 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {removing ? 'Removing…' : 'Remove sender from trusted-payer list'}
           </button>
@@ -407,7 +407,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
       ) : null}
 
       {/* File preview */}
-      <div className="rounded-[16px] border border-slate-800 bg-slate-900/70 p-3">
+      <div className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3">
         <button
           type="button"
           onClick={onPreview}
@@ -448,7 +448,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
 
         {verdict === 'verify' && item.is_large_surplus ? (
           <div className="rounded-[16px] border border-amber-500/30 bg-amber-950/20 p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">{LARGE_SURPLUS_FLAG}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">{LARGE_SURPLUS_FLAG}</p>
             <div className="mt-2 grid gap-3 md:grid-cols-3">
               {(['credit_forward', 'credit_backward', 'partial_ignore'] as LargeSurplusDecision[]).map((d) => (
                 <button
@@ -478,7 +478,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
 
         {verdict === 'verify' ? (
           <div className="flex flex-wrap items-center gap-3">
-            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Trusted payer</label>
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trusted payer</label>
             <select
               value={trustedPayerAction}
               onChange={(event) => setTrustedPayerAction(event.target.value as TrustedPayerAction)}
@@ -574,12 +574,12 @@ export function AdminReceiptsPage() {
       />
 
       {message ? (
-        <Panel className="border-sky-500/20 bg-sky-950/12">
+        <Panel className="border-sky-500/20 bg-sky-950/20">
           <p className="text-sm text-sky-100">{message}</p>
         </Panel>
       ) : null}
       {error ? (
-        <Panel className="border-rose-500/20 bg-rose-950/12">
+        <Panel className="border-rose-500/20 bg-rose-950/20">
           <p className="text-sm text-rose-100">{error}</p>
         </Panel>
       ) : null}
@@ -601,7 +601,7 @@ export function AdminReceiptsPage() {
                     setError(null);
                     setMessage(null);
                   }}
-                  className={`rounded-[18px] border p-3 text-left transition ${
+                  className={`rounded-xl border p-3 text-left transition ${
                     selectedId === item.id
                       ? 'border-sky-400/40 bg-sky-500/10'
                       : 'border-slate-800 bg-slate-900/70 hover:border-slate-600'
@@ -611,12 +611,12 @@ export function AdminReceiptsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge label={item.status} tone={verdictTone(item.status)} />
                       {item.sender_has_reversed_credit ? (
-                        <span className="rounded-full border border-violet-500/50 bg-violet-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-200">
+                        <span className="rounded-full border border-violet-500/50 bg-violet-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
                           {REVERSED_CREDIT_CHIP}
                         </span>
                       ) : null}
                       {item.is_new_sender ? (
-                        <span className="rounded-full border border-rose-500/50 bg-rose-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-200">
+                        <span className="rounded-full border border-rose-500/50 bg-rose-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-200">
                           NEW SENDER
                         </span>
                       ) : null}
@@ -661,3 +661,4 @@ export function AdminReceiptsPage() {
     </div>
   );
 }
+

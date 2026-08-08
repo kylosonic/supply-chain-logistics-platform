@@ -193,7 +193,7 @@ export function AccountPage() {
   const activeKeyCount = useMemo(() => keys.filter((key) => key.status === 'active').length, [keys]);
 
   const fieldClassName =
-    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+    'glow-ring min-h-12 rounded-lg border border-slate-700/60 bg-slate-900 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
 
   if (loading) {
     return (
@@ -201,12 +201,12 @@ export function AccountPage() {
         <div className="skeleton h-[120px] rounded-2xl" />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton h-[130px] rounded-[24px]" />
+            <div key={i} className="skeleton h-[110px] rounded-xl" />
           ))}
         </div>
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-          <div className="skeleton h-[400px] rounded-[28px]" />
-          <div className="skeleton h-[400px] rounded-[28px]" />
+          <div className="skeleton h-[360px] rounded-2xl" />
+          <div className="skeleton h-[360px] rounded-2xl" />
         </div>
       </div>
     );
@@ -228,7 +228,7 @@ export function AccountPage() {
       </div>
 
       {statusMessage ? (
-        <Panel className="border-sky-500/20 bg-sky-950/12">
+        <Panel className="border-sky-500/20 bg-sky-950/20">
           <p className="text-sm text-sky-100">{statusMessage}</p>
         </Panel>
       ) : null}
@@ -242,7 +242,7 @@ export function AccountPage() {
             <button
               type="button"
               onClick={onRefreshUsage}
-              className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-700/60 px-4 text-sm font-medium text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800/50"
             >
               Refresh usage
             </button>
@@ -327,7 +327,7 @@ export function AccountPage() {
                   type="button"
                   disabled={currentTier === plan.tier}
                   onClick={() => onSelectTier(plan.tier)}
-                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-slate-700 px-4 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-700/60 px-4 text-xs font-medium text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {currentTier === plan.tier ? 'Current plan' : 'Switch to plan'}
                 </button>
@@ -412,7 +412,7 @@ export function AccountPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge label={key.status} tone={keyTone(key.status)} />
-                      <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{key.provider_name}</span>
+                      <span className="text-xs uppercase tracking-wide text-slate-500">{key.provider_name}</span>
                     </div>
                     <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{key.key_name}</h3>
                     <p className="mt-1 font-mono text-xs text-slate-400">{key.masked_key}</p>
@@ -456,7 +456,7 @@ export function AccountPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge label={event.entity_type} tone="info" />
-                    <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{event.event_type}</span>
+                    <span className="text-xs uppercase tracking-wide text-slate-500">{event.event_type}</span>
                   </div>
                   <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{event.description}</h3>
                 </div>
@@ -478,3 +478,4 @@ export function AccountPage() {
     </div>
   );
 }
+

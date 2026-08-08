@@ -40,7 +40,7 @@ export function RouteMap({ stops, riskZones = [] }: Props) {
       title="Spatial route review"
       description="Visual map of the optimized route path with stop markers and distance segments."
     >
-      <div className="relative h-[420px] overflow-hidden rounded-[20px] border border-slate-800">
+      <div className="relative h-[420px] overflow-hidden rounded-xl border border-slate-800/60">
         {validStops.length === 0 ? (
           <div className="absolute inset-0 z-[500] grid place-items-center bg-slate-950/88 text-center text-sm text-slate-400">
             <div className="max-w-xs space-y-3 px-4">
@@ -105,3 +105,4 @@ export function RouteMap({ stops, riskZones = [] }: Props) {
     </Panel>
   );
 }
+
