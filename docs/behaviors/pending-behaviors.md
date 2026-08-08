@@ -608,6 +608,37 @@ Source behavior doc: [`console-navigation-persistence.md`](./console-navigation-
 
 ---
 
+## Feature: Console Login Color Fidelity
+
+Source behavior doc: [`console-login-color-fidelity.md`](./console-login-color-fidelity.md)
+
+### NB-60 — The login page renders in the product's declared colors
+- **Priority:** P1
+- **Feature area:** Console surfaces, design-token fidelity
+- **Acceptance criteria:**
+  1. When an operator opens the login page, the page background, main panels, and nested panels are each visibly distinct — no near-black stacking where surfaces disappear into each other.
+  2. Input fields on the login page are visibly lighter than the panel they sit in, with a clear border and a readable placeholder; focused fields show the cyan focus treatment.
+  3. The rendered colors match the color values the design system declares (surfaces, elevated panels, inputs, borders, text).
+  4. The same rendered colors appear everywhere the shared surfaces are used across the console — the login page and the rest of the application never disagree about what a panel or a field looks like.
+
+### NB-61 — Small text on the login page is readable
+- **Priority:** P1
+- **Feature area:** Login page contrast, accessibility
+- **Acceptance criteria:**
+  1. Every text element on the login page — eyebrows, helper copy, secondary actions — meets WCAG AA contrast for small text against its background.
+  2. Hierarchy is preserved: labels read as labels, body text as body text, titles as titles — nothing flattens into one gray mass.
+  3. The login page uses one cyan accent family for the brand mark, primary action, links, and focus treatment; rose appears only for error states; no new hues are introduced.
+
+### NB-62 — Color drift cannot silently return
+- **Priority:** P2
+- **Feature area:** Regression protection, verification
+- **Acceptance criteria:**
+  1. A regression guard exists that fails the build if the shared surface or input classes stop referencing the declared color tokens.
+  2. The full console test suite, typecheck, and build pass with the color changes in place.
+  3. A human visual check of the login page (and a spot-check of the dashboard, which shares the surfaces) confirms the rendered colors match the declared system.
+
+---
+
 ## Open items deferred to later features
 
 These are explicitly out of scope of v1 but noted here so they are not lost:
