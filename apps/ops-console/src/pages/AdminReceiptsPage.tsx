@@ -59,7 +59,7 @@ function ReversalActionButtons({ row, onUndo, onReverse }: ReversalActionButtons
           <button
             type="button"
             onClick={() => setMode('undo')}
-            className="rounded-lg border border-teal-400/35 bg-teal-950/25 px-3 py-1.5 text-[11px] font-medium text-teal-100 transition-colors hover:border-teal-300/60"
+            className="rounded-lg border border-emerald-400/35 bg-emerald-950/25 px-3 py-1.5 text-[11px] font-medium text-emerald-100 transition-colors hover:border-emerald-300/60"
           >
             Undo (≤24h)
           </button>
@@ -97,7 +97,7 @@ function ReversalActionButtons({ row, onUndo, onReverse }: ReversalActionButtons
         onChange={(event) => setText(event.target.value)}
         placeholder={isReverse ? 'Reason (required — shown to the customer)' : 'Note (optional)'}
         maxLength={512}
-        className="glow-ring min-h-20 w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-amber-400/50"
+        className="fp-input min-h-20 px-3 py-2"
       />
       <div className="flex flex-wrap gap-2">
         <button
@@ -143,7 +143,7 @@ function AuditEventsDrawer({ receiptId }: { receiptId: string }) {
           </div>
           <p className="mt-1 text-slate-400">{event.description}</p>
           {event.available_actions.length > 0 ? (
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-teal-300">
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
               Actions: {event.available_actions.join(', ')}
             </p>
           ) : null}
@@ -191,7 +191,7 @@ function ReversalsPanel({
                     {row.decided_at ? new Date(row.decided_at).toLocaleString() : '—'}
                   </p>
                   {row.undo_available_until && row.undo_available ? (
-                    <p className="mt-0.5 text-[10px] text-teal-300/80">
+                    <p className="mt-0.5 text-[10px] text-slate-500">
                       Undo window closes {new Date(row.undo_available_until).toLocaleString()}
                     </p>
                   ) : null}
@@ -346,7 +346,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
         ) : null}
         {item.is_large_surplus ? (
           <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-950/30 px-3 py-1.5 text-[11px] font-semibold text-amber-100">
-            {LARGE_SURPLUS_FLAG} ({item.surplus_etb ?? '0'} ETB)
+            {LARGE_SURPLUS_FLAG} (<span className="font-mono tabular-nums">{item.surplus_etb ?? '0'}</span> ETB)
           </span>
         ) : null}
         {item.has_zero_confidence ? (
@@ -395,12 +395,12 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
           <div key={label} className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
-              <span className="text-xs text-slate-400">{Math.round(confidence * 100)}%</span>
+              <span className="font-mono text-xs tabular-nums text-slate-400">{Math.round(confidence * 100)}%</span>
             </div>
             <p className="mt-1 break-all font-mono text-sm text-slate-100">{value ?? '—'}</p>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
               <div
-                className={`h-full rounded-full ${confidence < 0.6 ? 'bg-amber-400' : 'bg-teal-300'}`}
+                className={`h-full rounded-full ${confidence < 0.6 ? 'bg-amber-400' : 'bg-emerald-400'}`}
                 style={{ width: `${Math.round(confidence * 100)}%` }}
               />
             </div>
@@ -420,9 +420,9 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
         {fileUrl ? (
           <div className="mt-3">
             {item.content_type === 'application/pdf' ? (
-              <iframe title="receipt-preview" src={fileUrl} className="h-72 w-full rounded-[16px] border border-slate-800 bg-slate-950" />
+              <iframe title="receipt-preview" src={fileUrl} className="h-72 w-full rounded-[var(--fp-radius-panel)] border border-slate-800 bg-slate-950" />
             ) : (
-              <img src={fileUrl} alt="receipt preview" className="max-h-72 rounded-[16px] border border-slate-800 bg-slate-950" />
+              <img src={fileUrl} alt="receipt preview" className="max-h-72 rounded-[var(--fp-radius-panel)] border border-slate-800 bg-slate-950" />
             )}
           </div>
         ) : null}
@@ -464,7 +464,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
         </div>
 
         {verdict === 'verify' && item.is_large_surplus ? (
-          <div className="rounded-[16px] border border-amber-500/30 bg-amber-950/20 p-3">
+          <div className="rounded-[var(--fp-radius-panel)] border border-amber-500/30 bg-amber-950/20 p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">{LARGE_SURPLUS_FLAG}</p>
             <div className="mt-2 grid gap-3 md:grid-cols-3">
               {(['credit_forward', 'credit_backward', 'partial_ignore'] as LargeSurplusDecision[]).map((d) => (
@@ -487,7 +487,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
                 value={partialAmount}
                 onChange={(event) => setPartialAmount(event.target.value)}
                 placeholder="Partial credit amount (ETB)"
-                className="glow-ring mt-3 min-h-10 w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 text-sm text-slate-100 outline-none transition focus:border-amber-400/50"
+                className="fp-input mt-3 min-h-10 px-3"
               />
             ) : null}
           </div>
@@ -499,7 +499,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
             <select
               value={trustedPayerAction}
               onChange={(event) => setTrustedPayerAction(event.target.value as TrustedPayerAction)}
-              className="glow-ring min-h-10 rounded-xl border border-slate-700 bg-slate-950/80 px-3 text-sm text-slate-100 outline-none"
+              className="fp-input min-h-10"
             >
               <option value="verified_once">Verify, do not add</option>
               <option value="added">Verify + add to trusted-payer list</option>
@@ -512,7 +512,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
             value={note}
             onChange={(event) => setNote(event.target.value)}
             placeholder="Escalation question shown to the customer (required)"
-            className="glow-ring min-h-24 w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-amber-400/50"
+            className="fp-input min-h-24 px-4 py-3"
           />
         ) : null}
 
@@ -521,7 +521,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
           onChange={(event) => setAdminNote(event.target.value)}
           placeholder="Admin note (optional)"
           maxLength={512}
-          className="glow-ring min-h-10 w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+          className="fp-input min-h-10 px-3"
         />
 
         <button
@@ -618,7 +618,7 @@ export function AdminReceiptsPage() {
                     setError(null);
                     setMessage(null);
                   }}
-                  className={`rounded-xl border p-2.5 text-left transition ${
+                  className={`rounded-[var(--fp-radius-panel)] border p-2.5 text-left transition ${
                     selectedId === item.id
                       ? 'border-sky-400/40 bg-sky-500/10'
                       : 'border-slate-800 bg-slate-900/70 hover:border-slate-600'

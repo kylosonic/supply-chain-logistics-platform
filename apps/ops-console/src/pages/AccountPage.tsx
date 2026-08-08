@@ -192,21 +192,20 @@ export function AccountPage() {
   const metricLabel = useMemo(() => usageMetricLabel(usage), [usage]);
   const activeKeyCount = useMemo(() => keys.filter((key) => key.status === 'active').length, [keys]);
 
-  const fieldClassName =
-    'glow-ring min-h-12 rounded-lg border border-slate-700/60 bg-slate-900 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+  const fieldClassName = 'fp-input min-h-12';
 
   if (loading) {
     return (
       <div className="space-y-5">
-        <div className="skeleton h-[120px] rounded-2xl" />
+        <div className="skeleton h-[120px] rounded-[var(--fp-radius-hero)]" />
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton h-[110px] rounded-xl" />
+            <div key={i} className="skeleton h-[110px] rounded-[var(--fp-radius-panel)]" />
           ))}
         </div>
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-          <div className="skeleton h-[360px] rounded-2xl" />
-          <div className="skeleton h-[360px] rounded-2xl" />
+          <div className="skeleton h-[360px] rounded-[var(--fp-radius-hero)]" />
+          <div className="skeleton h-[360px] rounded-[var(--fp-radius-hero)]" />
         </div>
       </div>
     );
@@ -253,12 +252,12 @@ export function AccountPage() {
             </button>
           }
         >
-          <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
+          <div className="fp-nested-surface p-4">
             <p className="text-sm font-semibold text-slate-100">Current plan: {tierLabel}</p>
             <p className="mt-2 text-sm text-slate-400">Organization: {subscription?.organization_name ?? 'Unknown'}</p>
           </div>
 
-          <div className="mt-4 rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
+          <div className="mt-4 fp-nested-surface p-4">
             <p className="text-sm font-semibold text-slate-100">Usage meter</p>
             <p className="mt-1 text-xs text-slate-500">{metricLabel}</p>
 
@@ -270,11 +269,11 @@ export function AccountPage() {
                     <span className="font-semibold text-slate-200">{usage.period_end}</span>
                   </p>
                   <p>
-                    Used: <span className="font-semibold text-slate-200">{usage.used_units.toLocaleString()}</span>
+                    Used: <span className="font-mono font-semibold tabular-nums text-slate-200">{usage.used_units.toLocaleString()}</span>
                   </p>
                   <p>
                     Included:{' '}
-                    <span className="font-semibold text-slate-200">
+                    <span className="font-mono font-semibold tabular-nums text-slate-200">
                       {usage.included_units == null ? 'Unlimited' : usage.included_units.toLocaleString()}
                     </span>
                   </p>
@@ -286,7 +285,7 @@ export function AccountPage() {
                       <div className="h-full rounded-lg bg-sky-500" style={{ width: `${progressPercent}%` }} />
                     </div>
                     <p className="text-xs text-slate-400">
-                      Utilization: <span className="font-semibold text-slate-200">{usage.utilization_percent ?? 0}%</span>
+                      Utilization: <span className="font-mono font-semibold tabular-nums text-slate-200">{usage.utilization_percent ?? 0}%</span>
                     </p>
                   </>
                 ) : (
@@ -295,11 +294,11 @@ export function AccountPage() {
 
                 <div className="grid gap-2 text-xs text-slate-400 md:grid-cols-2">
                   <p>
-                    Overage units: <span className="font-semibold text-slate-200">{usage.overage_units.toLocaleString()}</span>
+                    Overage units: <span className="font-mono font-semibold tabular-nums text-slate-200">{usage.overage_units.toLocaleString()}</span>
                   </p>
                   <p>
                     Estimated overage cost:{' '}
-                    <span className="font-semibold text-slate-200">
+                    <span className="font-mono font-semibold tabular-nums text-slate-200">
                       {usage.estimated_overage_cost_usd == null
                         ? 'N/A'
                         : `$${usage.estimated_overage_cost_usd.toLocaleString()}`}
@@ -314,19 +313,19 @@ export function AccountPage() {
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {plans.map((plan) => (
-              <div key={plan.tier} className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
+              <div key={plan.tier} className="hover-lift fp-nested-surface p-3.5 transition">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{plan.title}</h2>
-                    <p className="text-sm text-slate-400">{priceText(plan)}</p>
+                    <p className="font-mono tabular-nums text-sm text-slate-400">{priceText(plan)}</p>
                   </div>
                   {currentTier === plan.tier ? <StatusBadge label="Current" tone="info" /> : null}
                 </div>
                 <div className="mt-3 space-y-1 text-xs text-slate-400">
-                  <p>Seats: {plan.seat_limit ?? 'Unlimited'}</p>
-                  <p>Vehicles: {plan.vehicle_limit ?? 'Unlimited'}</p>
-                  <p>Included tasks: {includedTasksLabel(plan)}</p>
-                  <p>Overage rate: {overageRateLabel(plan)}</p>
+                  <p>Seats: <span className="font-mono tabular-nums">{plan.seat_limit ?? 'Unlimited'}</span></p>
+                  <p>Vehicles: <span className="font-mono tabular-nums">{plan.vehicle_limit ?? 'Unlimited'}</span></p>
+                  <p>Included tasks: <span className="font-mono tabular-nums">{includedTasksLabel(plan)}</span></p>
+                  <p>Overage rate: <span className="font-mono tabular-nums">{overageRateLabel(plan)}</span></p>
                 </div>
                 <button
                   type="button"
@@ -349,7 +348,7 @@ export function AccountPage() {
           title="Escalation SMS phone"
           description="Receipt escalations are sent to this number. The workspace can be locked exactly when escalation matters — owners and admins can update it anytime."
         >
-          <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
+          <div className="fp-nested-surface p-4">
             <label htmlFor="contactPhone" className="text-sm font-semibold text-slate-100">
               Contact phone
             </label>
@@ -380,7 +379,7 @@ export function AccountPage() {
           title="Bring your own provider keys"
           description="Set the preferred provider for dashboard workflows, test active keys, and rotate credentials without leaving the workspace."
         >
-          <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
+          <div className="fp-nested-surface p-4">
             <p className="text-sm font-semibold text-slate-100">Preferred AI provider for the dashboard</p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <select value={preferredKeyId} onChange={(event) => setPreferredKeyId(event.target.value)} className={`${fieldClassName} min-w-[240px]`}>
@@ -415,7 +414,7 @@ export function AccountPage() {
 
           <div className="mt-4 space-y-3">
             {keys.map((key) => (
-              <article key={key.id} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
+              <article key={key.id} className="fp-row">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -459,7 +458,7 @@ export function AccountPage() {
       >
         <div className="space-y-3">
           {auditEvents.slice(0, 8).map((event) => (
-            <article key={event.id} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
+            <article key={event.id} className="animate-fade-in hover-lift fp-nested-surface p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">

@@ -36,7 +36,7 @@ function severityTone(severity: string) {
 }
 
 function SkeletonBlock({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded-xl bg-slate-800/40 ${className ?? ''}`} />;
+  return <div className={`animate-pulse rounded-[var(--fp-radius-panel)] bg-slate-800/40 ${className ?? ''}`} />;
 }
 
 // NB-29.3 panel gate map: hidden vs placeholder per surface, milestone
@@ -59,7 +59,7 @@ export { PANEL_GATES };
 
 function GatePlaceholder({ milestone }: { milestone: number }) {
   return (
-    <div className="grid h-full min-h-[160px] place-items-center rounded-xl border border-dashed border-slate-700/60 bg-slate-900/30 p-6 text-center">
+    <div className="grid h-full min-h-[160px] place-items-center rounded-[var(--fp-radius-panel)] border border-dashed border-slate-700/60 bg-slate-900/30 p-6 text-center">
       <div>
         <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">
           Unlocks after Milestone {milestone}
@@ -75,20 +75,20 @@ function GatePlaceholder({ milestone }: { milestone: number }) {
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
-      <SkeletonBlock className="h-[120px] rounded-2xl" />
+      <SkeletonBlock className="h-[120px] rounded-[var(--fp-radius-hero)]" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {[1, 2].map((i) => (
-          <SkeletonBlock key={i} className="h-[110px] rounded-2xl" />
+          <SkeletonBlock key={i} className="h-[110px] rounded-[var(--fp-radius-panel)]" />
         ))}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <SkeletonBlock key={i} className="h-[110px] rounded-xl" />
+          <SkeletonBlock key={i} className="h-[110px] rounded-[var(--fp-radius-panel)]" />
         ))}
       </div>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-        <SkeletonBlock className="h-[300px] rounded-2xl" />
-        <SkeletonBlock className="h-[300px] rounded-2xl" />
+        <SkeletonBlock className="h-[300px] rounded-[var(--fp-radius-hero)]" />
+        <SkeletonBlock className="h-[300px] rounded-[var(--fp-radius-hero)]" />
       </div>
     </div>
   );
@@ -305,7 +305,7 @@ export function DashboardPage() {
               </article>
             ))}
             {feedItems.length === 0 ? (
-              <div className="animate-fade-in rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-5 text-center">
+              <div className="animate-fade-in rounded-[var(--fp-radius-panel)] border border-emerald-500/20 bg-emerald-950/20 p-5 text-center">
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-emerald-200">Queue clear</p>
                 <p className="mt-1 text-sm text-emerald-300/60">No open alerts requiring operator attention.</p>
               </div>
@@ -316,19 +316,19 @@ export function DashboardPage() {
         <div className="grid gap-5">
           <Panel eyebrow="Execution posture" title="Workspace readiness">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-              <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
+              <div className="hover-lift fp-nested-surface p-3.5 transition">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Inventory position</p>
                 <p className="mt-2.5 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{summary.stock.toLocaleString()}</p>
                 <p className="mt-1.5 text-sm text-slate-400">Safety stock: {summary.safety.toLocaleString()} units</p>
               </div>
               {milestone >= gateMilestone('utilization') ? (
-                <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
+                <div className="hover-lift fp-nested-surface p-3.5 transition">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Utilization</p>
                   <p className="mt-2.5 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{summary.avgUtil}%</p>
                   <p className="mt-1.5 text-sm text-slate-400">Average capacity pressure.</p>
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-700/60 bg-slate-900/30 p-3.5">
+                <div className="rounded-[var(--fp-radius-panel)] border border-dashed border-slate-700/60 bg-slate-900/30 p-3.5">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Utilization</p>
                   <p className="mt-2 text-sm text-slate-400">Unlocks after Milestone 4.</p>
                   <a href="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
@@ -336,12 +336,12 @@ export function DashboardPage() {
                   </a>
                 </div>
               )}
-              <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
+              <div className="hover-lift fp-nested-surface p-3.5 transition">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Pending approvals</p>
                 <p className="mt-2.5 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{summary.pendingPlans.length}</p>
                 <p className="mt-1.5 text-sm text-slate-400">Replenishment plans awaiting sign-off.</p>
               </div>
-              <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
+              <div className="hover-lift fp-nested-surface p-3.5 transition">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Route schedules</p>
                 <p className="mt-2.5 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{schedules.length}</p>
                 <p className="mt-1.5 text-sm text-slate-400">Saved optimization output.</p>
@@ -352,7 +352,7 @@ export function DashboardPage() {
           <Panel eyebrow="Audit timeline" title="Latest workspace actions">
             <div className="space-y-3">
               {auditEvents.slice(0, 4).map((event, index) => (
-                <article key={event.id} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4" style={{ animationDelay: `${index * 0.06}s` }}>
+                <article key={event.id} className="animate-fade-in hover-lift fp-nested-surface p-4" style={{ animationDelay: `${index * 0.06}s` }}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{event.description}</h3>

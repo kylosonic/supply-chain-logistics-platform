@@ -70,8 +70,7 @@ export function RouteOptimizerForm({
     }
   }
 
-  const fieldClassName =
-    'glow-ring min-h-12 rounded-lg border border-slate-700/60 bg-slate-900 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+  const fieldClassName = 'fp-input min-h-12';
   const previousDistanceDelta = previousResult && result ? result.total_distance_km - previousResult.total_distance_km : null;
   const previousCostDelta = previousResult && result ? result.total_cost - previousResult.total_cost : null;
 
@@ -128,11 +127,11 @@ export function RouteOptimizerForm({
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           <p className="col-span-full text-[11px] font-medium tracking-[0.18em] text-slate-500">Persistence options</p>
-          <label className="col-span-1 flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/35 px-4 py-4 text-sm text-slate-300">
+          <label className="col-span-1 flex items-center gap-3 fp-nested-surface px-4 py-4 text-sm text-slate-300">
             <input type="checkbox" checked={payload.persist_schedule} onChange={(e) => setPayload({ ...payload, persist_schedule: e.target.checked })} />
             Persist the optimized route as a saved schedule for the wider team.
           </label>
-          <label className="col-span-1 flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/35 px-4 py-4 text-sm text-slate-300">
+          <label className="col-span-1 flex items-center gap-3 fp-nested-surface px-4 py-4 text-sm text-slate-300">
             <input type="checkbox" checked={payload.minimize_carbon_footprint} onChange={(e) => setPayload({ ...payload, minimize_carbon_footprint: e.target.checked })} />
             Minimize Carbon Footprint
           </label>
@@ -152,7 +151,7 @@ export function RouteOptimizerForm({
       {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
 
       {result ? (
-        <div className="animate-slide-up mt-5 space-y-4 rounded-2xl border border-slate-800/60 bg-slate-900/35 p-5">
+        <div className="animate-slide-up mt-5 space-y-4 fp-nested-surface p-5">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={result.objective} tone="info" />
             <StatusBadge label={result.unassigned_deliveries.length === 0 ? 'Fully assigned' : 'Review unassigned'} tone={result.unassigned_deliveries.length === 0 ? 'success' : 'warning'} />
@@ -168,7 +167,7 @@ export function RouteOptimizerForm({
               { label: 'Duration', value: `${result.estimated_duration_min} min` },
               { label: 'Stops', value: String(result.stops.length) },
             ].map((stat) => (
-              <div key={stat.label} className="hover-lift rounded-lg border border-slate-800/60 bg-slate-900/40 p-4 transition">
+              <div key={stat.label} className="hover-lift fp-nested-surface p-4 transition">
                 <p className="text-xs uppercase tracking-wide text-slate-500">{stat.label}</p>
                 <p className="mt-3 font-mono text-2xl font-medium tabular-nums text-slate-50">{stat.value}</p>
               </div>
@@ -176,13 +175,13 @@ export function RouteOptimizerForm({
           </div>
 
           {previousResult ? (
-            <div className="rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-3.5 text-sm text-slate-400">
+            <div className="rounded-[var(--fp-radius-panel)] border border-slate-700/50 bg-slate-900/50 px-4 py-3.5 text-sm text-slate-400">
               Compared with the previous scenario:{' '}
-              <span className={`font-semibold ${previousDistanceDelta != null && previousDistanceDelta < 0 ? 'text-emerald-300' : 'text-slate-200'}`}>
+              <span className={`font-mono font-semibold tabular-nums ${previousDistanceDelta != null && previousDistanceDelta < 0 ? 'text-emerald-300' : 'text-slate-200'}`}>
                 {previousDistanceDelta == null ? 'N/A' : `${previousDistanceDelta >= 0 ? '+' : ''}${previousDistanceDelta.toFixed(1)} km`}
               </span>
               {' | '}
-              <span className={`font-semibold ${previousCostDelta != null && previousCostDelta < 0 ? 'text-emerald-300' : 'text-slate-200'}`}>
+              <span className={`font-mono font-semibold tabular-nums ${previousCostDelta != null && previousCostDelta < 0 ? 'text-emerald-300' : 'text-slate-200'}`}>
                 {previousCostDelta == null ? 'N/A' : `${previousCostDelta >= 0 ? '+' : ''}$${previousCostDelta.toFixed(2)}`}
               </span>
             </div>
@@ -192,7 +191,7 @@ export function RouteOptimizerForm({
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stop sequence</p>
             <ul className="mt-3 grid gap-1.5 text-sm text-slate-300">
               {result.stops.map((stop, index) => (
-                <li key={stop.sequence} className="animate-fade-in rounded-lg border border-slate-800/60 bg-slate-900/40 px-4 py-2.5" style={{ animationDelay: `${index * 0.05}s` }}>
+                <li key={stop.sequence} className="fp-row px-4 py-2.5" style={{ animationDelay: `${index * 0.05}s` }}>
                   <span className="font-semibold text-slate-100">#{stop.sequence}</span> {stop.warehouse_code} · {stop.demand_units} units · {stop.leg_distance_km} km leg
                 </li>
               ))}

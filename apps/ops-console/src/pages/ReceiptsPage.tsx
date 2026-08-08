@@ -21,7 +21,7 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
   const [showDispute, setShowDispute] = useState(false);
 
   return (
-    <article className="animate-fade-in rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5">
+    <article className="fp-row">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <StatusBadge label={receipt.status} tone={statusTone(receipt.status)} />
         <span className="font-mono text-base font-semibold tabular-nums text-slate-50">
@@ -87,7 +87,7 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
                 onChange={(event) => setDisputeText(event.target.value)}
                 placeholder="Explain why you believe the rejection was wrong…"
                 maxLength={1000}
-                className="glow-ring min-h-24 w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-amber-400/50"
+                className="fp-input min-h-24 px-4 py-3"
               />
               <button
                 type="button"
@@ -106,7 +106,7 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
       ) : null}
 
       {receipt.status === 'escalated' ? (
-        <p className="mt-3 rounded-[16px] border border-amber-500/30 bg-amber-950/20 p-3 text-sm text-amber-100">
+        <p className="mt-3 rounded-[var(--fp-radius-panel)] border border-amber-500/30 bg-amber-950/20 p-3 text-sm text-amber-100">
           Your receipt is under review. FreightPilot has a question about your recent receipt — please
           watch your notifications for the details.
         </p>
@@ -190,7 +190,7 @@ export function ReceiptsPage() {
               type="file"
               accept=".png,.jpg,.jpeg,.pdf"
               onChange={onFileSelected}
-              className="glow-ring min-h-12 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+              className="fp-input min-h-12 px-4"
             />
             <button
               type="submit"
@@ -212,7 +212,7 @@ export function ReceiptsPage() {
         >
           {wallet ? (
             <>
-              <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
+              <div className="fp-nested-surface p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Available balance</p>
                 <p className="mt-2 font-mono text-3xl font-medium tabular-nums tracking-tight text-slate-50">
                   {wallet.available_etb} ETB
@@ -226,7 +226,7 @@ export function ReceiptsPage() {
                   {wallet.credits.slice(0, 6).map((credit) => (
                     <div
                       key={`${credit.created_at}-${credit.amount_etb}`}
-                      className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/35 px-4 py-3 text-sm"
+                      className="flex items-center justify-between fp-row px-4 py-3 text-sm"
                     >
                       <span className="text-slate-300">+{credit.amount_etb} ETB</span>
                       <span className="text-xs text-slate-500">

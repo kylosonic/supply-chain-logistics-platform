@@ -102,7 +102,7 @@ export function RoutesPage() {
           <RouteMap stops={latestRouteStops} riskZones={riskZones} />
         ) : (
           <Panel eyebrow="Weather risk" title="Weather risk zones map">
-            <div className="grid h-full min-h-[240px] place-items-center rounded-xl border border-dashed border-slate-700/60 bg-slate-900/30 p-6 text-center">
+            <div className="grid h-full min-h-[240px] place-items-center rounded-[var(--fp-radius-panel)] border border-dashed border-slate-700/60 bg-slate-900/30 p-6 text-center">
               <div>
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">
                   Unlocks after Milestone 5
@@ -131,7 +131,7 @@ export function RoutesPage() {
       >
         <div className="space-y-3">
           {history.slice(0, 6).map((run, index) => (
-            <article key={run.id} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4" style={{ animationDelay: `${index * 0.04}s` }}>
+            <article key={run.id} className="fp-row" style={{ animationDelay: `${index * 0.04}s` }}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -144,16 +144,16 @@ export function RoutesPage() {
                 <span className="text-xs text-slate-500">{new Date(run.created_at).toLocaleString()}</span>
               </div>
               <div className="mt-3 grid gap-2 text-sm text-slate-400 sm:grid-cols-4">
-                <span><span className="font-semibold text-slate-200">{run.total_distance_km}</span> km</span>
-                <span><span className="font-semibold text-slate-200">${run.total_cost}</span></span>
-                <span><span className="font-semibold text-slate-200">{run.estimated_duration_min}</span> min</span>
-                <span><span className="font-semibold text-slate-200">{run.deliveries_count}</span> deliveries</span>
+                <span><span className="font-mono font-semibold tabular-nums text-slate-200">{run.total_distance_km}</span> km</span>
+                <span><span className="font-mono font-semibold tabular-nums text-slate-200">${run.total_cost}</span></span>
+                <span><span className="font-mono font-semibold tabular-nums text-slate-200">{run.estimated_duration_min}</span> min</span>
+                <span><span className="font-mono font-semibold tabular-nums text-slate-200">{run.deliveries_count}</span> deliveries</span>
               </div>
             </article>
           ))}
 
           {history.length === 0 ? (
-            <div className="animate-fade-in rounded-xl border border-slate-800/60 bg-slate-900/35 p-6 text-center">
+            <div className="animate-fade-in rounded-[var(--fp-radius-panel)] border border-slate-800/60 bg-slate-900/35 p-6 text-center">
               <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No optimization history</p>
               <p className="mt-1 text-sm text-slate-500">Run a route optimization above to start building scenario history.</p>
             </div>
