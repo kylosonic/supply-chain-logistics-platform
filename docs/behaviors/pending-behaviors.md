@@ -612,7 +612,7 @@ Source behavior doc: [`console-navigation-persistence.md`](./console-navigation-
 
 Source behavior doc: [`console-login-color-fidelity.md`](./console-login-color-fidelity.md)
 
-### NB-60 — The login page renders in the product's declared colors
+### NB-60 — The login page renders in the product's declared colors — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Console surfaces, design-token fidelity
 - **Acceptance criteria:**
@@ -621,7 +621,7 @@ Source behavior doc: [`console-login-color-fidelity.md`](./console-login-color-f
   3. The rendered colors match the color values the design system declares (surfaces, elevated panels, inputs, borders, text).
   4. The same rendered colors appear everywhere the shared surfaces are used across the console — the login page and the rest of the application never disagree about what a panel or a field looks like.
 
-### NB-61 — Small text on the login page is readable
+### NB-61 — Small text on the login page is readable — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Login page contrast, accessibility
 - **Acceptance criteria:**
@@ -629,7 +629,7 @@ Source behavior doc: [`console-login-color-fidelity.md`](./console-login-color-f
   2. Hierarchy is preserved: labels read as labels, body text as body text, titles as titles — nothing flattens into one gray mass.
   3. The login page uses one cyan accent family for the brand mark, primary action, links, and focus treatment; rose appears only for error states; no new hues are introduced.
 
-### NB-62 — Color drift cannot silently return
+### NB-62 — Color drift cannot silently return — [IMPLEMENTED]
 - **Priority:** P2
 - **Feature area:** Regression protection, verification
 - **Acceptance criteria:**

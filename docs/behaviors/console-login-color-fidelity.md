@@ -1,6 +1,6 @@
 # Console Login Color Fidelity — Living Behaviors
 
-> ⚠️ **NOT YET IMPLEMENTED** — This feature is locked but not built. Tickets: NB-60..NB-62 in `pending-behaviors.md`. Handoff prepared for `@architect`; blueprint + TDD execution pending. Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+> ✅ **IMPLEMENTED** — This feature shipped in the console login color fidelity batch (NB-60..NB-62; QA-approved commits `2550841`, `daaeac2`, `0a68046` on `feat/console-login-color-fidelity`, merged to `master` 2026-08-08). Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
 
 ## 1. Why this feature exists
 
