@@ -553,7 +553,7 @@ Source behavior doc: [`live-launch-origin-trust-and-readiness.md`](./live-launch
 
 Source behavior doc: [`console-navigation-persistence.md`](./console-navigation-persistence.md)
 
-### NB-54 — Page switching never restarts the app
+### NB-54 — Page switching never restarts the app — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Console navigation, full-reload elimination
 - **Acceptance criteria:**
@@ -562,7 +562,7 @@ Source behavior doc: [`console-navigation-persistence.md`](./console-navigation-
   3. External addresses (e.g., map attributions) remain external and are unaffected.
   4. The sidebar, top shell, and persistent banners stay on screen unchanged while the page content switches.
 
-### NB-55 — The workspace shell persists across pages
+### NB-55 — The workspace shell persists across pages — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Console shell, layout continuity
 - **Acceptance criteria:**
@@ -572,7 +572,7 @@ Source behavior doc: [`console-navigation-persistence.md`](./console-navigation-
   4. The active page marker in the sidebar is always correct after a page switch.
   5. On mobile, the navigation drawer state the operator left is preserved where sensible.
 
-### NB-56 — Live data updates connect once per session
+### NB-56 — Live data updates connect once per session — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Dashboard freshness, background data
 - **Acceptance criteria:**
@@ -580,7 +580,7 @@ Source behavior doc: [`console-navigation-persistence.md`](./console-navigation-
   2. When live data arrives, dashboard surfaces update quietly in the background — the operator never sees the dashboard blank out, replay loading placeholders, or rebuild panels because of a background refresh.
   3. If the live connection is unavailable, the operator still sees the last known data and the application keeps working; no errors are shown and the console does not retry aggressively on every page visit.
 
-### NB-57 — Page changes are calm
+### NB-57 — Page changes are calm — [IMPLEMENTED]
 - **Priority:** P2
 - **Feature area:** Transition motion
 - **Acceptance criteria:**
@@ -588,7 +588,7 @@ Source behavior doc: [`console-navigation-persistence.md`](./console-navigation-
   2. Panels, cards, and rows never replay individual entrance animations during a page switch.
   3. If the operator has reduced motion enabled at the operating-system level, no fade is shown at all.
 
-### NB-58 — Scroll position and first-load placeholders
+### NB-58 — Scroll position and first-load placeholders — [IMPLEMENTED]
 - **Priority:** P2
 - **Feature area:** Scroll restoration, loading surfaces
 - **Acceptance criteria:**
@@ -596,7 +596,7 @@ Source behavior doc: [`console-navigation-persistence.md`](./console-navigation-
   2. Moving forward to a new page starts at the top of that page.
   3. The first time a page loads, the operator sees a calm placeholder built from the console's visual language — never a bare text line.
 
-### NB-59 — Signing in and out never restarts the app; expired sessions never bounce
+### NB-59 — Signing in and out never restarts the app; expired sessions never bounce — [IMPLEMENTED]
 - **Priority:** P1
 - **Feature area:** Login, session continuity
 - **Acceptance criteria:**

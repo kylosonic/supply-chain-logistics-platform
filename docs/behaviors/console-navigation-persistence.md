@@ -1,6 +1,6 @@
 # Console Navigation & Login Continuity — Living Behaviors
 
-> ⚠️ **NOT YET IMPLEMENTED** — This feature is locked but not built. Tickets: NB-54..NB-59 in `pending-behaviors.md`. Handoff prepared for `@architect`; blueprint + TDD execution pending. Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+> ✅ **IMPLEMENTED** — This feature shipped in the console navigation & login continuity batch (NB-54..NB-59; QA-approved commits `01808ae`, `ab9262a`, `a7da5c4` on `feat/console-navigation-ux`, 2026-08-08). Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
 
 ## 1. Why this feature exists
 
