@@ -20,7 +20,7 @@ const AdminReceiptsPage = lazy(() => import('./pages/AdminReceiptsPage').then((m
 
 function RouteFallback() {
   return (
-    <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-5 py-5 text-sm text-slate-400">
+    <div className="fp-nested-surface px-5 py-5 text-sm text-slate-400">
       Loading workspace surface...
     </div>
   );

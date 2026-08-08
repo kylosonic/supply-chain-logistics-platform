@@ -100,25 +100,22 @@ export function CsvUploadPanel() {
   }
 
     const fieldClassName =
-      'min-h-11 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-sky-400/15 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sky-200 hover:file:bg-sky-400/20';
+      'fp-input file:mr-3 file:rounded-full file:border-0 file:bg-sky-400/15 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sky-200 hover:file:bg-sky-400/20';
 
   return (
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {uploadSpecs.map((spec, index) => (
-          <article key={spec.key} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-5 transition" style={{ animationDelay: `${index * 0.06}s` }}>
+          <article key={spec.key} className="fp-row" style={{ animationDelay: `${index * 0.06}s` }}>
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300/80">Step {index + 1}</p>
-                <h3 className="mt-2 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{spec.title}</h3>
-              </div>
+              <h3 className="font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{spec.title}</h3>
               <span className="rounded-full border border-slate-700 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
                 {spec.key}
               </span>
             </div>
 
-            <p className="mt-3 text-sm leading-6 text-slate-400">{spec.hint}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">{spec.hint}</p>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-3 space-y-3">
               <input
                 className={fieldClassName}
                 type="file"
@@ -142,7 +139,7 @@ export function CsvUploadPanel() {
               </div>
             </div>
 
-            {results[spec.key] ? <p className="mt-4 text-sm text-slate-300">{results[spec.key]}</p> : null}
+            {results[spec.key] ? <p className="mt-3 text-sm text-slate-300">{results[spec.key]}</p> : null}
           </article>
         ))}
     </div>

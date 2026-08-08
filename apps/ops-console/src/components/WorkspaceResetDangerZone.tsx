@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { Dialog } from './ui/Dialog';
 import { Panel } from './ui/Panel';
 import { useResetWorkspace } from '../hooks/queries';
 
@@ -50,47 +51,41 @@ export function WorkspaceResetDangerZone({
       ) : null}
 
       {resetModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-md rounded-2xl border border-rose-500/25 bg-slate-900/60 p-6">
-            <h3 className="font-['Space_Grotesk'] text-xl font-semibold text-rose-100">
-              Reset workspace to sample data?
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              All real uploaded data across warehouses, items, fleet assets, inventory, and orders
-              will be deleted and replaced with the seeded sample set. Milestones reset to 0 of 5.
-              Type <span className="font-semibold text-slate-100">{organizationName}</span> to
-              confirm.
-            </p>
-            <input
-              value={typedWorkspaceName}
-              onChange={(event) => setTypedWorkspaceName(event.target.value)}
-              placeholder={organizationName}
-              aria-label="Workspace name confirmation"
-              className="glow-ring mt-4 min-h-12 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-rose-400/50"
-            />
-            <div className="mt-5 flex flex-wrap justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setResetModalOpen(false)}
-                className="rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-slate-500"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={typedWorkspaceName !== organizationName || resetMutation.isPending}
-                onClick={() => resetMutation.mutate(typedWorkspaceName)}
-                className="rounded-full border border-rose-500/50 bg-rose-950/30 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-950/50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {resetMutation.isPending ? 'Resetting...' : 'Reset workspace'}
-              </button>
-            </div>
+        <Dialog className="max-w-md border-rose-500/25">
+          <h3 className="font-['Space_Grotesk'] text-xl font-semibold text-rose-100">
+            Reset workspace to sample data?
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            All real uploaded data across warehouses, items, fleet assets, inventory, and orders
+            will be deleted and replaced with the seeded sample set. Milestones reset to 0 of 5.
+            Type <span className="font-semibold text-slate-100">{organizationName}</span> to
+            confirm.
+          </p>
+          <input
+            value={typedWorkspaceName}
+            onChange={(event) => setTypedWorkspaceName(event.target.value)}
+            placeholder={organizationName}
+            aria-label="Workspace name confirmation"
+            className="fp-input mt-4 px-4 focus:border-rose-400/50"
+          />
+          <div className="mt-5 flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setResetModalOpen(false)}
+              className="rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-slate-500"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={typedWorkspaceName !== organizationName || resetMutation.isPending}
+              onClick={() => resetMutation.mutate(typedWorkspaceName)}
+              className="rounded-full border border-rose-500/50 bg-rose-950/30 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-950/50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {resetMutation.isPending ? 'Resetting...' : 'Reset workspace'}
+            </button>
           </div>
-        </div>
+        </Dialog>
       ) : null}
     </Panel>
   );

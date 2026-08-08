@@ -229,6 +229,31 @@ textarea:focus-visible {
     border-color: rgba(56, 189, 248, 0.5);
     box-shadow: 0 0 0 2px var(--fp-focus-ring);
   }
+
+  /* Shared modal presentation — one overlay, one border-first frame. */
+  .fp-dialog-overlay {
+    @apply fixed inset-0 z-50 grid place-items-center bg-slate-950/80 p-4;
+    animation: fadeIn 0.3s ease-out both;
+  }
+
+  .fp-dialog-surface {
+    @apply w-full max-w-lg border border-slate-800/80 bg-slate-950 p-6;
+    border-radius: var(--fp-radius-hero);
+    animation: scaleIn 0.28s ease-out both;
+  }
+
+  /* Dense nested queue row shared by shipments, alerts, planning, providers. */
+  .fp-row {
+    @apply border border-slate-800/60 bg-slate-950/75 p-4;
+    border-radius: var(--fp-radius-panel);
+    animation: fadeIn 0.3s ease-out both;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .fp-row:hover {
+    background-color: rgba(30, 41, 59, 0.5);
+    border-color: rgba(71, 85, 105, 0.55);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

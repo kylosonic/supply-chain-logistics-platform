@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 
+import { Dialog } from '../components/ui/Dialog';
 import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
@@ -32,21 +33,12 @@ function DelayReasonDialog({
   const [reason, setReason] = useState(defaultReason);
 
   return (
-    <div className="animate-fade-in fixed inset-0 z-50 grid place-items-center bg-slate-950/70 backdrop-blur-sm">
-      <div className="animate-scale-in w-full max-w-lg rounded-[28px] border border-slate-800/80 bg-slate-950 p-6 shadow-[0_32px_100px_rgba(2,12,20,0.6)]">
-        <p className="text-xs font-medium uppercase tracking-wide text-sky-300/70">Delay reason</p>
-        <h3 className="mt-2 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">
-          Mark {shipmentNo} as delayed
-        </h3>
-        <p className="mt-2 text-sm text-slate-400">Provide a reason for the delay so the team can track root causes and take corrective action.</p>
-        <textarea
-          autoFocus
-          className="mt-4 min-h-24 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
-          placeholder="Describe the delay reason..."
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
-        <div className="mt-4 flex justify-end gap-2">
+    <Dialog
+      eyebrow="Delay reason"
+      title={`Mark ${shipmentNo} as delayed`}
+      description="Provide a reason for the delay so the team can track root causes and take corrective action."
+      actions={
+        <>
           <button
             type="button"
             onClick={onCancel}
@@ -62,9 +54,17 @@ function DelayReasonDialog({
           >
             Confirm delay
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <textarea
+        autoFocus
+        className="fp-input min-h-24 px-4 py-3"
+        placeholder="Describe the delay reason..."
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+      />
+    </Dialog>
   );
 }
 
@@ -158,9 +158,6 @@ export function ShipmentsPage() {
     delivered: shipments.filter((shipment) => shipment.status === 'delivered').length,
   };
 
-  const fieldClassName =
-    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
-
   return (
     <div className="space-y-6">
       {delayDialog ? (
@@ -190,13 +187,28 @@ export function ShipmentsPage() {
         title="Create a shipment"
         description="Use this for direct movement creation when the order flow does not originate from a bulk CSV load."
       >
-        <form className="grid grid-cols-1 gap-3 lg:grid-cols-5" onSubmit={onCreate}>
-          <input className={fieldClassName} placeholder="Shipment No" value={form.shipment_no} onChange={(e) => setForm((prev) => ({ ...prev, shipment_no: e.target.value }))} required />
-          <input className={fieldClassName} placeholder="Origin Code" value={form.origin_warehouse_code} onChange={(e) => setForm((prev) => ({ ...prev, origin_warehouse_code: e.target.value.toUpperCase() }))} required />
-          <input className={fieldClassName} placeholder="Destination Code" value={form.destination_warehouse_code} onChange={(e) => setForm((prev) => ({ ...prev, destination_warehouse_code: e.target.value.toUpperCase() }))} required />
-          <input className={fieldClassName} placeholder="SKU" value={form.sku} onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }))} required />
-          <div className="flex gap-2">
-            <input className={`${fieldClassName} w-full`} type="number" min={1} value={form.quantity_units} onChange={(e) => setForm((prev) => ({ ...prev, quantity_units: Number(e.target.value) }))} required />
+        <form className="grid grid-cols-1 gap-4 lg:grid-cols-5" onSubmit={onCreate}>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Shipment No
+            <input className="fp-input" placeholder="Shipment No" value={form.shipment_no} onChange={(e) => setForm((prev) => ({ ...prev, shipment_no: e.target.value }))} required />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Origin Code
+            <input className="fp-input" placeholder="Origin Code" value={form.origin_warehouse_code} onChange={(e) => setForm((prev) => ({ ...prev, origin_warehouse_code: e.target.value.toUpperCase() }))} required />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Destination Code
+            <input className="fp-input" placeholder="Destination Code" value={form.destination_warehouse_code} onChange={(e) => setForm((prev) => ({ ...prev, destination_warehouse_code: e.target.value.toUpperCase() }))} required />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            SKU
+            <input className="fp-input" placeholder="SKU" value={form.sku} onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }))} required />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Quantity
+            <input className="fp-input" type="number" min={1} value={form.quantity_units} onChange={(e) => setForm((prev) => ({ ...prev, quantity_units: Number(e.target.value) }))} required />
+          </label>
+          <div className="flex justify-end lg:col-span-5">
             <button
               type="submit"
               disabled={creating}
@@ -220,33 +232,33 @@ export function ShipmentsPage() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <SkeletonBlock key={i} className="h-[120px] rounded-[22px]" />
+              <SkeletonBlock key={i} className="h-[120px]" />
             ))}
           </div>
         ) : null}
 
         <div className="space-y-3">
           {shipments.map((shipment, index) => (
-            <article key={shipment.id} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4" style={{ animationDelay: `${index * 0.04}s` }}>
+            <article key={shipment.id} className="fp-row" style={{ animationDelay: `${index * 0.04}s` }}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge label={shipment.status} tone={statusTone(shipment.status)} />
                     <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{new Date(shipment.created_at).toLocaleString()}</span>
                   </div>
-                  <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{shipment.shipment_no}</h3>
+                  <h3 className="mt-1.5 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{shipment.shipment_no}</h3>
                 </div>
-                <div className="text-right text-sm text-slate-400">
+                <div className="text-right font-mono text-sm text-slate-400 tabular-nums">
                   <p>{shipment.origin_warehouse_code} → {shipment.destination_warehouse_code}</p>
                   <p>{shipment.sku} · {shipment.quantity_units} units</p>
                 </div>
               </div>
 
-              <p className="mt-3 text-sm leading-6 text-slate-400">
+              <p className="mt-2 text-sm leading-6 text-slate-400">
                 {shipment.delay_reason ? `Delay note: ${shipment.delay_reason}` : 'No delay reason logged for this shipment.'}
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {statusTransitions.map((status) => (
                   <button
                     key={status}
@@ -262,7 +274,7 @@ export function ShipmentsPage() {
           ))}
 
           {!loading && shipments.length === 0 ? (
-            <div className="animate-fade-in rounded-[22px] border border-slate-800 bg-slate-900/40 p-6 text-center">
+            <div className="fp-nested-surface animate-fade-in p-6 text-center">
               <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No shipments yet</p>
               <p className="mt-1 text-sm text-slate-500">Create your first shipment using the form above.</p>
             </div>

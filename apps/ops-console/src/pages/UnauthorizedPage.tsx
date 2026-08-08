@@ -1,8 +1,12 @@
 export function UnauthorizedPage() {
   return (
-    <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <h1 className="text-xl font-semibold text-slate-900">Unauthorized</h1>
-      <p className="mt-2 text-sm text-slate-600">You do not have permission to access this page.</p>
+    <div className="flex min-h-screen items-center justify-center p-6">
+      <div className="fp-shell-surface animate-fade-in w-full max-w-md p-8 text-center">
+        <h1 className="font-['Space_Grotesk'] text-2xl font-semibold tracking-tight text-slate-100">
+          Unauthorized
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-slate-400">You do not have permission to access this page.</p>
+      </div>
     </div>
   );
 }

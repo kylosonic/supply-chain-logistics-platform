@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 
+import { Dialog } from '../components/ui/Dialog';
 import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
@@ -20,13 +21,6 @@ function statusTone(status: AlertStatus) {
   return 'warning';
 }
 
-const severityBorderAccent: Record<string, string> = {
-  critical: 'border-l-rose-500/60',
-  high: 'border-l-amber-500/60',
-  medium: 'border-l-sky-500/40',
-  low: 'border-l-slate-700',
-};
-
 /* ── Inline resolution note dialog ─────────────────────────── */
 
 function ResolveDialog({
@@ -41,21 +35,12 @@ function ResolveDialog({
   const [note, setNote] = useState('');
 
   return (
-    <div className="animate-fade-in fixed inset-0 z-50 grid place-items-center bg-slate-950/70 backdrop-blur-sm">
-      <div className="animate-scale-in w-full max-w-lg rounded-[28px] border border-slate-800/80 bg-slate-950 p-6 shadow-[0_32px_100px_rgba(2,12,20,0.6)]">
-        <p className="text-xs font-medium uppercase tracking-wide text-emerald-300/70">Resolution</p>
-        <h3 className="mt-2 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">
-          Resolve: {alertTitle}
-        </h3>
-        <p className="mt-2 text-sm text-slate-400">Optionally provide a resolution note to document how this alert was handled.</p>
-        <textarea
-          autoFocus
-          className="mt-4 min-h-24 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
-          placeholder="Resolution note (optional)..."
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-        <div className="mt-4 flex justify-end gap-2">
+    <Dialog
+      eyebrow="Resolution"
+      title={`Resolve: ${alertTitle}`}
+      description="Optionally provide a resolution note to document how this alert was handled."
+      actions={
+        <>
           <button
             type="button"
             onClick={onCancel}
@@ -70,9 +55,17 @@ function ResolveDialog({
           >
             Resolve alert
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <textarea
+        autoFocus
+        className="fp-input min-h-24 px-4 py-3"
+        placeholder="Resolution note (optional)..."
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+      />
+    </Dialog>
   );
 }
 
@@ -162,8 +155,19 @@ export function AlertsPage() {
     high: alerts.filter((alert) => alert.severity === 'high').length,
   };
 
-  const fieldClassName =
-    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
+  // Presentation-only triage: highest severity first, then newest — render
+  // order only; the server payload and filter state are never mutated.
+  const severityRank: Record<AlertSeverity, number> = {
+    critical: 0,
+    high: 1,
+    medium: 2,
+    low: 3,
+  };
+  const sortedAlerts = [...alerts].sort(
+    (a, b) =>
+      severityRank[a.severity] - severityRank[b.severity] ||
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 
   return (
     <div className="space-y-6">
@@ -183,7 +187,7 @@ export function AlertsPage() {
           <button
             onClick={onScan}
             disabled={isScanning}
-            className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 disabled:opacity-60"
+            className="glow-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:opacity-60"
           >
             {isScanning ? (
               <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
@@ -208,14 +212,14 @@ export function AlertsPage() {
         >
           <form className="grid grid-cols-1 gap-3" onSubmit={onCreate}>
             <input
-              className={fieldClassName}
+              className="fp-input"
               placeholder="Title"
               value={form.title}
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
               required
             />
             <textarea
-              className="glow-ring min-h-32 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+              className="fp-input min-h-32 px-4 py-3"
               placeholder="Message"
               value={form.message}
               onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))}
@@ -223,7 +227,7 @@ export function AlertsPage() {
             />
             <div className="flex flex-wrap gap-3">
               <select
-                className={fieldClassName}
+                className="fp-input w-auto"
                 value={form.severity}
                 onChange={(e) => setForm((prev) => ({ ...prev, severity: e.target.value as AlertSeverity }))}
               >
@@ -245,7 +249,7 @@ export function AlertsPage() {
           description="Filter by lifecycle state and keep the highest-severity work visible first."
           actions={
             <select
-              className={fieldClassName}
+              className="fp-input w-auto"
               value={statusFilter}
               onChange={(e) => {
                 const next = e.target.value as AlertStatus | 'all';
@@ -264,16 +268,16 @@ export function AlertsPage() {
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="skeleton h-[100px] rounded-[22px]" />
+                <div key={i} className="skeleton h-[100px]" />
               ))}
             </div>
           ) : null}
 
           <div className="space-y-3">
-            {alerts.map((alert, index) => (
+            {sortedAlerts.map((alert, index) => (
               <article
                 key={alert.id}
-                className={`animate-fade-in hover-lift rounded-xl border border-l-[3px] border-slate-800/60 bg-slate-900/40 p-4 ${severityBorderAccent[alert.severity] ?? ''}`}
+                className="fp-row"
                 style={{ animationDelay: `${index * 0.04}s` }}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -287,8 +291,8 @@ export function AlertsPage() {
                   </div>
                   <span className="text-xs text-slate-500">{new Date(alert.created_at).toLocaleString()}</span>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-slate-400">{alert.message}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <p className="mt-2 text-sm leading-6 text-slate-400">{alert.message}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     onClick={() => onAcknowledge(alert.id)}
                     className="glow-ring rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
@@ -306,7 +310,7 @@ export function AlertsPage() {
                   {alert.payload?.rerouting_plan ? (
                     <button
                       onClick={() => onAutoResolve(alert.id)}
-                      className="glow-ring rounded-full border border-violet-500/30 px-3 py-2 text-xs font-semibold text-violet-200 transition hover:border-violet-400/50 hover:bg-violet-950/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="glow-ring rounded-full border border-sky-500/30 px-3 py-2 text-xs font-semibold text-sky-200 transition hover:border-sky-400/50 hover:bg-sky-950/20 disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={alert.status === 'resolved'}
                     >
                       Auto-Resolve
@@ -317,7 +321,7 @@ export function AlertsPage() {
             ))}
 
             {!loading && alerts.length === 0 ? (
-              <div className="animate-fade-in rounded-[22px] border border-slate-800 bg-slate-900/40 p-6 text-center">
+              <div className="fp-nested-surface animate-fade-in p-6 text-center">
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No alerts</p>
                 <p className="mt-1 text-sm text-slate-500">No alerts for the selected filter.</p>
               </div>

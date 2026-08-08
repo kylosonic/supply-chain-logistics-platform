@@ -96,7 +96,7 @@ export function ProvidersPage() {
             {isLoading ? (
               <div className="py-8 text-center text-sm text-slate-400">Loading keys...</div>
             ) : error ? (
-              <div className="rounded-2xl border border-rose-900/50 bg-rose-500/10 p-4 text-sm text-rose-300">
+              <div className="fp-radius-panel border border-rose-900/50 bg-rose-500/10 p-4 text-sm text-rose-300">
                 {error}
               </div>
             ) : keys.length === 0 ? (
@@ -108,17 +108,17 @@ export function ProvidersPage() {
                 {keys.map((key) => (
                   <li
                     key={key.id}
-                    className="flex flex-col gap-4 rounded-[20px] border border-slate-800 bg-slate-900/60 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="fp-row flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <h4 className="font-semibold text-slate-100">{key.provider_name}</h4>
+                        <span className="text-sm text-slate-400">{key.key_name}</span>
                         <StatusBadge
                           label={key.status}
                           tone={key.status === 'active' ? 'success' : 'neutral'}
                         />
                       </div>
-                      <p className="mt-1 text-sm text-slate-400">{key.key_name}</p>
                       <p className="mt-1 font-mono text-xs text-slate-500">{key.masked_key}</p>
                     </div>
 
@@ -145,7 +145,7 @@ export function ProvidersPage() {
                   Provider Code
                   <input
                     required
-                    className="glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+                    className="fp-input"
                     placeholder="e.g. fourkites, project44"
                     value={providerName}
                     onChange={(e) => setProviderName(e.target.value)}
@@ -156,7 +156,7 @@ export function ProvidersPage() {
                   Key Name / Alias
                   <input
                     required
-                    className="glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+                    className="fp-input"
                     placeholder="e.g. Prod Logistics Token"
                     value={keyName}
                     onChange={(e) => setKeyName(e.target.value)}
@@ -168,7 +168,7 @@ export function ProvidersPage() {
                   <input
                     required
                     type="password"
-                    className="glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
+                    className="fp-input"
                     placeholder="••••••••••••••••"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
@@ -176,7 +176,7 @@ export function ProvidersPage() {
                 </label>
 
                 {testError && (
-                  <div className="animate-fade-in mt-2 rounded-xl border border-rose-900/50 bg-rose-500/10 p-3 text-sm text-rose-300">
+                  <div className="fp-radius-panel animate-fade-in mt-2 border border-rose-900/50 bg-rose-500/10 p-3 text-sm text-rose-300">
                     {testError}
                   </div>
                 )}

@@ -19,14 +19,14 @@ export function UploadPage() {
         title="Recommended onboarding order"
         description="Follow the steps top to bottom so downstream files can resolve against upstream warehouse, SKU, and fleet references."
       >
-        <div className="grid gap-3 text-sm text-slate-300 md:grid-cols-5">
+        <ol className="flex flex-wrap items-center gap-2.5">
           {['Warehouses', 'Items', 'Fleet', 'Inventory', 'Orders'].map((step, index) => (
-            <div key={step} className="rounded-[20px] border border-slate-800 bg-slate-900/70 px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Step {index + 1}</p>
-              <p className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{step}</p>
-            </div>
+            <li key={step} className="fp-pill">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Step {index + 1}</span>
+              <span className="font-['Space_Grotesk'] text-sm font-semibold text-slate-50">{step}</span>
+            </li>
           ))}
-        </div>
+        </ol>
       </Panel>
 
       <CsvUploadPanel />

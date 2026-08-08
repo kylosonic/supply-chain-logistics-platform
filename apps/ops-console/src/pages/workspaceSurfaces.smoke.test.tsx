@@ -9,6 +9,12 @@ import { ReceiptsPage } from './ReceiptsPage';
 import { AdminReceiptsPage } from './AdminReceiptsPage';
 import { AccountPage } from './AccountPage';
 import { RoutesPage } from './RoutesPage';
+import { UploadPage } from './UploadPage';
+import { ShipmentsPage } from './ShipmentsPage';
+import { AlertsPage } from './AlertsPage';
+import { PlanningPage } from './PlanningPage';
+import { ProvidersPage } from './ProvidersPage';
+import { UnauthorizedPage } from './UnauthorizedPage';
 import { WorkspaceResetDangerZone } from '../components/WorkspaceResetDangerZone';
 import type { ActivationState } from '../types/api';
 
@@ -333,5 +339,100 @@ describe('ops console surface smoke', () => {
     );
 
     expect(html).not.toContain('Reset workspace to sample data');
+  });
+
+  it('renders the upload intake surface with the calm import rail and per-spec actions', () => {
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/upload">
+          <UploadPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('Load a workspace in the right operational order');
+    expect(html).toContain('Recommended onboarding order');
+    // Unseeded activation resolves to an unlocked free cap, so the action labels render.
+    expect(html).toContain('Upload Warehouses');
+    expect(html).toContain('Upload Items');
+    expect(html).toContain('Upload Fleet Assets');
+    expect(html).toContain('Upload Inventory');
+    expect(html).toContain('Upload Orders');
+  });
+
+  it('renders the shipments surface with the labeled manual-entry form', () => {
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/shipments">
+          <ShipmentsPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('Track movement health across every lane');
+    expect(html).toContain('Create a shipment');
+    expect(html).toContain('Shipment lifecycle');
+    // Labeled field group uses the existing placeholder strings as labels.
+    expect(html).toContain('Origin Code');
+    expect(html).toContain('Destination Code');
+  });
+
+  it('renders the alerts surface with the queue panel and scan action', () => {
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/alerts">
+          <AlertsPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('Triage, assign, and close operational risk quickly');
+    expect(html).toContain('Create a manual operator alert');
+    expect(html).toContain('Alert queue');
+    expect(html).toContain('Scan for exceptions');
+  });
+
+  it('renders the planning surface with the generate panel and approval board', () => {
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/planning">
+          <PlanningPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('Generate and approve replenishment actions');
+    expect(html).toContain('Run replenishment planning');
+    expect(html).toContain('Horizon (weeks)');
+    expect(html).toContain('Approval board');
+  });
+
+  it('renders the provider governance surface with keys and the credential form for admins', () => {
+    authUserState.user = { role: 'admin', email: 'admin@seedco.com' };
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/providers">
+          <ProvidersPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+    authUserState.user = null;
+
+    expect(html).toContain('Carrier Integrations');
+    expect(html).toContain('Provider Keys');
+    expect(html).toContain('Loading keys...');
+    expect(html).toContain('Securely Save Key');
+  });
+
+  it('renders the unauthorized fallback on the shared dark system without the light card', () => {
+    const html = renderToString(
+      <StaticRouter location="/unauthorized">
+        <UnauthorizedPage />
+      </StaticRouter>,
+    );
+
+    expect(html).toContain('Unauthorized');
+    expect(html).toContain('You do not have permission to access this page.');
+    expect(html).not.toContain('bg-white');
   });
 });

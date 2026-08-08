@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { Dialog } from '../components/ui/Dialog';
 import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
@@ -33,21 +34,12 @@ function RejectDialog({
   const [reason, setReason] = useState('Need manual review');
 
   return (
-    <div className="animate-fade-in fixed inset-0 z-50 grid place-items-center bg-slate-950/70 backdrop-blur-sm">
-      <div className="animate-scale-in w-full max-w-lg rounded-[28px] border border-slate-800/80 bg-slate-950 p-6 shadow-[0_32px_100px_rgba(2,12,20,0.6)]">
-        <p className="text-xs font-medium uppercase tracking-wide text-rose-300/70">Plan rejection</p>
-        <h3 className="mt-2 font-['Space_Grotesk'] text-xl font-semibold text-slate-50">
-          Reject plan for {sku}
-        </h3>
-        <p className="mt-2 text-sm text-slate-400">Provide a rejection reason so the planning team can understand what needs review or correction.</p>
-        <textarea
-          autoFocus
-          className="mt-4 min-h-24 w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50"
-          placeholder="Reason for rejection..."
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
-        <div className="mt-4 flex justify-end gap-2">
+    <Dialog
+      eyebrow="Plan rejection"
+      title={`Reject plan for ${sku}`}
+      description="Provide a rejection reason so the planning team can understand what needs review or correction."
+      actions={
+        <>
           <button
             type="button"
             onClick={onCancel}
@@ -63,9 +55,17 @@ function RejectDialog({
           >
             Reject plan
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <textarea
+        autoFocus
+        className="fp-input min-h-24 px-4 py-3"
+        placeholder="Reason for rejection..."
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+      />
+    </Dialog>
   );
 }
 
@@ -134,9 +134,6 @@ export function PlanningPage() {
     rejected: plans.filter((plan) => plan.status === 'rejected').length,
   };
 
-  const fieldClassName =
-    'glow-ring min-h-12 rounded-2xl border border-slate-700 bg-slate-900/80 px-4 text-sm text-slate-100 outline-none transition focus:border-sky-400/50';
-
   return (
     <div className="space-y-6">
       {rejectDialog ? (
@@ -175,7 +172,7 @@ export function PlanningPage() {
               max={12}
               value={horizon}
               onChange={(e) => setHorizon(Number(e.target.value))}
-              className={`${fieldClassName} w-28`}
+              className="fp-input w-28"
             />
           </label>
           <button
@@ -201,7 +198,7 @@ export function PlanningPage() {
         <Panel eyebrow="Approval board" title="Current replenishment plans">
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="skeleton h-[120px] rounded-[22px]" />
+              <div key={i} className="skeleton h-[120px]" />
             ))}
           </div>
         </Panel>
@@ -213,51 +210,29 @@ export function PlanningPage() {
           title="Current replenishment plans"
           description="Review average demand, suggested quantity, and approval status before committing inventory moves."
         >
-          <div className="space-y-3">
-            {plans.map((plan, index) => (
-              <article key={plan.id} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4" style={{ animationDelay: `${index * 0.04}s` }}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge label={plan.status} tone={statusTone(plan.status)} />
-                      <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{plan.warehouse_code}</span>
-                    </div>
-                    <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{plan.sku}</h3>
-                  </div>
-                  <div className="grid gap-1 text-right text-sm text-slate-400 sm:grid-cols-3 sm:text-left">
-                    <span>Avg demand: <span className="font-semibold text-slate-200">{plan.avg_weekly_demand.toFixed(2)}</span></span>
-                    <span>Suggested: <span className="font-semibold text-slate-200">{plan.suggested_quantity}</span></span>
-                    <span>Horizon: <span className="font-semibold text-slate-200">{plan.horizon_weeks}w</span></span>
-                  </div>
-                </div>
+          <div className="space-y-6">
+            {plans.filter((plan) => plan.status === 'pending_approval').length > 0 ? (
+              <div className="space-y-3">
+                {plans
+                  .filter((plan) => plan.status === 'pending_approval')
+                  .map((plan, index) => (
+                    <PlanRow key={plan.id} plan={plan} userRole={user?.role} onApprove={onApprove} onReject={() => setRejectDialog({ plan })} index={index} />
+                  ))}
+              </div>
+            ) : null}
 
-                <p className="mt-3 text-sm leading-6 text-slate-400">{plan.rationale}</p>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  {user?.role === 'admin' && plan.status === 'pending_approval' ? (
-                    <>
-                      <button
-                        onClick={() => onApprove(plan.id)}
-                        className="glow-ring rounded-full border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200 transition hover:border-emerald-400/50 hover:bg-emerald-950/20"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => setRejectDialog({ plan })}
-                        className="glow-ring rounded-full border border-rose-500/30 px-3 py-2 text-xs font-semibold text-rose-200 transition hover:border-rose-400/50 hover:bg-rose-950/20"
-                      >
-                        Reject
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-xs text-slate-500">{plan.rejection_reason || 'No rejection reason recorded.'}</span>
-                  )}
-                </div>
-              </article>
-            ))}
+            {plans.filter((plan) => plan.status !== 'pending_approval').length > 0 ? (
+              <div className="space-y-3 border-t border-slate-800/70 pt-5 opacity-80">
+                {plans
+                  .filter((plan) => plan.status !== 'pending_approval')
+                  .map((plan, index) => (
+                    <PlanRow key={plan.id} plan={plan} userRole={user?.role} onApprove={onApprove} onReject={() => setRejectDialog({ plan })} index={index} />
+                  ))}
+              </div>
+            ) : null}
 
             {plans.length === 0 ? (
-              <div className="animate-fade-in rounded-[22px] border border-slate-800 bg-slate-900/40 p-6 text-center">
+              <div className="fp-nested-surface animate-fade-in p-6 text-center">
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No plans yet</p>
                 <p className="mt-1 text-sm text-slate-500">Generate replenishment suggestions using the form above.</p>
               </div>
@@ -266,5 +241,61 @@ export function PlanningPage() {
         </Panel>
       ) : null}
     </div>
+  );
+}
+
+function PlanRow({
+  plan,
+  userRole,
+  onApprove,
+  onReject,
+  index,
+}: {
+  plan: ReplenishmentPlan;
+  userRole: string | undefined;
+  onApprove: (planId: string) => void;
+  onReject: () => void;
+  index: number;
+}) {
+  return (
+    <article className="fp-row" style={{ animationDelay: `${index * 0.04}s` }}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge label={plan.status} tone={statusTone(plan.status)} />
+            <span className="text-xs uppercase tracking-[0.18em] text-slate-500">{plan.warehouse_code}</span>
+          </div>
+          <h3 className="mt-1.5 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{plan.sku}</h3>
+        </div>
+        <div className="grid gap-1 text-right font-mono text-sm text-slate-400 tabular-nums sm:grid-cols-3 sm:text-left">
+          <span>Avg demand: <span className="font-semibold text-slate-200">{plan.avg_weekly_demand.toFixed(2)}</span></span>
+          <span>Suggested: <span className="font-semibold text-slate-200">{plan.suggested_quantity}</span></span>
+          <span>Horizon: <span className="font-semibold text-slate-200">{plan.horizon_weeks}w</span></span>
+        </div>
+      </div>
+
+      <p className="mt-2 text-sm leading-6 text-slate-400">{plan.rationale}</p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {userRole === 'admin' && plan.status === 'pending_approval' ? (
+          <>
+            <button
+              onClick={() => onApprove(plan.id)}
+              className="glow-ring rounded-full border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200 transition hover:border-emerald-400/50 hover:bg-emerald-950/20"
+            >
+              Approve
+            </button>
+            <button
+              onClick={onReject}
+              className="glow-ring rounded-full border border-rose-500/30 px-3 py-2 text-xs font-semibold text-rose-200 transition hover:border-rose-400/50 hover:bg-rose-950/20"
+            >
+              Reject
+            </button>
+          </>
+        ) : (
+          <span className="text-xs text-slate-500">{plan.rejection_reason || 'No rejection reason recorded.'}</span>
+        )}
+      </div>
+    </article>
   );
 }
