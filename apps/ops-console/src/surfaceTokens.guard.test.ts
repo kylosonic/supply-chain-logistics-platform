@@ -10,7 +10,8 @@ import { describe, expect, it } from 'vitest';
  * proof only — no DOM, no Tailwind compilation.
  *
  * Blueprint: `docs/plans/phase-console-login-color-fidelity-01-token-surfaces.md`
- * §2.1, §2.3, §5.2.
+ * §2.1, §2.3, §5.2; `docs/plans/phase-console-login-color-fidelity-03-guard-verification.md`
+ * §2.1, §3 (declaration-side token pin).
  */
 
 /** `apps/ops-console/src` resolved from this test file, independent of cwd. */
@@ -60,6 +61,15 @@ const FORBIDDEN_SLATE_OVERLAYS = ['bg-slate-950', 'bg-slate-900', 'bg-slate-800'
 describe('shared surface token guard (TECH-77 / NB-60, NB-62 seed)', () => {
   it('declares the --fp-placeholder token in :root', () => {
     expect(tokenBlock(readIndexCss())).toContain('--fp-placeholder: #94a3b8;');
+  });
+
+  it('declares the five load-bearing color tokens in :root with their phase-1 values', () => {
+    const tokens = tokenBlock(readIndexCss());
+    expect(tokens).toContain('--fp-surface: #0d141d;');
+    expect(tokens).toContain('--fp-elevated: #111a26;');
+    expect(tokens).toContain('--fp-input: #233040;');
+    expect(tokens).toContain('--fp-border: #1f2a37;');
+    expect(tokens).toContain('--fp-primary: #dbe4ee;');
   });
 
   it.each(FIVE_CLASSES.map((selector) => [selector]))(
