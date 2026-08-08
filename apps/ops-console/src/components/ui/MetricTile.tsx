@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 type MetricTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
 
 type MetricTileProps = {
@@ -31,9 +33,17 @@ export function MetricTile({ title, value, detail, tone = 'neutral', cta }: Metr
       <p className="mt-2 font-mono text-2xl font-medium tabular-nums tracking-tight text-slate-100">{value}</p>
       <p className="mt-1.5 text-sm leading-5 text-slate-400">{detail}</p>
       {cta ? (
-        <a href={cta.href} className="mt-2 inline-block text-sm font-medium text-sky-400 underline-offset-4 hover:underline">
-          {cta.label} →
-        </a>
+        // NB-54: internal CTA targets (leading "/") navigate via the router
+        // — never a browser reload; anything else stays an external anchor.
+        cta.href.startsWith('/') ? (
+          <Link to={cta.href} className="mt-2 inline-block text-sm font-medium text-sky-400 underline-offset-4 hover:underline">
+            {cta.label} →
+          </Link>
+        ) : (
+          <a href={cta.href} className="mt-2 inline-block text-sm font-medium text-sky-400 underline-offset-4 hover:underline">
+            {cta.label} →
+          </a>
+        )
       ) : null}
     </article>
   );

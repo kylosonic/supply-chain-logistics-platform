@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { PostAhaToast } from '../components/PostAhaToast';
 import { RouteMap } from '../components/RouteMap';
@@ -107,9 +108,9 @@ export function RoutesPage() {
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">
                   Unlocks after Milestone 5
                 </p>
-                <a href="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
+                <Link to="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
                   Continue onboarding →
-                </a>
+                </Link>
               </div>
             </div>
           </Panel>

@@ -36,7 +36,7 @@ const VALUE_POINTS = [
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
-  const signupUrl = import.meta.env.VITE_SIGNUP_URL || 'http://localhost:8081#signup';
+  const signupUrl = import.meta.env.VITE_SIGNUP_URL || 'https://product-web-chi.vercel.app/launch';
   const [identifier, setIdentifier] = useState(() =>
     import.meta.env.PROD ? '' : 'admin@testco.com',
   );

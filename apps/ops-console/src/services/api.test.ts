@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { api, clearAuthStorage, getStoredToken, setStoredToken } from './api';
+import {
+  api,
+  beginAuthSessionEstablishment,
+  clearAuthStorage,
+  endAuthSessionEstablishment,
+  getStoredToken,
+  onAuthSessionExpired,
+  setStoredToken,
+} from './api';
 
 const sessionMock = (() => {
   let store: Record<string, string> = {};
@@ -76,5 +84,94 @@ describe('request interceptor', () => {
     await api.get('/auth/me');
     const auth = (captured.headers as Record<string, unknown>)?.Authorization;
     expect(auth).toBeUndefined();
+  });
+});
+
+describe('response interceptor — soft session reset (NB-59)', () => {
+  let assigns: string[];
+
+  beforeEach(() => {
+    vi.stubGlobal('sessionStorage', sessionMock);
+    vi.stubGlobal('localStorage', localMock);
+    assigns = [];
+    vi.stubGlobal('window', {
+      location: {
+        pathname: '/',
+        assign: (url: string) => { assigns.push(url); },
+      },
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete api.defaults.adapter;
+  });
+
+  /** Rejecting adapter that simulates a refused request. */
+  function rejectWith401() {
+    api.defaults.adapter = async () => {
+      throw { response: { status: 401 } };
+    };
+  }
+
+  it('clears auth storage and signals listeners on 401 with a stored token — no window redirect', async () => {
+    setStoredToken('tok-401');
+    localMock.setItem('supply_chain_org_id', 'org-1');
+    const listener = vi.fn();
+    const unsubscribe = onAuthSessionExpired(listener);
+    rejectWith401();
+
+    await expect(api.get('/data')).rejects.toMatchObject({ response: { status: 401 } });
+
+    expect(getStoredToken()).toBeNull();
+    expect(localMock.getItem('supply_chain_org_id')).toBeNull();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(assigns).toEqual([]);
+    unsubscribe();
+  });
+
+  it('retains the token and stays silent when a 401 lands while a session is being established', async () => {
+    setStoredToken('tok-fresh');
+    const listener = vi.fn();
+    const unsubscribe = onAuthSessionExpired(listener);
+    rejectWith401();
+
+    beginAuthSessionEstablishment();
+    try {
+      await expect(api.get('/auth/me')).rejects.toMatchObject({ response: { status: 401 } });
+    } finally {
+      endAuthSessionEstablishment();
+    }
+
+    expect(getStoredToken()).toBe('tok-fresh');
+    expect(listener).not.toHaveBeenCalled();
+    expect(assigns).toEqual([]);
+    unsubscribe();
+  });
+
+  it('leaves storage untouched and fires nothing on a 401 with no token and no org id (login failure)', async () => {
+    setStoredToken(null);
+    const listener = vi.fn();
+    const unsubscribe = onAuthSessionExpired(listener);
+    rejectWith401();
+
+    await expect(api.post('/auth/login', {})).rejects.toMatchObject({ response: { status: 401 } });
+
+    expect(getStoredToken()).toBeNull();
+    expect(localMock.getItem('supply_chain_org_id')).toBeNull();
+    expect(listener).not.toHaveBeenCalled();
+    expect(assigns).toEqual([]);
+    unsubscribe();
+  });
+
+  it('stops notifying a listener after it unsubscribes', async () => {
+    setStoredToken('tok-401');
+    const listener = vi.fn();
+    const unsubscribe = onAuthSessionExpired(listener);
+    unsubscribe();
+    rejectWith401();
+
+    await expect(api.get('/data')).rejects.toMatchObject({ response: { status: 401 } });
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });

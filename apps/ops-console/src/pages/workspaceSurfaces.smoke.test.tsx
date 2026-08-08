@@ -154,6 +154,9 @@ describe('ops console surface smoke', () => {
     expect(html).toContain('Enter control tower');
     expect(html).toContain('Create company account');
     expect(html).toContain('Create initial admin (first-time setup)');
+    // NB-59.5: the signup CTA must carry the real product address — never a
+    // placeholder, local address, or dead link.
+    expect(html).toContain('https://product-web-chi.vercel.app/launch');
   });
 
   it('renders the control-tower dashboard skeleton during data fetch', () => {

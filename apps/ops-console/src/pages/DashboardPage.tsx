@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { ActivationBanner } from '../components/ActivationBanner';
 import { DockGanttChart } from '../components/DockGanttChart';
@@ -64,9 +65,9 @@ function GatePlaceholder({ milestone }: { milestone: number }) {
         <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">
           Unlocks after Milestone {milestone}
         </p>
-        <a href="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
+        <Link to="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
           Continue onboarding →
-        </a>
+        </Link>
       </div>
     </div>
   );
@@ -331,9 +332,9 @@ export function DashboardPage() {
                 <div className="rounded-[var(--fp-radius-panel)] border border-dashed border-slate-700/60 bg-slate-900/30 p-3.5">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Utilization</p>
                   <p className="mt-2 text-sm text-slate-400">Unlocks after Milestone 4.</p>
-                  <a href="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
+                  <Link to="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
                     Continue onboarding →
-                  </a>
+                  </Link>
                 </div>
               )}
               <div className="hover-lift fp-nested-surface p-3.5 transition">
