@@ -220,9 +220,14 @@ export function AccountPage() {
         description="Keep subscription posture, included task capacity, overage pressure, and provider configuration visible to the team running the workspace."
       />
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+      {/* Posture strip — dominant pair (plan, usage) on the framed primary
+          strip; the quieter secondary pair (provider, keys) below. */}
+      <div className="fp-shell-surface grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
         <MetricTile title="Current plan" value={subscription?.tier ?? 'Unknown'} detail={`Status: ${subscription?.status ?? 'unknown'}`} tone="info" />
         <MetricTile title="Usage" value={usage ? `${usage.used_units.toLocaleString()}` : 'N/A'} detail={metricLabel} tone={progressPercent >= 100 ? 'danger' : progressPercent >= 80 ? 'warning' : 'success'} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <MetricTile title="Preferred provider" value={subscription?.preferred_ai_provider ?? 'None'} detail="Dashboard workflows use this provider when configured." tone="neutral" />
         <MetricTile title="Active keys" value={activeKeyCount} detail="Provider credentials available for current workspace use." tone={activeKeyCount > 0 ? 'success' : 'warning'} />
       </div>
@@ -233,10 +238,10 @@ export function AccountPage() {
         </Panel>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-        <Panel
-          eyebrow="Subscription"
-          title="Current plan and usage posture"
+      {/* Section 1 — plan + usage posture (dominant, full width) */}
+      <Panel
+        eyebrow="Subscription"
+        title="Current plan and usage posture"
           description="Switch tiers, monitor included task capacity, and keep the commercial model legible to workspace operators."
           actions={
             <button
@@ -309,7 +314,7 @@ export function AccountPage() {
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {plans.map((plan) => (
-              <div key={plan.tier} className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
+              <div key={plan.tier} className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{plan.title}</h2>
@@ -327,7 +332,7 @@ export function AccountPage() {
                   type="button"
                   disabled={currentTier === plan.tier}
                   onClick={() => onSelectTier(plan.tier)}
-                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-700/60 px-4 text-xs font-medium text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-slate-700/60 px-4 text-xs font-medium text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {currentTier === plan.tier ? 'Current plan' : 'Switch to plan'}
                 </button>
@@ -336,6 +341,9 @@ export function AccountPage() {
           </div>
         </Panel>
 
+        {/* Sections 2 + 3 — escalation contact and provider control as
+            side-by-side secondary work areas */}
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Panel
           eyebrow="Escalation contact"
           title="Escalation SMS phone"

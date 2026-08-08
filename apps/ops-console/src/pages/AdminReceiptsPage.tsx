@@ -184,7 +184,7 @@ function ReversalsPanel({
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-50">
                     {row.organization_name} · {row.reference_number ?? 'no ref'} ·{' '}
-                    {row.amount_etb ?? '—'} ETB
+                    <span className="font-mono font-medium tabular-nums">{row.amount_etb ?? '—'}</span> ETB
                   </p>
                   <p className="mt-0.5 text-xs text-slate-400">
                     Invoice {row.invoice_number ?? '—'} · decided{' '}
@@ -320,8 +320,10 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      {/* Flags */}
-      <div className="flex flex-wrap gap-2">
+      {/* Segment 1 — flags: flag chips plus the informational fraud-badge
+          admin controls (display-only, never blocks — NB-21.4/21.6) */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
         {item.sender_has_reversed_credit ? (
           <span className="inline-flex items-center rounded-full border border-violet-500/50 bg-violet-950/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-200">
             {REVERSED_CREDIT_CHIP}
@@ -362,10 +364,33 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
             Customer disputes rejection: {item.dispute_text}
           </span>
         ) : null}
+        </div>
+
+        {item.sender_has_reversed_credit ? (
+          <div className="rounded-lg border border-violet-500/25 bg-violet-950/20 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-violet-200">
+              {REVERSED_CREDIT_CHIP}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              This badge is informational — you can still verify or escalate this receipt normally.
+              {item.fraud_risk_since
+                ? ` Flagged since ${new Date(item.fraud_risk_since).toLocaleString()}.`
+                : ''}
+            </p>
+            <button
+              type="button"
+              disabled={removing}
+              onClick={onRemoveTrustedPayer}
+              className="mt-2 inline-flex min-h-9 items-center justify-center rounded-lg border border-rose-500/35 px-4 text-xs font-medium text-rose-200 transition-colors hover:border-rose-400/60 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {removing ? 'Removing…' : 'Remove sender from trusted-payer list'}
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      {/* Extracted fields with confidence bars */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {/* Segment 2 — extracted fields with confidence bars */}
+      <div className="grid grid-cols-1 gap-3 border-t border-slate-800/70 pt-4 md:grid-cols-2">
         {fieldRows.map(([label, value, confidence]) => (
           <div key={label} className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3">
             <div className="flex items-center justify-between gap-2">
@@ -383,30 +408,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
         ))}
       </div>
 
-      {/* Fraud badge admin controls — display-only, never blocks (NB-21.4/21.6) */}
-      {item.sender_has_reversed_credit ? (
-        <div className="rounded-lg border border-violet-500/25 bg-violet-950/20 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-violet-200">
-            {REVERSED_CREDIT_CHIP}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">
-            This badge is informational — you can still verify or escalate this receipt normally.
-            {item.fraud_risk_since
-              ? ` Flagged since ${new Date(item.fraud_risk_since).toLocaleString()}.`
-              : ''}
-          </p>
-          <button
-            type="button"
-            disabled={removing}
-            onClick={onRemoveTrustedPayer}
-            className="mt-2 inline-flex min-h-9 items-center justify-center rounded-lg border border-rose-500/35 px-4 text-xs font-medium text-rose-200 transition-colors hover:border-rose-400/60 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {removing ? 'Removing…' : 'Remove sender from trusted-payer list'}
-          </button>
-        </div>
-      ) : null}
-
-      {/* File preview */}
+      {/* Segment 3 — file preview */}
       <div className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3">
         <button
           type="button"
@@ -426,24 +428,39 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
         ) : null}
       </div>
 
-      {/* Verdict actions */}
-      <div className="grid gap-3">
+      {/* Segment 4 — verdict controls */}
+      <div className="grid gap-3 border-t border-slate-800/70 pt-4">
         <label className="text-xs font-medium uppercase tracking-wide text-slate-500">Verdict</label>
         <div className="flex flex-wrap gap-2">
-          {(['verify', 'reject_wrong_bank', 'reject_duplicate', 'reject_illegible', 'escalate'] as Verdict[]).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setVerdict(v)}
-              className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                verdict === v
-                  ? 'border-sky-400/50 bg-sky-500/15 text-slate-50'
-                  : 'border-slate-700 text-slate-300 hover:border-slate-500'
-              }`}
-            >
-              {v === 'verify' ? 'Verify' : v.replace('_', ' ')}
-            </button>
-          ))}
+          {(['verify', 'reject_wrong_bank', 'reject_duplicate', 'reject_illegible', 'escalate'] as Verdict[]).map((v) => {
+            // Three-tier hierarchy: verify = dominant primary (solid cyan),
+            // escalate = warning secondary (amber outline), rejects = muted
+            // danger group (rose outline). Selection stays obvious in all tiers.
+            const isVerify = v === 'verify';
+            const isEscalate = v === 'escalate';
+            const active = verdict === v;
+            const tierClass = isVerify
+              ? active
+                ? 'border-sky-300/70 bg-sky-500 text-slate-950'
+                : 'border-sky-500/40 bg-sky-500/15 text-sky-100 hover:border-sky-400/70'
+              : isEscalate
+                ? active
+                  ? 'border-amber-300/70 bg-amber-500/30 text-amber-50'
+                  : 'border-amber-500/35 bg-amber-950/25 text-amber-200 hover:border-amber-400/70'
+                : active
+                  ? 'border-rose-300/70 bg-rose-500/30 text-rose-50'
+                  : 'border-rose-500/30 bg-rose-950/20 text-rose-200 hover:border-rose-400/60';
+            return (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setVerdict(v)}
+                className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${tierClass}`}
+              >
+                {v === 'verify' ? 'Verify' : v.replace('_', ' ')}
+              </button>
+            );
+          })}
         </div>
 
         {verdict === 'verify' && item.is_large_surplus ? (
@@ -591,7 +608,7 @@ export function AdminReceiptsPage() {
           {queue.length === 0 ? (
             <p className="text-sm text-slate-500">No receipts awaiting a verdict.</p>
           ) : (
-            <div className="grid gap-2">
+            <div className="grid gap-1.5">
               {queue.map((item) => (
                 <button
                   key={item.id}
@@ -601,7 +618,7 @@ export function AdminReceiptsPage() {
                     setError(null);
                     setMessage(null);
                   }}
-                  className={`rounded-xl border p-3 text-left transition ${
+                  className={`rounded-xl border p-2.5 text-left transition ${
                     selectedId === item.id
                       ? 'border-sky-400/40 bg-sky-500/10'
                       : 'border-slate-800 bg-slate-900/70 hover:border-slate-600'
@@ -628,15 +645,17 @@ export function AdminReceiptsPage() {
                     </div>
                     <span className="text-xs text-slate-500">{new Date(item.created_at).toLocaleString()}</span>
                   </div>
-                  <p className="mt-2 font-['Space_Grotesk'] text-sm font-semibold text-slate-50">
+                  <p className="mt-1.5 font-['Space_Grotesk'] text-sm font-semibold text-slate-50">
                     {item.organization_name} · {item.extracted_fields['reference_number'] ?? 'no ref'}
                   </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {item.extracted_fields['transfer_amount'] ?? '—'} ETB · invoice{' '}
-                    {item.invoice_number ?? '—'} · {item.extracted_fields['sender_name'] ?? 'no sender'}
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    <span className="font-mono font-medium tabular-nums text-slate-300">
+                      {item.extracted_fields['transfer_amount'] ?? '—'} ETB
+                    </span>{' '}
+                    · invoice {item.invoice_number ?? '—'} · {item.extracted_fields['sender_name'] ?? 'no sender'}
                   </p>
                   {item.dispute_text ? (
-                    <p className="mt-1 text-xs text-amber-200/90">Dispute: {item.dispute_text}</p>
+                    <p className="mt-0.5 text-xs text-amber-200/90">Dispute: {item.dispute_text}</p>
                   ) : null}
                 </button>
               ))}

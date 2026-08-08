@@ -76,12 +76,17 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-6">
       <SkeletonBlock className="h-[120px] rounded-2xl" />
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
-        {[1, 2, 3, 4, 5].map((i) => (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {[1, 2].map((i) => (
+          <SkeletonBlock key={i} className="h-[110px] rounded-2xl" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {[1, 2, 3].map((i) => (
           <SkeletonBlock key={i} className="h-[110px] rounded-xl" />
         ))}
       </div>
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <SkeletonBlock className="h-[300px] rounded-2xl" />
         <SkeletonBlock className="h-[300px] rounded-2xl" />
       </div>
@@ -209,7 +214,9 @@ export function DashboardPage() {
 
       <ActivationBanner mode="compact" />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {/* Layer C — two-tier metric hierarchy: the primary pair spans the
+          framed primary strip; the secondary trio reads quieter on canvas. */}
+      <div className="fp-shell-surface grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
         <MetricTile
           title="Open exceptions"
           value={feedSummary?.open_alerts ?? 0}
@@ -222,6 +229,9 @@ export function DashboardPage() {
           detail="Live movement across exception lanes."
           tone="info"
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {milestone >= gateMilestone('forecast-demand') ? (
           <MetricTile
             title="Forecast demand"
@@ -270,26 +280,28 @@ export function DashboardPage() {
         </Panel>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <Panel
           eyebrow="Exception queue"
           title="What needs operator action"
           description="Unified feed: alerts, pending approvals, and route interventions."
         >
-          <div className="space-y-3">
+          <div className="divide-y divide-slate-800/60">
             {feedItems.slice(0, 6).map((item, index) => (
-              <article key={`${item.source_type}:${item.source_id}`} className="animate-fade-in hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4" style={{ animationDelay: `${index * 0.06}s` }}>
+              <article
+                key={`${item.source_type}:${item.source_id}`}
+                className="animate-fade-in py-3 transition-colors hover:bg-slate-900/40"
+                style={{ animationDelay: `${index * 0.06}s` }}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge label={item.severity} tone={severityTone(item.severity)} />
-                      <span className="text-xs uppercase tracking-wide text-slate-500">{item.source_type}</span>
-                    </div>
-                    <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{item.title}</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge label={item.severity} tone={severityTone(item.severity)} />
+                    <span className="text-xs uppercase tracking-wide text-slate-500">{item.source_type}</span>
+                    <h3 className="font-['Space_Grotesk'] text-sm font-semibold text-slate-100">{item.title}</h3>
                   </div>
                   <span className="text-xs text-slate-500">{new Date(item.created_at).toLocaleString()}</span>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-slate-400">{item.message}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-400">{item.message}</p>
               </article>
             ))}
             {feedItems.length === 0 ? (
@@ -304,19 +316,19 @@ export function DashboardPage() {
         <div className="grid gap-5">
           <Panel eyebrow="Execution posture" title="Workspace readiness">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-              <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
+              <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Inventory position</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.stock.toLocaleString()}</p>
-                <p className="mt-2 text-sm text-slate-400">Safety stock: {summary.safety.toLocaleString()} units</p>
+                <p className="mt-2.5 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{summary.stock.toLocaleString()}</p>
+                <p className="mt-1.5 text-sm text-slate-400">Safety stock: {summary.safety.toLocaleString()} units</p>
               </div>
               {milestone >= gateMilestone('utilization') ? (
-                <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
+                <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Utilization</p>
-                  <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.avgUtil}%</p>
-                  <p className="mt-2 text-sm text-slate-400">Average capacity pressure.</p>
+                  <p className="mt-2.5 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{summary.avgUtil}%</p>
+                  <p className="mt-1.5 text-sm text-slate-400">Average capacity pressure.</p>
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-700/60 bg-slate-900/30 p-4">
+                <div className="rounded-xl border border-dashed border-slate-700/60 bg-slate-900/30 p-3.5">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Utilization</p>
                   <p className="mt-2 text-sm text-slate-400">Unlocks after Milestone 4.</p>
                   <a href="/upload" className="mt-2 inline-block text-sm font-semibold text-sky-300 underline-offset-4 hover:underline">
@@ -324,15 +336,15 @@ export function DashboardPage() {
                   </a>
                 </div>
               )}
-              <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
+              <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Pending approvals</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{summary.pendingPlans.length}</p>
-                <p className="mt-2 text-sm text-slate-400">Replenishment plans awaiting sign-off.</p>
+                <p className="mt-2.5 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{summary.pendingPlans.length}</p>
+                <p className="mt-1.5 text-sm text-slate-400">Replenishment plans awaiting sign-off.</p>
               </div>
-              <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition">
+              <div className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5 transition">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Route schedules</p>
-                <p className="mt-3 font-['Space_Grotesk'] text-3xl font-semibold tabular-nums text-slate-50">{schedules.length}</p>
-                <p className="mt-2 text-sm text-slate-400">Saved optimization output.</p>
+                <p className="mt-2.5 font-['Space_Grotesk'] text-2xl font-semibold tabular-nums text-slate-50">{schedules.length}</p>
+                <p className="mt-1.5 text-sm text-slate-400">Saved optimization output.</p>
               </div>
             </div>
           </Panel>

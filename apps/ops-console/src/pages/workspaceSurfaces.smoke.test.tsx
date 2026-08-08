@@ -8,6 +8,7 @@ import { LoginPage } from './LoginPage';
 import { ReceiptsPage } from './ReceiptsPage';
 import { AdminReceiptsPage } from './AdminReceiptsPage';
 import { AccountPage } from './AccountPage';
+import { RoutesPage } from './RoutesPage';
 import { WorkspaceResetDangerZone } from '../components/WorkspaceResetDangerZone';
 import type { ActivationState } from '../types/api';
 
@@ -47,6 +48,31 @@ vi.mock('../services/api', async (importOriginal) => {
     },
   };
 });
+
+// leaflet touches `window` at module load, which is undefined in the node
+// test environment — the Route Studio smoke block must not execute it.
+// Test-scoped only; no runtime modules are mocked.
+vi.mock('leaflet', () => ({
+  default: {
+    icon: () => ({
+      iconRetinaUrl: '',
+      iconUrl: '',
+      shadowUrl: '',
+      iconSize: [0, 0],
+      iconAnchor: [0, 0],
+    }),
+  },
+  icon: () => ({}),
+}));
+
+vi.mock('react-leaflet', () => ({
+  MapContainer: () => null,
+  Marker: () => null,
+  Polygon: () => null,
+  Polyline: () => null,
+  Popup: () => null,
+  TileLayer: () => null,
+}));
 
 function seededActivationState(): ActivationState {
   return {
@@ -221,6 +247,47 @@ describe('ops console surface smoke', () => {
     expect(strip(html)).toContain('You&#x27;re 0% through onboarding');
     expect(html).toContain('data-testid="activation-banner"');
     expect(html).toContain('href="/upload"');
+  });
+
+  it('renders the two-tier dashboard metric hierarchy with milestone-5 locked variants (0-of-5)', () => {
+    const client = preloadedDashboardClient();
+    const html = renderToString(
+      <QueryClientProvider client={client}>
+        <StaticRouter location="/">
+          <DashboardPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    // Primary pair and secondary trio copy all render (source plan §5 Layer C).
+    expect(html).toContain('Open exceptions');
+    expect(html).toContain('In-transit');
+    expect(html).toContain('Forecast demand');
+    expect(html).toContain('Weather risk');
+    expect(html).toContain('Usage posture');
+    // Seeded 0-of-5: forecast + weather render their locked milestone-5 variants.
+    expect(html).toContain('>Locked<');
+    expect(html).toContain('Unlocks after Milestone 5.');
+    expect(html).toContain('Continue onboarding');
+  });
+
+  it('renders the Route Studio workstation surfaces (form, map placeholder, library, history)', () => {
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/routes">
+          <RoutesPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('Route studio');
+    expect(html).toContain('Build, compare, and operationalize route scenarios');
+    expect(html).toContain('Optimize route');
+    expect(html).toContain('Schedule library');
+    expect(html).toContain('Scenario history');
+    // No activation data resolves to milestone 0 — the locked map placeholder renders.
+    expect(html).toContain('Unlocks after Milestone 5');
+    expect(html).toContain('No optimization history');
   });
 
   it('renders the account page with the escalation contact phone field (PROD-03)', () => {

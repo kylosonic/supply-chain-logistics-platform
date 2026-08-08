@@ -21,24 +21,20 @@ function ReceiptCard({ receipt, onDispute }: { receipt: Receipt; onDispute: (tex
   const [showDispute, setShowDispute] = useState(false);
 
   return (
-    <article className="animate-fade-in rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge label={receipt.status} tone={statusTone(receipt.status)} />
-            <span className="text-xs uppercase tracking-wide text-slate-500">
-              {receipt.reference_number ?? 'no reference extracted'}
-            </span>
-          </div>
-          <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">
-            {receipt.amount_etb ? `${receipt.amount_etb} ETB` : 'Amount pending extraction'}
-          </h3>
-          <p className="mt-1 text-sm text-slate-400">
-            Invoice: {receipt.invoice_number ?? '—'} · Sender: {receipt.sender_name ?? '—'} · Bank:{' '}
-            {receipt.bank_code ?? '—'}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">{new Date(receipt.created_at).toLocaleString()}</p>
-        </div>
+    <article className="animate-fade-in rounded-xl border border-slate-800/60 bg-slate-900/40 p-3.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <StatusBadge label={receipt.status} tone={statusTone(receipt.status)} />
+        <span className="font-mono text-base font-semibold tabular-nums text-slate-50">
+          {receipt.amount_etb ? `${receipt.amount_etb} ETB` : 'Amount pending extraction'}
+        </span>
+        <span className="text-xs uppercase tracking-wide text-slate-500">
+          {receipt.reference_number ?? 'no reference extracted'}
+        </span>
+        <span className="text-sm text-slate-400">
+          Invoice: {receipt.invoice_number ?? '—'} · Sender: {receipt.sender_name ?? '—'} · Bank:{' '}
+          {receipt.bank_code ?? '—'}
+        </span>
+        <span className="ml-auto text-xs text-slate-500">{new Date(receipt.created_at).toLocaleString()}</span>
       </div>
 
       {receipt.reversal_status ? (
@@ -218,7 +214,7 @@ export function ReceiptsPage() {
             <>
               <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Available balance</p>
-                <p className="mt-2 font-['Space_Grotesk'] text-3xl font-semibold text-slate-50">
+                <p className="mt-2 font-mono text-3xl font-medium tabular-nums tracking-tight text-slate-50">
                   {wallet.available_etb} ETB
                 </p>
                 <p className="mt-2 text-sm text-slate-400">
@@ -258,7 +254,7 @@ export function ReceiptsPage() {
         {receipts.length === 0 ? (
           <p className="text-sm text-slate-500">No receipts uploaded yet.</p>
         ) : (
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+          <div className="space-y-2">
             {receipts.map((receipt) => (
               <ReceiptCard
                 key={receipt.id}

@@ -84,7 +84,9 @@ export function RoutesPage() {
         </Panel>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+      {/* Workstation split: the route model form is the dominant surface;
+          the map reads clearly subordinate until results exist. */}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         <RouteOptimizerForm
           onOptimized={(route: RouteOptimizeResponse) => {
             setLatestRouteStops(route.stops);

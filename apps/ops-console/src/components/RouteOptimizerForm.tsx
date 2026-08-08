@@ -81,53 +81,66 @@ export function RouteOptimizerForm({
       title="Optimize a dispatch scenario"
       description="Compare route assumptions, persist the winning option, and preview the resulting stop sequence without leaving the control surface."
     >
-      <form onSubmit={onSubmit} className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <label className="grid gap-2 text-sm text-slate-300">
-          Route name
-          <input className={fieldClassName} value={payload.route_name} onChange={(e) => setPayload({ ...payload, route_name: e.target.value })} />
-        </label>
-        <label className="grid gap-2 text-sm text-slate-300">
-          Schedule date
-          <input className={fieldClassName} type="date" value={payload.schedule_date} onChange={(e) => setPayload({ ...payload, schedule_date: e.target.value })} />
-        </label>
-        <label className="grid gap-2 text-sm text-slate-300">
-          Start warehouse code
-          <input className={fieldClassName} value={payload.start_warehouse_code} onChange={(e) => setPayload({ ...payload, start_warehouse_code: e.target.value })} />
-        </label>
-        <label className="grid gap-2 text-sm text-slate-300">
-          Deliveries
-          <input className={fieldClassName} value={payload.deliveries} onChange={(e) => setPayload({ ...payload, deliveries: e.target.value })} placeholder="WH-002:80,WH-003:60" />
-        </label>
-        <label className="grid gap-2 text-sm text-slate-300">
-          Vehicle capacity
-          <input className={fieldClassName} type="number" value={payload.vehicle_capacity_units} onChange={(e) => setPayload({ ...payload, vehicle_capacity_units: Number(e.target.value) })} />
-        </label>
-        <label className="grid gap-2 text-sm text-slate-300">
-          Max stops
-          <input className={fieldClassName} type="number" value={payload.max_stops} onChange={(e) => setPayload({ ...payload, max_stops: Number(e.target.value) })} />
-        </label>
-        <label className="grid gap-2 text-sm text-slate-300">
-          Speed km/h
-          <input className={fieldClassName} type="number" step="0.1" value={payload.speed_kmh} onChange={(e) => setPayload({ ...payload, speed_kmh: Number(e.target.value) })} />
-        </label>
-        <label className="grid gap-2 text-sm text-slate-300">
-          Cost per km
-          <input className={fieldClassName} type="number" step="0.1" value={payload.cost_per_km} onChange={(e) => setPayload({ ...payload, cost_per_km: Number(e.target.value) })} />
-        </label>
+      <form onSubmit={onSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <p className="col-span-full text-[11px] font-medium tracking-[0.18em] text-slate-500">Scenario identity</p>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Route name
+            <input className={fieldClassName} value={payload.route_name} onChange={(e) => setPayload({ ...payload, route_name: e.target.value })} />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Schedule date
+            <input className={fieldClassName} type="date" value={payload.schedule_date} onChange={(e) => setPayload({ ...payload, schedule_date: e.target.value })} />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Start warehouse code
+            <input className={fieldClassName} value={payload.start_warehouse_code} onChange={(e) => setPayload({ ...payload, start_warehouse_code: e.target.value })} />
+          </label>
+        </div>
 
-        <label className="col-span-1 flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/35 px-4 py-4 text-sm text-slate-300">
-          <input type="checkbox" checked={payload.persist_schedule} onChange={(e) => setPayload({ ...payload, persist_schedule: e.target.checked })} />
-          Persist the optimized route as a saved schedule for the wider team.
-        </label>
-        
-        <label className="col-span-1 flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/35 px-4 py-4 text-sm text-slate-300">
-          <input type="checkbox" checked={payload.minimize_carbon_footprint} onChange={(e) => setPayload({ ...payload, minimize_carbon_footprint: e.target.checked })} />
-          Minimize Carbon Footprint
-        </label>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <p className="col-span-full text-[11px] font-medium tracking-[0.18em] text-slate-500">Route shape</p>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Deliveries
+            <input className={fieldClassName} value={payload.deliveries} onChange={(e) => setPayload({ ...payload, deliveries: e.target.value })} placeholder="WH-002:80,WH-003:60" />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Vehicle capacity
+            <input className={fieldClassName} type="number" value={payload.vehicle_capacity_units} onChange={(e) => setPayload({ ...payload, vehicle_capacity_units: Number(e.target.value) })} />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Max stops
+            <input className={fieldClassName} type="number" value={payload.max_stops} onChange={(e) => setPayload({ ...payload, max_stops: Number(e.target.value) })} />
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <p className="col-span-full text-[11px] font-medium tracking-[0.18em] text-slate-500">Operating constraints</p>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Speed km/h
+            <input className={fieldClassName} type="number" step="0.1" value={payload.speed_kmh} onChange={(e) => setPayload({ ...payload, speed_kmh: Number(e.target.value) })} />
+          </label>
+          <label className="grid gap-2 text-sm text-slate-300">
+            Cost per km
+            <input className={fieldClassName} type="number" step="0.1" value={payload.cost_per_km} onChange={(e) => setPayload({ ...payload, cost_per_km: Number(e.target.value) })} />
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <p className="col-span-full text-[11px] font-medium tracking-[0.18em] text-slate-500">Persistence options</p>
+          <label className="col-span-1 flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/35 px-4 py-4 text-sm text-slate-300">
+            <input type="checkbox" checked={payload.persist_schedule} onChange={(e) => setPayload({ ...payload, persist_schedule: e.target.checked })} />
+            Persist the optimized route as a saved schedule for the wider team.
+          </label>
+          <label className="col-span-1 flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/35 px-4 py-4 text-sm text-slate-300">
+            <input type="checkbox" checked={payload.minimize_carbon_footprint} onChange={(e) => setPayload({ ...payload, minimize_carbon_footprint: e.target.checked })} />
+            Minimize Carbon Footprint
+          </label>
+        </div>
 
         <button
           disabled={isSubmitting}
-          className="glow-ring col-span-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60 lg:col-span-2"
+          className="glow-ring inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-sky-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? (
             <svg className="animate-spin-slow h-4 w-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="50 20" /></svg>
@@ -163,7 +176,7 @@ export function RouteOptimizerForm({
           </div>
 
           {previousResult ? (
-            <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 text-sm text-slate-400">
+            <div className="rounded-xl border border-slate-700/50 bg-slate-900/50 px-4 py-3.5 text-sm text-slate-400">
               Compared with the previous scenario:{' '}
               <span className={`font-semibold ${previousDistanceDelta != null && previousDistanceDelta < 0 ? 'text-emerald-300' : 'text-slate-200'}`}>
                 {previousDistanceDelta == null ? 'N/A' : `${previousDistanceDelta >= 0 ? '+' : ''}${previousDistanceDelta.toFixed(1)} km`}
@@ -177,9 +190,9 @@ export function RouteOptimizerForm({
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stop sequence</p>
-            <ul className="mt-3 grid gap-2 text-sm text-slate-300">
+            <ul className="mt-3 grid gap-1.5 text-sm text-slate-300">
               {result.stops.map((stop, index) => (
-                <li key={stop.sequence} className="animate-fade-in rounded-lg border border-slate-800/60 bg-slate-900/40 px-4 py-3" style={{ animationDelay: `${index * 0.05}s` }}>
+                <li key={stop.sequence} className="animate-fade-in rounded-lg border border-slate-800/60 bg-slate-900/40 px-4 py-2.5" style={{ animationDelay: `${index * 0.05}s` }}>
                   <span className="font-semibold text-slate-100">#{stop.sequence}</span> {stop.warehouse_code} · {stop.demand_units} units · {stop.leg_distance_km} km leg
                 </li>
               ))}
