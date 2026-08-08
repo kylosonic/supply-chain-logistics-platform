@@ -160,3 +160,23 @@ Source: `docs/behaviors/live-launch-origin-trust-and-readiness.md` (parent ticke
 | TECH-56 | NB-53 | E2E launch verification: preflight + signup flow verified against the LIVE API from both official origins; `/health` reports `db: ok`; newly created workspace visible post-signup; runs only after TECH-51..TECH-55 are verified. |
 
 **Execution protocol for this phase:** Phase 1 = TECH-51/52 (code → QA → commit → Vercel env → redeploy → live preflight). Phase 2 = TECH-54 (QA audit of hotfix tree → atomic commit). Phase 3 = TECH-53 (inventory → dashboard rotation [human] → Vercel DATABASE_URL → redeploy → health → prod migrations). Phase 4 = TECH-55 (dry-run → review → delete → verify). Phase 5 = TECH-56 (live e2e). Ledger debits per phase by @architect only after QA sign-off. UAT halt + user-approved merge to main after ALL phases.
+
+## Follow-up Batch — Console UI: Website Language, Operator Density (P1) — IN PROGRESS
+
+**Status:** Branch `feat/console-website-language-batch` created 2026-08-08 for a docs-plan-driven design hardening pass. Source-of-truth execution order lives in `docs/plans/console-ui-website-language-plan.md`. Phase 1 (TECH-62/63) QA APPROVED, committed `e70c939`, debited 2026-08-08. Phase 2 (TECH-64..68) QA APPROVED, committed `790f853`, debited 2026-08-08. Phase 3 (TECH-69) QA APPROVED, committed `78c2cfd`, debited 2026-08-08.
+
+Source: `docs/plans/console-ui-website-language-plan.md`
+
+| TECH | Parent | Ticket summary |
+|---|---|---|
+| ~~TECH-62~~ | — | ✅ IMPLEMENTED — Shared shell/tokens/page-header alignment: website-language dark field, restrained cyan accent, premium border-only surfaces, stronger workspace hierarchy, denser operator shell. |
+| ~~TECH-63~~ | — | ✅ IMPLEMENTED — Login redesign: front-door trust framing, clearer primary/secondary actions, and visually separated sign-in vs bootstrap error states. |
+| ~~TECH-64~~ | — | ✅ IMPLEMENTED — Dashboard top + activation hierarchy: 2-primary/3-secondary metric grouping, action-first focal point, stronger exception-queue anchor, supportive readiness/audit surfaces. |
+| ~~TECH-65~~ | — | ✅ IMPLEMENTED — Route Studio workstation pass: intent-grouped form structure (scenario identity / route shape / operating constraints / persistence), dominant submit, result hierarchy with summary → mono stats → distinct diff → dense stop rows. |
+| ~~TECH-66~~ | — | ✅ IMPLEMENTED — Account governance surface: five section boundaries, dominant plan/usage posture, secondary provider work area, supportive audit stream, isolated danger zone. |
+| ~~TECH-67~~ | — | ✅ IMPLEMENTED — Receipts financial workflow pass: intake / wallet state / receipt history split, queue-like row scanning, structured dispute/rejection handling preserved. |
+| ~~TECH-68~~ | — | ✅ IMPLEMENTED — Admin verification workstation pass: denser queue rows, segmented detail pane (flags → extracted fields → preview → verdict controls), verify primary / escalate warning-secondary / rejects muted-danger hierarchy. |
+| ~~TECH-69~~ | — | ✅ IMPLEMENTED — Remaining console pages aligned: upload calm step rail + shared Dialog primitive (no blur/heavy shadow), denser shipment rows, alerts triage queue (side-stripes removed, violet→cyan), planning approval bands, providers governance rows, dark unauthorized fallback. |
+| ~~TECH-70~~ | — | ✅ IMPLEMENTED (code) — Final consistency pass: single accent family enforced (violet only in the preserved fraud-block exception), radius/input/mono normalization sweep (teal/blue/orange→0, backdrop-blur→0, token radius refs 9→31, mono sites 18→41), 55/55 tests + typecheck + build green. Committed `5029fda`. **Deploy + live verification still pending human UAT per source-plan step 10 adaptation (UAT-before-deploy).** |
+
+**Execution protocol for this batch:** Phase 1 = TECH-62/63 (commit `e70c939`). Phase 2 = TECH-64..68 (commit `790f853`). Phase 3 = TECH-69 (commit `78c2cfd`). Phase 4 = TECH-70 (commit `5029fda`). All QA APPROVED. Ledger debited per phase by @architect after QA sign-off. **Remaining: human UAT on the feature branch → user-approved merge to main → deploy + live verification.** Residual UAT checklist items: 10 rounded-xl/2xl baseline sites in locked/out-of-scope files (ActivationBanner ×6, MetricTile, PostAhaToast, RouteMap, RouteSchedulesTable), AdminReceiptsPage L107 pre-existing `hover:bg-sky-400` on the undo confirm button.
