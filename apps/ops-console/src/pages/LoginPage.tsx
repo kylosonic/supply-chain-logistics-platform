@@ -86,7 +86,7 @@ export function LoginPage() {
                 FP
               </span>
               <div className="space-y-1.5">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">FreightPilot workspace</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">FreightPilot workspace</p>
                 <h1 className="font-['Space_Grotesk'] text-[clamp(2rem,3.2vw,2.8rem)] font-semibold leading-tight tracking-tight text-slate-100">
                   Enter the control tower with the same calm surface you saw on the site.
                 </h1>
@@ -100,7 +100,7 @@ export function LoginPage() {
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
               {VALUE_POINTS.map((point) => (
                 <article key={point.label} className="fp-nested-surface px-4 py-4">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{point.label}</p>
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{point.label}</p>
                   <p className="mt-2 text-sm leading-6 text-slate-200">{point.title}</p>
                 </article>
               ))}
@@ -113,7 +113,7 @@ export function LoginPage() {
             <div className="fp-nested-surface px-5 py-5 sm:px-6 sm:py-6">
               <div className="space-y-6">
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Control tower login</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Control tower login</p>
                   <h2 className="font-['Space_Grotesk'] text-2xl font-semibold tracking-tight text-slate-100">
                     Sign in to your workspace
                   </h2>
@@ -166,7 +166,7 @@ export function LoginPage() {
 
             <div className="space-y-3">
               <div className="fp-nested-surface px-5 py-4 text-center sm:px-6">
-                <p className="text-xs text-slate-500">New workspace? Create the company account on the product site first.</p>
+                <p className="text-xs text-slate-400">New workspace? Create the company account on the product site first.</p>
                 <a
                   href={signupUrl}
                   className="mt-1.5 inline-block text-sm font-medium text-sky-400 underline-offset-4 hover:underline"
@@ -182,7 +182,7 @@ export function LoginPage() {
                   type="button"
                   disabled={isBootstrapping}
                   onClick={onBootstrapInitialAdmin}
-                  className="text-xs font-medium text-slate-500 underline-offset-4 transition-colors hover:text-slate-300 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                  className="text-xs font-medium text-slate-400 underline-offset-4 transition-colors hover:text-slate-300 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isBootstrapping ? 'Creating admin...' : 'Create initial admin (first-time setup)'}
                 </button>

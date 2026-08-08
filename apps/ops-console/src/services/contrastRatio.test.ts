@@ -6,7 +6,9 @@ import { contrastRatio, wcagAAContrast } from './contrastRatio';
  * Pinned hex pairs from the Phase 01 blueprint §2.3 (verified 2026-08-08):
  * `--fp-primary #dbe4ee`, `--fp-elevated #111a26`, `--fp-input #233040`,
  * `--fp-secondary #8fa1b3`, `--fp-muted #5b6b7d`, `--fp-placeholder #94a3b8`.
- * Tolerance ±0.05.
+ * Phase 02 blueprint §2.3 adds: `--fp-surface #0d141d` (shell), slate-400
+ * `#94a3b8`, slate-500 `#64748b`, and the rose panel composite `#231422`
+ * (= alpha-composite `0.3 × #4c0519 + 0.7 × #111a26`). Tolerance ±0.05.
  */
 const PINNED_PAIRS: ReadonlyArray<{
   fg: string;
@@ -19,6 +21,14 @@ const PINNED_PAIRS: ReadonlyArray<{
   { fg: '#8fa1b3', bg: '#233040', expected: 5.05 }, // secondary on input (AA)
   { fg: '#5b6b7d', bg: '#233040', expected: 2.45 }, // muted on input (documents exemption)
   { fg: '#94a3b8', bg: '#233040', expected: 5.22 }, // placeholder on input (AA)
+  // Phase 02 (TECH-78) pins — login-page small text on the NEW surfaces:
+  { fg: '#94a3b8', bg: '#0d141d', expected: 7.22 }, // slate-400 on shell surface (FIX, §2.3 #1/#5/#13)
+  { fg: '#94a3b8', bg: '#111a26', expected: 6.83 }, // slate-400 on elevated (FIX, §2.3 #3/#12)
+  { fg: '#64748b', bg: '#0d141d', expected: 3.89 }, // slate-500 on shell (documents fixed FAIL)
+  { fg: '#64748b', bg: '#111a26', expected: 3.68 }, // slate-500 on elevated (documents fixed FAIL)
+  { fg: '#8fa1b3', bg: '#0d141d', expected: 6.98 }, // --fp-secondary on shell (documents rejected token alternative)
+  // rose panel composite: 0.3 × #4c0519 (rose-950) + 0.7 × #111a26 (elevated) = #231422
+  { fg: '#fda4af', bg: '#231422', expected: 9.3 }, // rose-300 on rose-950/30 over elevated (PASS, stays)
 ];
 
 const TOLERANCE = 0.05;
@@ -61,6 +71,17 @@ describe('wcagAAContrast', () => {
   it('fails the documented exempted pairs', () => {
     expect(wcagAAContrast('#5b6b7d', '#233040')).toBe(false); // muted 2.45:1
     expect(wcagAAContrast('#5b6b7d', '#111a26')).toBe(false); // muted 3.20:1 (TECH-78)
+  });
+
+  it('passes the Phase 02 login small-text pairs (TECH-78)', () => {
+    expect(wcagAAContrast('#94a3b8', '#0d141d')).toBe(true); // slate-400 on shell 7.22:1
+    expect(wcagAAContrast('#94a3b8', '#111a26')).toBe(true); // slate-400 on elevated 6.83:1
+    expect(wcagAAContrast('#fda4af', '#231422')).toBe(true); // rose-300 panel 9.30:1
+  });
+
+  it('fails the documented Phase 02 slate-500 pairs (TECH-78)', () => {
+    expect(wcagAAContrast('#64748b', '#0d141d')).toBe(false); // 3.89:1 — pre-fix eyebrow/helper
+    expect(wcagAAContrast('#64748b', '#111a26')).toBe(false); // 3.68:1 — pre-fix labels/helper
   });
 
   it('resolves the 4.5:1 boundary correctly', () => {
