@@ -238,8 +238,8 @@ export function ShipmentsPage() {
         ) : null}
 
         <div className="space-y-3">
-          {shipments.map((shipment, index) => (
-            <article key={shipment.id} className="fp-row" style={{ animationDelay: `${index * 0.04}s` }}>
+          {shipments.map((shipment) => (
+            <article key={shipment.id} className="fp-row">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -274,7 +274,7 @@ export function ShipmentsPage() {
           ))}
 
           {!loading && shipments.length === 0 ? (
-            <div className="fp-nested-surface animate-fade-in p-6 text-center">
+            <div className="fp-nested-surface p-6 text-center">
               <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No shipments yet</p>
               <p className="mt-1 text-sm text-slate-500">Create your first shipment using the form above.</p>
             </div>

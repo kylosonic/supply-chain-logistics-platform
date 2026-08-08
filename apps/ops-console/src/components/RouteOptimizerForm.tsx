@@ -190,8 +190,8 @@ export function RouteOptimizerForm({
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stop sequence</p>
             <ul className="mt-3 grid gap-1.5 text-sm text-slate-300">
-              {result.stops.map((stop, index) => (
-                <li key={stop.sequence} className="fp-row px-4 py-2.5" style={{ animationDelay: `${index * 0.05}s` }}>
+              {result.stops.map((stop) => (
+                <li key={stop.sequence} className="fp-row px-4 py-2.5">
                   <span className="font-semibold text-slate-100">#{stop.sequence}</span> {stop.warehouse_code} · {stop.demand_units} units · {stop.leg_distance_km} km leg
                 </li>
               ))}

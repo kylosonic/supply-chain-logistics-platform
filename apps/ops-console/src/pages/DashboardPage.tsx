@@ -289,11 +289,10 @@ export function DashboardPage() {
           description="Unified feed: alerts, pending approvals, and route interventions."
         >
           <div className="divide-y divide-slate-800/60">
-            {feedItems.slice(0, 6).map((item, index) => (
+            {feedItems.slice(0, 6).map((item) => (
               <article
                 key={`${item.source_type}:${item.source_id}`}
-                className="animate-fade-in py-3 transition-colors hover:bg-slate-900/40"
-                style={{ animationDelay: `${index * 0.06}s` }}
+                className="py-3 transition-colors hover:bg-slate-900/40"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -307,7 +306,7 @@ export function DashboardPage() {
               </article>
             ))}
             {feedItems.length === 0 ? (
-              <div className="animate-fade-in rounded-[var(--fp-radius-panel)] border border-emerald-500/20 bg-emerald-950/20 p-5 text-center">
+              <div className="rounded-[var(--fp-radius-panel)] border border-emerald-500/20 bg-emerald-950/20 p-5 text-center">
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-emerald-200">Queue clear</p>
                 <p className="mt-1 text-sm text-emerald-300/60">No open alerts requiring operator attention.</p>
               </div>
@@ -353,8 +352,8 @@ export function DashboardPage() {
 
           <Panel eyebrow="Audit timeline" title="Latest workspace actions">
             <div className="space-y-3">
-              {auditEvents.slice(0, 4).map((event, index) => (
-                <article key={event.id} className="animate-fade-in hover-lift fp-nested-surface p-4" style={{ animationDelay: `${index * 0.06}s` }}>
+              {auditEvents.slice(0, 4).map((event) => (
+                <article key={event.id} className="hover-lift fp-nested-surface p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h3 className="font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{event.description}</h3>

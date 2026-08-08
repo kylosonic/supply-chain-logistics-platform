@@ -104,8 +104,8 @@ export function CsvUploadPanel() {
 
   return (
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {uploadSpecs.map((spec, index) => (
-          <article key={spec.key} className="fp-row" style={{ animationDelay: `${index * 0.06}s` }}>
+        {uploadSpecs.map((spec) => (
+          <article key={spec.key} className="fp-row">
             <div className="flex items-start justify-between gap-3">
               <h3 className="font-['Space_Grotesk'] text-xl font-semibold text-slate-50">{spec.title}</h3>
               <span className="rounded-full border border-slate-700 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">

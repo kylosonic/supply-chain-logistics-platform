@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 import { CapPitchBanner } from './ActivationBanner';
+import { PageTransition } from './PageTransition';
+import { ScrollManager } from './ScrollManager';
 import { SessionLiveUpdates } from './shell/SessionLiveUpdates';
 import { ShellHeader } from './shell/ShellHeader';
 import { ShellSidebar } from './shell/ShellSidebar';
@@ -12,11 +14,24 @@ const SHELL_DESCRIPTOR = 'Routes, exceptions, planning, and workspace governance
 
 /** Lazy-chunk fallback rendered INSIDE the shell so the layout stays mounted
  *  while a page chunk loads (TECH-72). Also reused by App.tsx at the top
- *  level for the /login and /unauthorized lazy chunks. */
+ *  level for the /login and /unauthorized lazy chunks.
+ *  NB-58.3: calm console-language skeleton — never a bare text line; the
+ *  verbatim copy stays available to screen readers via sr-only. */
 export function RouteFallback() {
   return (
-    <div className="fp-nested-surface px-5 py-5 text-sm text-slate-400">
-      Loading workspace surface...
+    <div className="fp-nested-surface px-5 py-5" role="status">
+      <div className="skeleton h-6 w-1/3" />
+      <div className="mt-4 grid gap-3">
+        <div className="skeleton h-28" />
+        <div className="skeleton h-28" />
+        <div className="skeleton h-28" />
+      </div>
+      <div className="mt-4 flex gap-3">
+        <div className="skeleton h-4 w-1/4" />
+        <div className="skeleton h-4 w-1/4" />
+        <div className="skeleton h-4 w-1/4" />
+      </div>
+      <span className="sr-only">Loading workspace surface...</span>
     </div>
   );
 }
@@ -28,6 +43,7 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-[var(--fp-black)] text-slate-100">
       <SessionLiveUpdates />
+      <ScrollManager />
       <div className="mx-auto flex max-w-[1520px] gap-5 px-4 py-4 lg:gap-6 lg:px-6">
         <aside className="hidden w-[280px] shrink-0 lg:block">
           <div className="sticky top-4 flex h-[calc(100vh-2rem)] flex-col">
@@ -54,7 +70,9 @@ export function Layout() {
           <CapPitchBanner />
           <main className="space-y-5">
             <Suspense fallback={<RouteFallback />}>
-              <Outlet />
+              <PageTransition>
+                <Outlet />
+              </PageTransition>
             </Suspense>
           </main>
         </div>

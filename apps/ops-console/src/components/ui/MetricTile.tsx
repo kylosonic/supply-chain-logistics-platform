@@ -22,7 +22,7 @@ export function MetricTile({ title, value, detail, tone = 'neutral', cta }: Metr
   const isPulsing = tone === 'danger' || tone === 'warning';
 
   return (
-    <article className="hover-lift animate-scale-in rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-4">
+    <article className="hover-lift rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-4">
       <div className="flex items-center gap-2">
         <span
           className={`inline-block h-1.5 w-1.5 rounded-full ${dotColors[tone]}`}

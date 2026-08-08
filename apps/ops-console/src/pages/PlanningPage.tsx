@@ -215,8 +215,8 @@ export function PlanningPage() {
               <div className="space-y-3">
                 {plans
                   .filter((plan) => plan.status === 'pending_approval')
-                  .map((plan, index) => (
-                    <PlanRow key={plan.id} plan={plan} userRole={user?.role} onApprove={onApprove} onReject={() => setRejectDialog({ plan })} index={index} />
+                  .map((plan) => (
+                    <PlanRow key={plan.id} plan={plan} userRole={user?.role} onApprove={onApprove} onReject={() => setRejectDialog({ plan })} />
                   ))}
               </div>
             ) : null}
@@ -225,14 +225,14 @@ export function PlanningPage() {
               <div className="space-y-3 border-t border-slate-800/70 pt-5 opacity-80">
                 {plans
                   .filter((plan) => plan.status !== 'pending_approval')
-                  .map((plan, index) => (
-                    <PlanRow key={plan.id} plan={plan} userRole={user?.role} onApprove={onApprove} onReject={() => setRejectDialog({ plan })} index={index} />
+                  .map((plan) => (
+                    <PlanRow key={plan.id} plan={plan} userRole={user?.role} onApprove={onApprove} onReject={() => setRejectDialog({ plan })} />
                   ))}
               </div>
             ) : null}
 
             {plans.length === 0 ? (
-              <div className="fp-nested-surface animate-fade-in p-6 text-center">
+              <div className="fp-nested-surface p-6 text-center">
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No plans yet</p>
                 <p className="mt-1 text-sm text-slate-500">Generate replenishment suggestions using the form above.</p>
               </div>
@@ -249,16 +249,14 @@ function PlanRow({
   userRole,
   onApprove,
   onReject,
-  index,
 }: {
   plan: ReplenishmentPlan;
   userRole: string | undefined;
   onApprove: (planId: string) => void;
   onReject: () => void;
-  index: number;
 }) {
   return (
-    <article className="fp-row" style={{ animationDelay: `${index * 0.04}s` }}>
+    <article className="fp-row">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">

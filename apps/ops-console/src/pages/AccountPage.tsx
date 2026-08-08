@@ -458,7 +458,7 @@ export function AccountPage() {
       >
         <div className="space-y-3">
           {auditEvents.slice(0, 8).map((event) => (
-            <article key={event.id} className="animate-fade-in hover-lift fp-nested-surface p-4">
+            <article key={event.id} className="hover-lift fp-nested-surface p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">

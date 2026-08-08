@@ -132,8 +132,8 @@ export function RoutesPage() {
         description="Every optimization run now keeps a scenario record so the team can review what was modeled, what persisted, and where manual intervention was still required."
       >
         <div className="space-y-3">
-          {history.slice(0, 6).map((run, index) => (
-            <article key={run.id} className="fp-row" style={{ animationDelay: `${index * 0.04}s` }}>
+          {history.slice(0, 6).map((run) => (
+            <article key={run.id} className="fp-row">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -155,7 +155,7 @@ export function RoutesPage() {
           ))}
 
           {history.length === 0 ? (
-            <div className="animate-fade-in rounded-[var(--fp-radius-panel)] border border-slate-800/60 bg-slate-900/35 p-6 text-center">
+            <div className="rounded-[var(--fp-radius-panel)] border border-slate-800/60 bg-slate-900/35 p-6 text-center">
               <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No optimization history</p>
               <p className="mt-1 text-sm text-slate-500">Run a route optimization above to start building scenario history.</p>
             </div>

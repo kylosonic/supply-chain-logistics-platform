@@ -19,7 +19,7 @@ export function Panel({ eyebrow, title, description, actions, className, bodyCla
   return (
     <section
       className={joinClasses(
-        'fp-nested-surface animate-fade-in overflow-hidden',
+        'fp-nested-surface overflow-hidden',
         className,
       )}
     >

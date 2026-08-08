@@ -274,12 +274,8 @@ export function AlertsPage() {
           ) : null}
 
           <div className="space-y-3">
-            {sortedAlerts.map((alert, index) => (
-              <article
-                key={alert.id}
-                className="fp-row"
-                style={{ animationDelay: `${index * 0.04}s` }}
-              >
+            {sortedAlerts.map((alert) => (
+              <article key={alert.id} className="fp-row">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -321,7 +317,7 @@ export function AlertsPage() {
             ))}
 
             {!loading && alerts.length === 0 ? (
-              <div className="fp-nested-surface animate-fade-in p-6 text-center">
+              <div className="fp-nested-surface p-6 text-center">
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">No alerts</p>
                 <p className="mt-1 text-sm text-slate-500">No alerts for the selected filter.</p>
               </div>

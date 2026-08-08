@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderToString } from 'react-dom/server';
 import { Route, Routes } from 'react-router-dom';
@@ -122,5 +123,69 @@ describe('Layout shell smoke (TECH-72 / NB-55)', () => {
     expect(html).toContain('FreightPilot'); // shell mounted
     expect(html).toContain('data-testid="cap-pitch-banner"'); // banner mounted
     expect(html).toContain('Loading workspace surface...'); // nested fallback, not a shell remount
+  });
+});
+
+// ── ADDITIVE: Phase 3 (TECH-74 / NB-57 + TECH-75 / NB-58) ──────────────────
+
+describe('Layout page transition & first-load fallback (TECH-74 / TECH-75)', () => {
+  it('renders the RouteFallback skeleton surface with sr-only copy on first chunk load (NB-58.3)', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['activation'], p60PitchState());
+
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/">
+          <App />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('fp-nested-surface');
+    expect(html).toContain('role="status"');
+    expect(html).toContain('skeleton');
+    expect(html).toContain('<span class="sr-only">Loading workspace surface...</span>');
+  });
+
+  it('wraps the Outlet content in the PageTransition div inside the nested Suspense (NB-57.1)', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['activation'], p60PitchState());
+
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/">
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<div data-testid="page-surface-marker">Surface</div>} />
+            </Route>
+          </Routes>
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('<div><div data-testid="page-surface-marker">Surface</div></div>');
+  });
+
+  it('mounts ScrollManager beside SessionLiveUpdates without disturbing the shell (NB-58)', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['activation'], p60PitchState());
+
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/">
+          <Routes>
+            <Route path="/" element={<Layout />} />
+          </Routes>
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('FreightPilot');
+    expect(html).toContain('data-testid="cap-pitch-banner"');
+    expect(html).toContain('<main');
+
+    const layoutSource = readFileSync(new URL('./Layout.tsx', import.meta.url), 'utf8');
+    expect(layoutSource).toContain('<ScrollManager />');
+    expect(layoutSource).toContain("import { ScrollManager } from './ScrollManager';");
   });
 });

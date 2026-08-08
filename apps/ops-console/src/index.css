@@ -78,6 +78,13 @@ body {
     animation: spin 1.1s linear infinite;
   }
 
+  /* NB-57: one subtle content fade per page switch, applied by the
+     PageTransition wrapper (140ms, ease-out, both). The prefers-reduced-motion
+     block below zeroes its duration for reduced-motion users. */
+  .fp-page-fade {
+    animation: fadeIn 0.14s ease-out both;
+  }
+
   /* Calm hover: color shift only — no lift, no glow. */
   .hover-lift {
     transition: background-color 0.15s ease, border-color 0.15s ease;
@@ -124,12 +131,6 @@ body {
     pointer-events: none;
   }
 
-  .stagger-1 { animation-delay: 0.05s; }
-  .stagger-2 { animation-delay: 0.1s; }
-  .stagger-3 { animation-delay: 0.15s; }
-  .stagger-4 { animation-delay: 0.2s; }
-  .stagger-5 { animation-delay: 0.25s; }
-  .stagger-6 { animation-delay: 0.3s; }
 }
 
 /* ── Scrollbars ─────────────────────────────────────────── */
@@ -246,7 +247,6 @@ textarea:focus-visible {
   .fp-row {
     @apply border border-slate-800/60 bg-slate-950/75 p-4;
     border-radius: var(--fp-radius-panel);
-    animation: fadeIn 0.3s ease-out both;
     transition: background-color 0.15s ease, border-color 0.15s ease;
   }
 

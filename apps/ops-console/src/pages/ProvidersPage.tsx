@@ -84,7 +84,7 @@ export function ProvidersPage() {
   const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Carrier Integrations"
         description="Manage secure API credentials for third-party logistics providers and external routing engines."
@@ -176,7 +176,7 @@ export function ProvidersPage() {
                 </label>
 
                 {testError && (
-                  <div className="fp-radius-panel animate-fade-in mt-2 border border-rose-900/50 bg-rose-500/10 p-3 text-sm text-rose-300">
+                  <div className="fp-radius-panel mt-2 border border-rose-900/50 bg-rose-500/10 p-3 text-sm text-rose-300" style={{ animation: 'fadeIn 0.3s ease-out both' }}>
                     {testError}
                   </div>
                 )}
