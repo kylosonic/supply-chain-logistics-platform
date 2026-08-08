@@ -177,6 +177,8 @@ textarea:focus-visible {
    --fp-input: #233040;
    --fp-muted: #5b6b7d;
    --fp-secondary: #8fa1b3;
+   /* Placeholder text: slate-400, AA 5.22:1 on --fp-input (#233040). */
+   --fp-placeholder: #94a3b8;
   --fp-primary: #dbe4ee;
   --fp-white: #f5f8fb;
   --fp-accent: #38bdf8;
@@ -202,27 +204,36 @@ textarea:focus-visible {
 
 @layer components {
   .fp-shell-surface {
-    @apply border border-slate-800/70 bg-slate-900/45;
+    @apply border;
+    border-color: var(--fp-border);
+    background-color: var(--fp-surface);
     border-radius: var(--fp-radius-hero);
   }
 
   .fp-nested-surface {
-    @apply border border-slate-800/70 bg-slate-950/75;
+    @apply border;
+    border-color: var(--fp-border);
+    background-color: var(--fp-elevated);
     border-radius: var(--fp-radius-panel);
   }
 
   .fp-pill {
-    @apply inline-flex items-center gap-2 border border-slate-700/70 bg-slate-950/75 px-2.5 py-1 text-xs;
+    @apply inline-flex items-center gap-2 border px-2.5 py-1 text-xs;
+    border-color: var(--fp-border);
+    background-color: var(--fp-elevated);
     border-radius: var(--fp-radius-pill);
   }
 
   .fp-input {
-    @apply w-full border border-slate-700/70 bg-slate-950/80 px-3.5 py-2.5 text-sm text-slate-100 transition-colors;
+    @apply w-full border px-3.5 py-2.5 text-sm transition-colors;
+    border-color: var(--fp-border);
+    background-color: var(--fp-input);
+    color: var(--fp-primary);
     border-radius: var(--fp-radius-panel);
   }
 
   .fp-input::placeholder {
-    color: rgba(143, 161, 179, 0.72);
+    color: var(--fp-placeholder);
   }
 
   .fp-input:focus-visible {
@@ -245,7 +256,9 @@ textarea:focus-visible {
 
   /* Dense nested queue row shared by shipments, alerts, planning, providers. */
   .fp-row {
-    @apply border border-slate-800/60 bg-slate-950/75 p-4;
+    @apply border p-4;
+    border-color: var(--fp-border);
+    background-color: var(--fp-elevated);
     border-radius: var(--fp-radius-panel);
     transition: background-color 0.15s ease, border-color 0.15s ease;
   }
