@@ -549,6 +549,65 @@ Source behavior doc: [`live-launch-origin-trust-and-readiness.md`](./live-launch
 
 ---
 
+## Feature: Console Navigation & Login Continuity
+
+Source behavior doc: [`console-navigation-persistence.md`](./console-navigation-persistence.md)
+
+### NB-54 — Page switching never restarts the app
+- **Priority:** P1
+- **Feature area:** Console navigation, full-reload elimination
+- **Acceptance criteria:**
+  1. When an operator clicks any navigation item or any in-app link that leads to another console page, the application never performs a full browser reload — no white flash, no session re-verification, no return to the login screen.
+  2. Every link on a console page that reads as a link to another console page (e.g., "Continue onboarding", "Continue setup", "Run your first route") navigates inside the application, not via a full page load.
+  3. External addresses (e.g., map attributions) remain external and are unaffected.
+  4. The sidebar, top shell, and persistent banners stay on screen unchanged while the page content switches.
+
+### NB-55 — The workspace shell persists across pages
+- **Priority:** P1
+- **Feature area:** Console shell, layout continuity
+- **Acceptance criteria:**
+  1. When the operator moves between pages, the sidebar (brand block, both navigation groups, identity footer) stays mounted and does not rebuild or flicker.
+  2. The top shell (context label, page descriptor, role and user chips) stays mounted across page switches.
+  3. Persistent banners (usage cap, upgrade pitch, activation state) stay mounted and do not refetch or flash on navigation.
+  4. The active page marker in the sidebar is always correct after a page switch.
+  5. On mobile, the navigation drawer state the operator left is preserved where sensible.
+
+### NB-56 — Live data updates connect once per session
+- **Priority:** P1
+- **Feature area:** Dashboard freshness, background data
+- **Acceptance criteria:**
+  1. The live data connection opens once per workspace session and remains open while the operator works; leaving the dashboard and returning to it does not reopen or replay the connection.
+  2. When live data arrives, dashboard surfaces update quietly in the background — the operator never sees the dashboard blank out, replay loading placeholders, or rebuild panels because of a background refresh.
+  3. If the live connection is unavailable, the operator still sees the last known data and the application keeps working; no errors are shown and the console does not retry aggressively on every page visit.
+
+### NB-57 — Page changes are calm
+- **Priority:** P2
+- **Feature area:** Transition motion
+- **Acceptance criteria:**
+  1. When the operator switches pages, the new page content fades in once, briefly (roughly a tenth of a second) and subtly.
+  2. Panels, cards, and rows never replay individual entrance animations during a page switch.
+  3. If the operator has reduced motion enabled at the operating-system level, no fade is shown at all.
+
+### NB-58 — Scroll position and first-load placeholders
+- **Priority:** P2
+- **Feature area:** Scroll restoration, loading surfaces
+- **Acceptance criteria:**
+  1. When the operator returns to a page with the browser's back action, the page opens at the scroll position they left, not at the top.
+  2. Moving forward to a new page starts at the top of that page.
+  3. The first time a page loads, the operator sees a calm placeholder built from the console's visual language — never a bare text line.
+
+### NB-59 — Signing in and out never restarts the app; expired sessions never bounce
+- **Priority:** P1
+- **Feature area:** Login, session continuity
+- **Acceptance criteria:**
+  1. When the operator signs in successfully, they land on the dashboard inside the same application session — no full reload occurs between the login screen and the dashboard.
+  2. A failed sign-in shows a clear error on the login screen and nothing else happens.
+  3. If the session expires or a data request is refused while the operator is working, the operator is returned to the login screen without a page reload, and the next successful sign-in works normally — the operator is never stuck in a reload-into-login loop.
+  4. Signing out returns the operator to the login screen without a full reload.
+  5. The "Create company account" action on the login screen always opens the product website's signup page at its real address — never a placeholder, a local address, or a dead link.
+
+---
+
 ## Open items deferred to later features
 
 These are explicitly out of scope of v1 but noted here so they are not lost:
