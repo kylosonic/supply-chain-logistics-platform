@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderToString } from 'react-dom/server';
 import { StaticRouter } from 'react-router-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { publishLivePayload, resetLivePayloadStore } from '../hooks/useLiveUpdates';
 import { DashboardPage } from './DashboardPage';
 import { LoginPage } from './LoginPage';
 import { ReceiptsPage } from './ReceiptsPage';
@@ -111,6 +112,12 @@ const queryClient = new QueryClient({
 function strip(html: string): string {
   return html.replace(/<!-- -->/g, '');
 }
+
+// TECH-73: the module-level live payload store is session-scoped; reset it
+// between tests so no chip/invalidation state bleeds across renderings.
+afterEach(() => {
+  resetLivePayloadStore();
+});
 
 /** QueryClient preloaded with a seeded 0-of-5 dashboard state. */
 function preloadedDashboardClient(): QueryClient {
@@ -278,6 +285,42 @@ describe('ops console surface smoke', () => {
     expect(html).toContain('>Locked<');
     expect(html).toContain('Unlocks after Milestone 5.');
     expect(html).toContain('Continue onboarding');
+  });
+
+  it('renders the Live sync pill from the session payload store when a payload has arrived (TECH-73)', () => {
+    const client = preloadedDashboardClient();
+    publishLivePayload({
+      type: 'live_update',
+      server_time: '2026-08-08T12:34:56Z',
+      inventory_overview: [],
+      route_summaries: [],
+      forecast_preview: [],
+    });
+
+    const html = renderToString(
+      <QueryClientProvider client={client}>
+        <StaticRouter location="/">
+          <DashboardPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    // Copy preserved verbatim: `Live sync {time}` pill with the emerald dot.
+    expect(html).toContain('Live sync');
+    expect(html).toContain('bg-emerald-400');
+  });
+
+  it('renders no Live sync pill when the payload store is empty (TECH-73)', () => {
+    const client = preloadedDashboardClient();
+    const html = renderToString(
+      <QueryClientProvider client={client}>
+        <StaticRouter location="/">
+          <DashboardPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).not.toContain('Live sync');
   });
 
   it('renders the Route Studio workstation surfaces (form, map placeholder, library, history)', () => {

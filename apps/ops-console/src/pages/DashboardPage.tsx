@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ActivationBanner } from '../components/ActivationBanner';
@@ -11,7 +11,6 @@ import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { useAuth } from '../context/AuthContext';
 import {
   useActivationState,
   useAuditTimeline,
@@ -21,13 +20,13 @@ import {
   useForecast,
   useInventoryOverview,
   useInvalidateDashboard,
+  useLiveDataInvalidator,
   useReplenishmentPlans,
   useRouteSchedules,
   useShipments,
   useWeatherRiskZones,
 } from '../hooks/queries';
-import { useLiveUpdates } from '../hooks/useLiveUpdates';
-import type { LiveUpdatePayload } from '../hooks/useLiveUpdates';
+import { useLivePayload, useLivePayloadStream } from '../hooks/useLiveUpdates';
 
 function severityTone(severity: string) {
   if (severity === 'critical' || severity === 'danger') return 'danger';
@@ -96,7 +95,6 @@ function DashboardSkeleton() {
 }
 
 export function DashboardPage() {
-  const { getToken, user } = useAuth();
   const invalidateDashboard = useInvalidateDashboard();
 
   const inventoryQ = useInventoryOverview();
@@ -111,8 +109,18 @@ export function DashboardPage() {
   const appointmentsQ = useDockAppointments();
   const activationQ = useActivationState();
 
-  const [lastLiveUpdate, setLastLiveUpdate] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // TECH-73: the live payload comes from the session-scoped store owned by
+  // SessionLiveUpdates — the chip survives page switches (decision 8) and
+  // background invalidation is coalesced + payload-scoped (decisions 5/6);
+  // invalidations only run while this page is mounted (stream subscription).
+  const livePayload = useLivePayload();
+  const invalidateLivePayload = useLiveDataInvalidator();
+
+  useLivePayloadStream((payload) => {
+    invalidateLivePayload(payload);
+  });
 
   const inventory = inventoryQ.data ?? [];
   const forecast = forecastQ.data?.points ?? [];
@@ -141,13 +149,6 @@ export function DashboardPage() {
     inventoryQ.error || forecastQ.error || schedulesQ.error ||
     shipmentsQ.error || plansQ.error || feedQ.error || auditQ.error ||
     riskQ.error || usageQ.error || appointmentsQ.error;
-
-  const handleLiveMessage = useCallback((payload: LiveUpdatePayload) => {
-    invalidateDashboard();
-    setLastLiveUpdate(payload.server_time);
-  }, [invalidateDashboard]);
-
-  useLiveUpdates({ getToken, enabled: Boolean(user), onMessage: handleLiveMessage });
 
   const summary = useMemo(() => {
     const stock = inventory.reduce((sum, row) => sum + row.total_quantity_on_hand, 0);
@@ -191,10 +192,10 @@ export function DashboardPage() {
         description="Monitor stock position, route status, open exceptions, approval pressure, and usage posture without leaving the operator frame."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {lastLiveUpdate ? (
+            {livePayload ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-xs font-medium uppercase tracking-wide text-emerald-200">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                Live sync {new Date(lastLiveUpdate).toLocaleTimeString()}
+                Live sync {new Date(livePayload.server_time).toLocaleTimeString()}
               </span>
             ) : null}
             <button

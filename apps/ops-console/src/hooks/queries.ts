@@ -1,4 +1,8 @@
+import { useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { createCoalescedInvalidator, livePayloadQueryKeys, LIVE_INVALIDATION_WINDOW_MS } from './liveInvalidation';
+import type { LiveUpdatePayload } from './useLiveUpdates';
 
 import {
   getInventoryOverview,
@@ -247,6 +251,36 @@ export function useInvalidateDashboard() {
     queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
     queryClient.invalidateQueries({ queryKey: ['activation'] });
   };
+}
+
+// ---------------------------------------------------------------------------
+// TECH-73 (NB-56): payload-scoped live invalidation — inventory/routes/forecast
+// ONLY, coalesced to at most one invalidation per 15s window with the latest
+// payload winning. Never touches shipments/subscriptions/activation (those
+// surfaces refresh via their own staleTime or the manual Refresh button).
+// ---------------------------------------------------------------------------
+
+export function useLiveDataInvalidator() {
+  const queryClient = useQueryClient();
+  const invalidatorRef = useRef<ReturnType<typeof createCoalescedInvalidator> | null>(null);
+  if (invalidatorRef.current === null) {
+    invalidatorRef.current = createCoalescedInvalidator(LIVE_INVALIDATION_WINDOW_MS, (payload) => {
+      for (const queryKey of livePayloadQueryKeys(payload)) {
+        queryClient.invalidateQueries({ queryKey });
+      }
+    });
+  }
+
+  useEffect(() => {
+    return () => {
+      invalidatorRef.current?.dispose();
+      invalidatorRef.current = null;
+    };
+  }, []);
+
+  return useCallback((payload: LiveUpdatePayload) => {
+    invalidatorRef.current?.push(payload);
+  }, []);
 }
 
 // ---------------------------------------------------------------------------

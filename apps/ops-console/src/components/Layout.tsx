@@ -1,20 +1,33 @@
-import { useState } from 'react';
-import type { PropsWithChildren } from 'react';
+import { Suspense, useState } from 'react';
+import { Outlet } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 import { CapPitchBanner } from './ActivationBanner';
+import { SessionLiveUpdates } from './shell/SessionLiveUpdates';
 import { ShellHeader } from './shell/ShellHeader';
 import { ShellSidebar } from './shell/ShellSidebar';
 
 const SHELL_CONTEXT_LABEL = 'Control tower';
 const SHELL_DESCRIPTOR = 'Routes, exceptions, planning, and workspace governance.';
 
-export function Layout({ children }: PropsWithChildren) {
+/** Lazy-chunk fallback rendered INSIDE the shell so the layout stays mounted
+ *  while a page chunk loads (TECH-72). Also reused by App.tsx at the top
+ *  level for the /login and /unauthorized lazy chunks. */
+export function RouteFallback() {
+  return (
+    <div className="fp-nested-surface px-5 py-5 text-sm text-slate-400">
+      Loading workspace surface...
+    </div>
+  );
+}
+
+export function Layout() {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[var(--fp-black)] text-slate-100">
+      <SessionLiveUpdates />
       <div className="mx-auto flex max-w-[1520px] gap-5 px-4 py-4 lg:gap-6 lg:px-6">
         <aside className="hidden w-[280px] shrink-0 lg:block">
           <div className="sticky top-4 flex h-[calc(100vh-2rem)] flex-col">
@@ -39,7 +52,11 @@ export function Layout({ children }: PropsWithChildren) {
             onOpenNavigation={() => setSidebarOpen(true)}
           />
           <CapPitchBanner />
-          <main className="space-y-5">{children}</main>
+          <main className="space-y-5">
+            <Suspense fallback={<RouteFallback />}>
+              <Outlet />
+            </Suspense>
+          </main>
         </div>
       </div>
     </div>

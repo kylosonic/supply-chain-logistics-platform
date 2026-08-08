@@ -2,7 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Layout } from './components/Layout';
+import { Layout, RouteFallback } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
@@ -18,14 +18,6 @@ const ProvidersPage = lazy(() => import('./pages/ProvidersPage').then((m) => ({ 
 const ReceiptsPage = lazy(() => import('./pages/ReceiptsPage').then((m) => ({ default: m.ReceiptsPage })));
 const AdminReceiptsPage = lazy(() => import('./pages/AdminReceiptsPage').then((m) => ({ default: m.AdminReceiptsPage })));
 
-function RouteFallback() {
-  return (
-    <div className="fp-nested-surface px-5 py-5 text-sm text-slate-400">
-      Loading workspace surface...
-    </div>
-  );
-}
-
 export default function App() {
   return (
     <ErrorBoundary>
@@ -34,115 +26,28 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
+          {/* TECH-72: ONE layout route with an auth-only gate — unauthenticated
+              users redirect to /login before the shell can mount (decision 1);
+              every child keeps its own role-gated ProtectedRoute. */}
           <Route
             path="/"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <DashboardPage />
-                </Layout>
+                <Layout />
               </ProtectedRoute>
             }
-          />
-
-          <Route
-            path="/routes"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}>
-                <Layout>
-                  <RoutesPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/upload"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operator']}>
-                <Layout>
-                  <UploadPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/shipments"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}>
-                <Layout>
-                  <ShipmentsPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/alerts"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}>
-                <Layout>
-                  <AlertsPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/planning"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}>
-                <Layout>
-                  <PlanningPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/account"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}>
-                <Layout>
-                  <AccountPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/providers"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'owner', 'operator']}>
-                <Layout>
-                  <ProvidersPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/receipts"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'owner', 'operator', 'viewer']}>
-                <Layout>
-                  <ReceiptsPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin/receipts"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'owner']}>
-                <Layout>
-                  <AdminReceiptsPage />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route index element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/routes" element={<ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}><RoutesPage /></ProtectedRoute>} />
+            <Route path="/upload" element={<ProtectedRoute allowedRoles={['admin', 'operator']}><UploadPage /></ProtectedRoute>} />
+            <Route path="/shipments" element={<ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}><ShipmentsPage /></ProtectedRoute>} />
+            <Route path="/alerts" element={<ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}><AlertsPage /></ProtectedRoute>} />
+            <Route path="/planning" element={<ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}><PlanningPage /></ProtectedRoute>} />
+            <Route path="/account" element={<ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}><AccountPage /></ProtectedRoute>} />
+            <Route path="/providers" element={<ProtectedRoute allowedRoles={['admin', 'owner', 'operator']}><ProvidersPage /></ProtectedRoute>} />
+            <Route path="/receipts" element={<ProtectedRoute allowedRoles={['admin', 'owner', 'operator', 'viewer']}><ReceiptsPage /></ProtectedRoute>} />
+            <Route path="/admin/receipts" element={<ProtectedRoute allowedRoles={['admin', 'owner']}><AdminReceiptsPage /></ProtectedRoute>} />
+          </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

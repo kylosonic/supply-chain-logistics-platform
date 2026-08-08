@@ -8,14 +8,12 @@ import { RouteSchedulesTable } from '../components/RouteSchedulesTable';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { useAuth } from '../context/AuthContext';
 import { useActivationState } from '../hooks/queries';
-import { useLiveUpdates } from '../hooks/useLiveUpdates';
+import { useLivePayloadStream } from '../hooks/useLiveUpdates';
 import { getRouteOptimizationHistory, getRouteSchedules, getWeatherRiskZones } from '../services/logisticsApi';
 import type { RouteOptimizationRunSummary, RouteOptimizeResponse, RouteScheduleSummary, RouteStop, WeatherRiskZone } from '../types/api';
 
 export function RoutesPage() {
-  const { getToken, user } = useAuth();
   const activationQ = useActivationState();
   const [schedules, setSchedules] = useState<RouteScheduleSummary[]>([]);
   const [history, setHistory] = useState<RouteOptimizationRunSummary[]>([]);
@@ -50,9 +48,12 @@ export function RoutesPage() {
     loadSchedules();
   }, []);
 
-  useLiveUpdates({ getToken, enabled: Boolean(user), onMessage: (payload) => {
+  // TECH-73: the shared session stream replaces this page's own socket — the
+  // listener fires ONLY on new publishes (never on mount), so mount freshness
+  // stays with loadSchedules() above (blueprint decision 9).
+  useLivePayloadStream((payload) => {
     setSchedules(payload.route_summaries);
-  }});
+  });
 
   async function handleRefresh() {
     setIsRefreshing(true);
