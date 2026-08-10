@@ -639,6 +639,225 @@ Source behavior doc: [`console-login-color-fidelity.md`](./console-login-color-f
 
 ---
 
+## Feature: Production Security Hardening
+
+Source behavior doc: [`production-security-hardening.md`](./production-security-hardening.md)
+
+Locked by human confirmation 2026-08-10. Execution batch: `feat/security-hardening-v1` (dispatched by @architect).
+
+### NB-63 — No environment can boot with a known placeholder secret — [NOT IMPLEMENTED]
+- **Priority:** P0
+- **Feature area:** Deployment secrets, startup guards
+- **Acceptance criteria:**
+  1. When the platform starts in a non-development environment with a `JWT_SECRET_KEY` or `PROVIDER_KEY_ENCRYPTION_SECRET` that matches any committed placeholder value, startup aborts with an error naming the offending variable.
+  2. When a secret is shorter than the 32-char minimum in a non-dev environment, startup aborts (existing guard preserved).
+  3. No committed file (`.env.example`, `docker-compose.yml`, docs) contains a placeholder secret long enough to pass the length guards — placeholder files ship empty values plus instructions.
+  4. The Postgres container is not reachable from outside its host by default (loopback binding), and `POSTGRES_PASSWORD` has no default value.
+  5. Any environment that may have been deployed from defaults has its JWT and provider-encryption secrets rotated; the rotation is documented in the ledger.
+
+### NB-64 — Every operator sees only their own company's data — everywhere — [NOT IMPLEMENTED]
+- **Priority:** P0
+- **Feature area:** Tenant isolation, ops surfaces
+- **Acceptance criteria:**
+  1. An operator of Organization A sees only Organization A rows on every surface: shipments, alerts, ops feeds/timeline, forecast, planning, invoices, dock appointments, live updates, and ingestion responses.
+  2. Live WebSocket updates deliver only the subscriber's own organization's data.
+  3. Cross-tenant access (guessing another org's record id) returns 404, never 403 and never data — existence is never leaked.
+  4. Write endpoints (telematics, IoT telemetry, alert/shipment creation, route persistence) stamp and enforce the caller's organization.
+  5. A two-org regression suite proves isolation with overlapping identifiers (same warehouse code, same SKU, same shipment number).
+  6. Any surface that must remain global sits behind a role that no customer signup can reach.
+
+### NB-65 — The feedback surface cannot be abused — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Feedback, public write surface
+- **Acceptance criteria:**
+  1. Submitting feedback requires a signed-in user; anonymous submissions are rejected with a clear message.
+  2. If public feedback is kept as a product requirement instead, a single visitor can submit at most 3 messages per hour (per IP) and a honeypot control rejects bots.
+  3. The operator feedback queue contains only real, bounded input — no endpoint accepts unlimited anonymous writes.
+
+### NB-66 — The product ships no known-vulnerable dependency versions — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Dependency posture (site, console, desktop)
+- **Acceptance criteria:**
+  1. The site runs on a Next.js version that still receives security patches (>=15.5.21 or 16.2.11); the upgrade is completed before any further self-hosted deployment.
+  2. The console uses axios >=1.18.0.
+  3. The desktop runs on a supported Electron major with the official checklist applied (navigation guard, permission handler, DevTools gated behind `!app.isPackaged`, `@electron/fuses`).
+  4. After each upgrade: full test suites, typecheck, and production builds pass; live surfaces behave identically for operators.
+
+### NB-67 — Supabase auth can never be wired up unsafe — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Supabase auth configuration
+- **Acceptance criteria:**
+  1. If the Supabase project is wired to any signup flow again, its auth config is hardened first: email confirmations enabled, minimum password length 8 with complexity requirements, secure password change enabled, CAPTCHA enabled, and dashboard settings (rate limits, SMTP sender, session timebox) reviewed.
+  2. If the legacy auth path is permanently retired instead, the `supabase/` directory is removed or marked retired in the ledger so the landmine cannot be re-armed by accident.
+
+### NB-68 — The first visitor can never become the platform admin — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Bootstrap admin, registration
+- **Acceptance criteria:**
+  1. Open registration can never produce a global admin.
+  2. The bootstrap-admin convention works only behind an explicit one-time environment flag that must be removed after first boot, or is replaced by an admin-invite flow.
+  3. A database reset or failed migration can never turn the next visitor into the platform administrator.
+
+### NB-69 — No account enumeration — [NOT IMPLEMENTED]
+- **Priority:** P2
+- **Feature area:** Signup/login responses
+- **Acceptance criteria:**
+  1. Signup and login conflicts return a generic message identical across cases ("That username/email cannot be used") with uniform timing.
+  2. No response reveals whether an account exists.
+
+### NB-70 — Console and upload hardening — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** CSP, upload limits, dependency locking, Docker posture
+- **Acceptance criteria:**
+  1. The ops console serves a Content-Security-Policy (nginx and Vercel): `default-src 'self'`, strict `script-src`, `object-src 'none'`, `frame-ancestors 'none'`, with `style-src 'unsafe-inline'` only where the map library requires it.
+  2. CSV uploads above the cap (e.g., 10 MB) are rejected with a clear in-product error; the API never reads unbounded uploads.
+  3. Python dependencies are locked (committed lockfile, frozen installs in CI/images) and a dependency vulnerability scan runs in CI.
+  4. Docker: Postgres binds to loopback only, no default password, and the backend requires explicit production secrets.
+
+### NB-71 — Low-severity tidy — [NOT IMPLEMENTED]
+- **Priority:** P2
+- **Feature area:** Token revocation, health endpoint, headers, housekeeping
+- **Acceptance criteria:**
+  1. Token revocation for high-privilege roles is documented (denylist/version claim tradeoff recorded).
+  2. `testserver` is removed from default allowed hosts.
+  3. `env` is dropped from the public `/health` response.
+  4. Receipt file responses carry `Content-Disposition: attachment`.
+  5. The dead `PASSWORD_SALT` env var is removed.
+  6. npm workspace hoisting is repaired (clean `npm ci` works).
+  7. postcss is bumped (build-time nanoid advisory closed).
+  8. Electron IPC handlers validate `sender`/`senderFrame`.
+
+---
+
+## Feature: Launch Readiness Completion
+
+Source behavior doc: [`launch-readiness-completion.md`](./launch-readiness-completion.md)
+
+Locked by human confirmation 2026-08-10. Execution batch: `feat/launch-readiness-v1` (dispatched by @architect after the security batch).
+
+### NB-72 — The launch funnel works end-to-end from the real domain — [NOT IMPLEMENTED]
+- **Priority:** P0
+- **Feature area:** Live launch verification
+- **Acceptance criteria:**
+  1. A visitor starting from the production site address completes signup with zero security-blocked requests, CORS errors, or host-rejection errors, and lands in the console with an authenticated session and a sample-data-seeded workspace.
+  2. The first route optimization runs successfully on the sample data (activation milestone 6).
+  3. The flow is verified from both official web addresses.
+  4. The production CORS allowlist and allowed-hosts values are the verified production values, and regression tests pin them.
+
+### NB-73 — No false rate-limit errors on launch day — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Rate limits, launch funnel
+- **Acceptance criteria:**
+  1. A burst of signups from the same office network (shared NAT) produces no false 429 errors for legitimate users.
+  2. Legitimate per-user abuse limits (login brute-force, signup spam) remain in force.
+  3. The final rate-limit values are documented in the ledger.
+
+### NB-74 — The funnel is observable — privacy-light — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Analytics, error monitoring
+- **Acceptance criteria:**
+  1. The site records pageviews and "Start free" clicks with a privacy-light, no-fingerprinting approach, loaded `defer`/lazy, with no ad networks.
+  2. Launch-form errors are observable via error monitoring (at minimum the signup form).
+  3. Honesty rules (NB-43/NB-44) are unchanged; analytics never fabricates proof.
+
+### NB-75 — The desktop installs and updates from the real product — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Desktop packaging
+- **Acceptance criteria:**
+  1. The desktop ships as a signed Windows installer (electron-builder NSIS) pointing at production URLs — no end-user environment variables required.
+  2. A clean-VM smoke test passes: install → onboarding → connectivity test against production → launch console → login.
+  3. Updates flow through a real release feed; version bumped to 1.0.0 with release notes.
+  4. The packaged app re-verifies the Electron security posture (context isolation on, node integration off, external links open in the browser).
+
+### NB-76 — Production data can be restored — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Backup and restore
+- **Acceptance criteria:**
+  1. The production backup strategy is documented and a restore drill executes on a scratch database, proving the data comes back intact.
+  2. The sample-data seeding path (workspace reset) works in production.
+  3. The drill result is recorded in the ledger as evidence.
+
+### NB-77 — CI gates the release — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** CI/CD
+- **Acceptance criteria:**
+  1. The deploy pipeline runs: full backend tests, console tests + typecheck + production build, site tests + `check:bundle` weight gate + production build, plus dependency vulnerability scans.
+  2. A red gate blocks the affected Vercel deploy (or is otherwise impossible to ignore).
+
+### NB-78 — Documentation and legacy artifacts match the shipped product — [NOT IMPLEMENTED]
+- **Priority:** P2
+- **Feature area:** Docs hygiene
+- **Acceptance criteria:**
+  1. The stale competitive-landscape document is rewritten against the shipped site or deleted — it no longer contradicts the honesty rules.
+  2. The legacy `supabase/` directory is retired or documented as history (per NB-67).
+  3. Housekeeping: dead `@supabase/supabase-js` dependency and unused `.back-to-top` CSS removed.
+
+### NB-79 — The human verification gate is closed or explicitly recorded — [NOT IMPLEMENTED]
+- **Priority:** P0 (human gate)
+- **Feature area:** Fee-schedule verification (NB-22 / TECH-22)
+- **Acceptance criteria:**
+  1. The CBE and Dashen fee schedules for transfers in the 5,000–50,000 ETB range are verified by a human against the ±1,000 ETB tolerance, and the finding is documented in `cashflow-bank-transfer-receipt-verification.md` §12.
+  2. If the gate cannot be closed, the production launch decision explicitly records the deferral with the risk stated.
+  3. This is a human action, not a code ticket; the system's job is to make the decision visible and recorded.
+
+---
+
+## Feature: Swarm Operating Health & v1.1 Growth Candidates
+
+Source behavior doc: [`swarm-health-and-growth-candidates.md`](./swarm-health-and-growth-candidates.md)
+
+Locked by human confirmation 2026-08-10. Execution batch: `feat/swarm-health-growth-v1` (dispatched by @architect after the security and launch-readiness batches).
+
+### NB-80 — The swarm state file exists and is current — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Swarm operating system (process)
+- **Acceptance criteria:**
+  1. `docs/swarm/STATE.md` exists and records: current phase, active feature branch, open TECH tickets, completed/failed gates, retry counts, unresolved risks, artifact paths, and last verification evidence.
+  2. The architect updates it at every gate transition; stale state is a defect.
+
+### NB-81 — No merge without recorded human UAT — [NOT IMPLEMENTED]
+- **Priority:** P1
+- **Feature area:** Merge protocol (process)
+- **Acceptance criteria:**
+  1. Every merged batch's closeout records explicit human UAT approval (what was checked, by whom, when) in the ledger before merge to `master`.
+  2. A batch whose ledger says "awaiting human UAT" is never merged until the approval entry exists.
+  3. This applies from the next merged batch onward, including the security-hardening and launch-readiness batches.
+
+### NB-82 — Deployment topology is a recorded decision — [NOT IMPLEMENTED]
+- **Priority:** P2
+- **Feature area:** Deployment architecture (process)
+- **Acceptance criteria:**
+  1. The Supabase-as-Postgres vs. VPS-Postgres decision is resolved and recorded as an ADR, including retirement notes for the path not taken.
+  2. No deployment documentation contradicts the ADR.
+
+### NB-83 — Owners can invite teammates — [NOT IMPLEMENTED]
+- **Priority:** P2 (v1.1 candidate)
+- **Feature area:** Team membership
+- **Acceptance criteria:**
+  1. An owner/admin sees an "Invite teammate" action on the account page; entering a teammate's email invites them with a role assignment.
+  2. The invited person signs in and operates inside the same workspace with exactly the assigned role (owner / admin / operator / viewer).
+  3. An invite can never grant a global role, and a viewer invite can never write.
+  4. The owner sees who is in the workspace and can change roles or remove a member.
+  5. Acceptance and removal are reflected in the member's next session without a full reload.
+
+### NB-84 — Phone-on-file state is visible before it matters — [NOT IMPLEMENTED]
+- **Priority:** P2 (v1.1 candidate)
+- **Feature area:** Escalation SMS readiness (NB-16)
+- **Acceptance criteria:**
+  1. The account page shows whether a contact phone is on file for the workspace.
+  2. When no phone is on file, a clear non-dismissible warning appears on the receipts/escalation surface: "No phone on file — escalation messages cannot reach you by SMS. Add a phone in Account."
+  3. When a phone is added, the warning disappears and the escalation path (NB-16) works end to end.
+
+### NB-85 — Route decisions are explainable — [NOT IMPLEMENTED]
+- **Priority:** P2 (v1.1 candidate)
+- **Feature area:** Route optimization explainability
+- **Acceptance criteria:**
+  1. After a route optimization completes, the operator can open a per-run "why this route" summary stating, in plain language, the dominant factors (distance / time / cost / capacity / weather-risk weighting) and the runner-up alternative.
+  2. The summary is derived from the actual run inputs, never fabricated; if no meaningful explanation exists, the surface says so honestly.
+  3. The explanation surface loads within the existing weight and performance budgets.
+
+---
+
 ## Open items deferred to later features
 
 These are explicitly out of scope of v1 but noted here so they are not lost:
@@ -660,3 +879,5 @@ These are explicitly out of scope of v1 but noted here so they are not lost:
 All `NB-01` through `NB-22` (cashflow), `NB-25` through `NB-35` (activation), and `NB-36` through `NB-46` (site) tickets above (`P0` and `P1`) must be `@qa`-verified against the user-acceptance criteria. `P2` tickets (`NB-23`, `NB-24`, `NB-47`) can ship later but must ship before public launch.
 
 The `NB-48` through `NB-53` (live launch) tickets are `P0` and must be `@qa`-verified against their user-acceptance criteria before the launch flow is considered operational.
+
+The `NB-63` through `NB-71` (production security hardening) tickets are `P0/P1/P2` and must be `@qa`-verified against their user-acceptance criteria before any real customer data is onboarded. The `NB-72` through `NB-79` (launch readiness completion) tickets must be verified before public launch (NB-79 is a human gate, not code). The `NB-80` through `NB-85` (swarm health + growth candidates) tickets are process/v1.1 items tracked for the post-launch backlog.
