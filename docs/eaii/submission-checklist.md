@@ -70,6 +70,11 @@ Tested signed-out:  [ ] yes   Date tested: ____________
 The script is written for **4:10** (requirement is 3–5 minutes) with a fast 3:45 cut and a full 4:45
 cut. Do the pre-flight checklist in that file before you hit record.
 
+**Visual reference:** https://freightpilot-eaii.vercel.app/product/ — eight captures of the running
+console in the same order as the demo beats, so you know what each screen should look like on
+camera. If you would rather not demo the product live, screen-record that tour page instead; the
+script still works.
+
 **Export settings:** 1080p, H.264 MP4, under 500 MB.
 
 ### B2. Option 1 — YouTube (Unlisted)

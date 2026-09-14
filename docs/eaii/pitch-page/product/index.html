@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FreightPilot — Product Tour (EAII)</title>
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  :root { --ink:#070c16; --line:#2a3a58; --text:#e8eef9; --muted:#9fb0cc; --accent:#38bdf8; --card:#131d30; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: radial-gradient(1100px 560px at 12% -6%, #14243d 0%, var(--ink) 58%);
+    color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  header { padding: 44px 0 26px; border-bottom: 1px solid var(--line); }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .mark { width:38px; height:38px; border-radius:10px; display:grid; place-items:center;
+    background: linear-gradient(140deg, var(--accent), #22d3ee); color:#04121f; font-weight:800; font-size:14px; }
+  .brand-name { font-weight:700; letter-spacing:.14em; font-size:11.5px; color:var(--muted); }
+  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--accent); margin-bottom:12px; }
+  h1 { font-size: clamp(24px, 3.6vw, 36px); line-height:1.14; letter-spacing:-.02em; font-weight:800; }
+  header p { margin-top:12px; color:var(--muted); font-size:16px; max-width:76ch; }
+  .note { margin-top:16px; border-left:3px solid var(--accent); background:rgba(56,189,248,.07);
+    border-radius:0 10px 10px 0; padding:13px 18px; color:var(--muted); font-size:14.5px; }
+  .note strong { color:var(--text); }
+  main { padding: 34px 0 60px; }
+  .shot { margin-bottom: 40px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card); }
+  .shot .cap { padding:15px 20px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap;
+    gap:6px 14px; align-items:baseline; }
+  .shot .cap h2 { font-size:16.5px; font-weight:700; }
+  .shot .cap span { font-size:13px; color:var(--muted); }
+  .shot img { display:block; width:100%; height:auto; }
+  .back { display:inline-block; margin-top:8px; color:var(--accent); text-decoration:none; font-weight:600; font-size:14.5px; }
+  .back:hover { text-decoration:underline; }
+  footer { border-top:1px solid var(--line); padding:26px 0 50px; color:var(--muted); font-size:13.5px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark">FP</div>
+      <div class="brand-name">FREIGHTPILOT · OPERATIONS PLATFORM</div>
+    </div>
+    <div class="eyebrow">Product Tour · EAII Second-Round Screening</div>
+    <h1>The operations console, captured from the running product.</h1>
+    <p>
+      Every screen below is a capture of the live console against a newly created company workspace —
+      the same workspace the launch-funnel verification creates. The figures are real output, not
+      mock-ups: seeded sample data on arrival, then a persisted route plan, a shipment, and a
+      replenishment plan created through the product's own endpoints.
+    </p>
+    <div class="note">
+      <strong>Use these in the pitch video.</strong> The script in
+      <code>docs/eaii/pitch-video-script.md</code> walks the same paths in the same order, so these
+      images show the recording's presenter exactly what each beat should look like on screen.
+      <a class="back" href="./">← Back to the submission page</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <figure class="shot">
+    <div class="cap"><h2>Control-tower login</h2><span>Company email and workspace password · no desktop install</span></div>
+    <img src="./shots/00-login.png" alt="FreightPilot control-tower login screen" loading="lazy" />
+  </figure>
+
+  <figure class="shot">
+    <div class="cap"><h2>Operations command surface</h2><span>Exception queue · workspace readiness · usage posture</span></div>
+    <img src="./shots/01-dashboard.png" alt="FreightPilot operations dashboard with KPIs and exception queue" loading="lazy" />
+  </figure>
+
+  <figure class="shot">
+    <div class="cap"><h2>Route studio</h2><span>Weighted optimisation · persisted schedules · spatial review</span></div>
+    <img src="./shots/02-route-studio.png" alt="FreightPilot route studio with saved schedule and map" loading="lazy" />
+  </figure>
+
+  <figure class="shot">
+    <div class="cap"><h2>Shipment execution</h2><span>Lifecycle states · delay reasons · proof of delivery</span></div>
+    <img src="./shots/03-shipments.png" alt="FreightPilot shipment execution surface" loading="lazy" />
+  </figure>
+
+  <figure class="shot">
+    <div class="cap"><h2>Replenishment planning</h2><span>Forecast-driven suggestions · approval workflow</span></div>
+    <img src="./shots/04-planning.png" alt="FreightPilot replenishment planning approval queue" loading="lazy" />
+  </figure>
+
+  <figure class="shot">
+    <div class="cap"><h2>Exception queue</h2><span>Alerts · acknowledge / resolve / escalate · audit trail</span></div>
+    <img src="./shots/05-alerts.png" alt="FreightPilot exception and alert queue" loading="lazy" />
+  </figure>
+
+  <figure class="shot">
+    <div class="cap"><h2>Operational data intake</h2><span>Five CSV categories · sample vs your data, stated plainly</span></div>
+    <img src="./shots/06-upload.png" alt="FreightPilot CSV upload surface showing sample and real data categories" loading="lazy" />
+  </figure>
+
+  <figure class="shot">
+    <div class="cap"><h2>Workspace, billing and providers</h2><span>Subscription tier · usage · BYOK provider keys</span></div>
+    <img src="./shots/07-account.png" alt="FreightPilot account and billing surface" loading="lazy" />
+  </figure>
+</main>
+
+<footer>
+  <div class="wrap">
+    Captured from the FreightPilot operations console running against the platform API with a
+    freshly created demo workspace. <a class="back" href="./">← Back to the submission page</a>
+  </div>
+</footer>
+</body>
+</html>

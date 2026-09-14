@@ -21,6 +21,11 @@
 
 ## Pre-flight checklist (10 minutes)
 
+**Visual reference:** https://freightpilot-eaii.vercel.app/product/ — eight captures of the running
+console, in the same order as the demo beats below. Look at these before recording so you know what
+each screen should show. If you would rather not demo live, you can screen-record the product tour
+page instead and the script still works.
+
 | # | Check | Why |
 |---|---|---|
 | 1 | Close Slack, mail, and any tab with personal data. Notifications appear on camera. | Professionalism |

@@ -73,7 +73,8 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | Launch funnel (local, real HTTP) | ✅ PASS | **22/22** — `.artifacts/nb72-funnel-verification.log` |
 | NB-64 two-org isolation | ✅ PASS | 12 tests in `tests/test_tenant_isolation_operations.py`; cross-tenant reads 404 |
 | Docker compose validity | ✅ PASS | `docker compose config --quiet` exits 0 |
-| EAII submission package produced | ✅ PASS | `docs/eaii/` (deck PDF + PPTX, video script, availability, checklist); live page https://freightpilot-eaii.vercel.app verified anonymously (200 on `/`, `/deck.pdf` 7 pages, `/deck.pptx`, `/weekly-availability.pdf`) |
+| EAII submission package produced | ✅ PASS | `docs/eaii/` (deck PDF + PPTX, video script, availability, checklist, 8 product captures); live page https://freightpilot-eaii.vercel.app verified anonymously — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, `/product/` 200 with all 8 screenshots 200 |
+| Product screenshots captured from the running console | ✅ PASS | 8 captures at 1600×1000 in `docs/eaii/product-shots/` and on the product tour page. Taken through the real login form against the live API, showing a persisted route plan, shipment, replenishment plan and exception queue — not mock-ups |
 
 ## 5. Failed Gates
 
@@ -126,7 +127,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | Product web | `Test Files 10 passed (10) / Tests 62 passed (62)`; Next 15 build: 10 static routes |
 | Launch funnel | `22 passed, 0 failed (of 22)` — first route plan 21.07 km / 31.61 ETB; cross-tenant read 404 |
 | Live API surface | 81 endpoints (`/openapi.json`) |
-| EAII pitch page | https://freightpilot-eaii.vercel.app — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, all fetched with no credentials |
+| EAII pitch page | https://freightpilot-eaii.vercel.app — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, `/product/` 200, all 8 product screenshots 200, every fetch with no credentials |
 | Production `/health` | `{"status":"degraded","db":"unavailable"}` — the open blocker |
 
 ## 10. Rollout / Rollback Note
