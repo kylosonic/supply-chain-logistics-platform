@@ -5,7 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc, select, text
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles, require_writable_workspace
+from app.api.security import (
+    actor_organization_id,
+    order_by_organization_first,
+    organization_scoped_get,
+    require_roles,
+    require_writable_workspace,
+    resolve_scoped_organization,
+    scoped_to_organization,
+)
 from app.core.config import settings
 from app.core.observability import app_metrics
 from app.db.session import get_db
@@ -44,9 +52,12 @@ def metrics(_: User = Depends(require_roles(UserRole.ADMIN))) -> dict:
 def audit_timeline(
     limit: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    rows = db.execute(select(AuditEvent).order_by(desc(AuditEvent.created_at)).limit(limit)).scalars().all()
+    # NB-64 (audit H-1): the audit trail holds operator emails and phone-masked
+    # payloads, so it must never leak across tenants.
+    stmt = scoped_to_organization(select(AuditEvent), AuditEvent, actor_organization_id(actor, db))
+    rows = db.execute(stmt.order_by(desc(AuditEvent.created_at)).limit(limit)).scalars().all()
     return rows
 
 
@@ -54,29 +65,36 @@ def audit_timeline(
 def exception_feed(
     limit: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
+    organization_id = actor_organization_id(actor, db)
+
+    alert_stmt = scoped_to_organization(
+        select(Alert).where(Alert.status.in_(['open', 'acknowledged'])), Alert, organization_id
+    )
     alerts = db.execute(
-        select(Alert)
-        .where(Alert.status.in_(['open', 'acknowledged']))
-        .order_by(desc(Alert.created_at))
-        .limit(limit)
+        alert_stmt.order_by(desc(Alert.created_at)).limit(limit)
     ).scalars().all()
 
-    pending_plans = db.execute(
+    plan_stmt = scoped_to_organization(
         select(ReplenishmentPlan, Warehouse.code, Item.sku)
         .join(Warehouse, Warehouse.id == ReplenishmentPlan.warehouse_id)
         .join(Item, Item.id == ReplenishmentPlan.item_id)
-        .where(ReplenishmentPlan.status == 'pending_approval')
-        .order_by(desc(ReplenishmentPlan.created_at))
-        .limit(limit)
+        .where(ReplenishmentPlan.status == 'pending_approval'),
+        ReplenishmentPlan,
+        organization_id,
+    )
+    pending_plans = db.execute(
+        plan_stmt.order_by(desc(ReplenishmentPlan.created_at)).limit(limit)
     ).all()
 
+    run_stmt = scoped_to_organization(
+        select(RouteOptimizationRun).where(RouteOptimizationRun.unassigned_count > 0),
+        RouteOptimizationRun,
+        organization_id,
+    )
     route_runs = db.execute(
-        select(RouteOptimizationRun)
-        .where(RouteOptimizationRun.unassigned_count > 0)
-        .order_by(desc(RouteOptimizationRun.created_at))
-        .limit(limit)
+        run_stmt.order_by(desc(RouteOptimizationRun.created_at)).limit(limit)
     ).scalars().all()
 
     items: list[ExceptionFeedItem] = [
@@ -137,7 +155,10 @@ def exception_feed(
 
     items.sort(key=lambda item: item.created_at, reverse=True)
 
-    delayed_shipments = db.execute(select(Shipment).where(Shipment.status == 'delayed')).scalars().all()
+    delayed_stmt = scoped_to_organization(
+        select(Shipment).where(Shipment.status == 'delayed'), Shipment, organization_id
+    )
+    delayed_shipments = db.execute(delayed_stmt).scalars().all()
 
     return ExceptionFeedResponse(
         summary=ExceptionFeedSummary(
@@ -154,21 +175,39 @@ def exception_feed(
 def update_live_eta(
     payload: DockAppointmentPayload,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+    organization_id = resolve_scoped_organization(actor, writable)
 
-    appointment = db.execute(
-        select(DockAppointment).where(
-            DockAppointment.warehouse_id == payload.warehouse_id,
-            DockAppointment.truck_id == payload.truck_id,
-            DockAppointment.status.in_(['scheduled', 'rescheduled'])
-        )
-    ).scalar_one_or_none()
+    # NB-64: the warehouse being updated must belong to the caller's tenant,
+    # otherwise an operator could rewrite another company's dock schedule.
+    warehouse = organization_scoped_get(
+        db,
+        Warehouse,
+        payload.warehouse_id,
+        organization_id,
+        not_found_detail='Warehouse not found',
+    )
+
+    appointment_stmt = order_by_organization_first(
+        scoped_to_organization(
+            select(DockAppointment).where(
+                DockAppointment.warehouse_id == warehouse.id,
+                DockAppointment.truck_id == payload.truck_id,
+                DockAppointment.status.in_(['scheduled', 'rescheduled']),
+            ),
+            DockAppointment,
+            organization_id,
+        ),
+        DockAppointment,
+    )
+    appointment = db.execute(appointment_stmt).scalars().first()
 
     if not appointment:
         appointment = DockAppointment(
-            warehouse_id=payload.warehouse_id,
+            organization_id=organization_id or warehouse.organization_id,
+            warehouse_id=warehouse.id,
             truck_id=payload.truck_id,
             status='scheduled',
             scheduled_time=payload.expected_time,
@@ -193,7 +232,10 @@ def update_live_eta(
 @router.get('/dock-appointments', response_model=list[DockAppointmentResponse])
 def get_dock_appointments(
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    rows = db.execute(select(DockAppointment).order_by(DockAppointment.scheduled_time)).scalars().all()
+    stmt = scoped_to_organization(
+        select(DockAppointment), DockAppointment, actor_organization_id(actor, db)
+    )
+    rows = db.execute(stmt.order_by(DockAppointment.scheduled_time)).scalars().all()
     return rows

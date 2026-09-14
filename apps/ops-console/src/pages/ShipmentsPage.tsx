@@ -7,6 +7,7 @@ import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { createShipment, listShipments, updateShipmentStatus } from '../services/logisticsApi';
 import type { Shipment, ShipmentStatus } from '../types/api';
+import { apiErrorMessage } from '../services/authErrors';
 
 const statusTransitions: ShipmentStatus[] = ['in_transit', 'delayed', 'delivered', 'cancelled'];
 
@@ -91,8 +92,8 @@ export function ShipmentsPage() {
       setError(null);
       const rows = await listShipments();
       setShipments(rows);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to load shipments');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to load shipments'));
     } finally {
       setLoading(false);
     }
@@ -116,8 +117,8 @@ export function ShipmentsPage() {
         quantity_units: 1,
       });
       await loadShipments();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to create shipment');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to create shipment'));
     } finally {
       setCreating(false);
     }
@@ -133,8 +134,8 @@ export function ShipmentsPage() {
       setError(null);
       await updateShipmentStatus(shipment.id, payload);
       await loadShipments();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to update shipment status');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to update shipment status'));
     }
   }
 
@@ -144,8 +145,8 @@ export function ShipmentsPage() {
       setError(null);
       await updateShipmentStatus(delayDialog.shipment.id, { status: 'delayed', delay_reason: reason });
       await loadShipments();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to update shipment status');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to update shipment status'));
     } finally {
       setDelayDialog(null);
     }

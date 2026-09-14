@@ -5,6 +5,7 @@ import { Panel } from './ui/Panel';
 import { StatusBadge } from './ui/StatusBadge';
 import { optimizeRoute } from '../services/logisticsApi';
 import type { RouteOptimizeResponse } from '../types/api';
+import { apiErrorMessage } from '../services/authErrors';
 
 export function RouteOptimizerForm({
   onOptimized,
@@ -63,8 +64,8 @@ export function RouteOptimizerForm({
       onOptimized?.(response);
       // NB-30.4: m6/activation state reflects without a page reload.
       queryClient.invalidateQueries({ queryKey: ['activation'] });
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err.message || 'Failed to optimize route');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to optimize route'));
     } finally {
       setIsSubmitting(false);
     }

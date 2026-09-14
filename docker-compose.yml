@@ -6,9 +6,9 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-supply_chain}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -27,11 +27,11 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-supply_chain}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-supply_chain}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-120}
-      PROVIDER_KEY_ENCRYPTION_SECRET: ${PROVIDER_KEY_ENCRYPTION_SECRET:-change-me-provider-key-secret-min-32-chars!}
+      PROVIDER_KEY_ENCRYPTION_SECRET: ${PROVIDER_KEY_ENCRYPTION_SECRET:?PROVIDER_KEY_ENCRYPTION_SECRET must be set}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:5173,http://localhost:3000,http://localhost:5174,http://localhost:8081,http://127.0.0.1:3000,http://127.0.0.1:5174,http://127.0.0.1:8081}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,testserver}
       APP_ENV: ${APP_ENV:-production}

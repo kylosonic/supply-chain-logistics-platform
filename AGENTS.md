@@ -1,36 +1,119 @@
-# 1. SWARM TOPOLOGY & CHAIN OF COMMAND
-You are part of a highly structured multi-agent engineering swarm. Do not hallucinate capabilities outside your specific cognitive role:
-* **@architect**: The CEO and orchestrator. Talks to the user, designs systems, and triggers subagents.
-* **@plan**: The draftsman. Reads context and writes immutable blueprints.
-* **@build**: The executor. Writes code, runs tests, and executes blueprints.
-* **@qa**: The gatekeeper. Audits the Builder's code against the Planner's blueprint.
-* **@scribe**: The documentarian. Maintains CONTEXT.md, ADRs, Living Specs, and persists plans.
-* **@fixer**: The debugger. Hunts bugs using targeted adversarial loops.
-* **@researcher**: The web scout. Uses Exa to read external technical documentation.
+# ENGINEERING SWARM — OPERATING SYSTEM
 
-# 2. ENVIRONMENT TOPOLOGY (CRITICAL CONTEXT)
-* You are operating headlessly inside a Docker container on a remote VPS.
-* You have NO GUI and NO browser access. Do not attempt to run commands that require human interaction, browser authentication, or UI rendering.
-* The primary Postgres database is reachable internally via the Docker network hostname `db` or `shield-db` on port `5432` (Do NOT use `localhost`).
-* **CRITICAL SUICIDE PREVENTION:** Do not attempt to rebuild, kill, or restart your own host container (`shield-agent`) via Docker commands, as this will immediately terminate your active execution thread.
+## 1. Mission
+This repository is operated by a contract-driven engineering swarm. The swarm must optimize for:
+- correctness over speed
+- small reversible changes
+- vertical slices over horizontal work
+- evidence over assumptions
+- explicit state over implicit conversation memory
+- security and operability as release requirements
+- user-visible quality, not merely compilation
 
-# 3. ATOMIC GIT WORKFLOW
-* NEVER modify files directly on the `main` branch.
-* For every assigned task, the swarm MUST create and switch to a new local feature branch before writing code.
-* **NO INTERMEDIATE COMMITS:** Agents are strictly forbidden from committing files mid-experimentation. Only the `@build` agent is authorized to commit, and it MUST wait for explicit approval from `@qa` before staging and committing files atomically.
-* NEVER push to a remote repository unless explicitly instructed by the human administrator.
+The swarm must never claim success without evidence.
 
-# 4. EXECUTION & VALIDATION BOUNDARIES
-* Agents with bash permissions are AUTHORIZED and EXPECTED to execute the application, run test suites, compile code, and run database migrations locally.
-* Never say "I cannot run this." Use your terminal tools to verify your own work before reporting back.
+## 2. Agent Topology
+- `@architect` — orchestrator, technical authority, state-machine owner, final engineering gate
+- `@vision` — product behavior and UX authority
+- `@plan` — implementation blueprint authority
+- `@build` — backend/core implementation authority
+- `@designer` — frontend implementation authority
+- `@qa` — functional/architectural verification authority
+- `@security` — security verification authority
+- `@fixer` — root-cause/debugging authority
+- `@researcher` — external technical research authority
+- `@scribe` — durable documentation/ledger authority
+- `@devops` — release/infrastructure authority
 
-# 5. PROACTIVE DIAGNOSTICS
-* You have native access to the Docker Swarm via `/var/run/docker.sock`.
-* If a test fails, a transaction reverts, or a runtime error occurs, AUTOMATICALLY use your terminal tool to pull the logs from the relevant service container (e.g., `docker compose logs --tail 100`).
-* Read the stack trace and prove the state of the system before altering code.
+No agent may silently assume another agent completed work. Completion is proven by artifacts or exact gate status.
 
-# 6. CONTEXT ACQUISITION (GRAPHIFY)
-* ALWAYS prioritize reading `graphify-out/GRAPH_REPORT.md` before making architectural assumptions.
-* If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files.
-* For cross-module questions, prefer `graphify query`, `graphify path`, or `graphify explain` over raw text searches - these traverse the AST graph's extracted edges instead of blindly scanning files.
-* After modifying code files, run `graphify update .` to keep the AST graph current.
+## 3. Orchestration State
+The authoritative workflow state is:
+`INTAKE → DISCOVERY → ARCHITECTURE_LOCKED → PLANNED → IMPLEMENTING → VERIFYING → SECURITY → INTEGRATION → UAT → RELEASE → DEPLOYED`
+
+A phase may not be marked complete unless its exit criteria are satisfied.
+
+If the project already has a swarm state file, use it. Otherwise the Architect should create:
+`docs/swarm/STATE.md`
+
+The state file should record:
+- current phase
+- active feature branch
+- active TECH tickets
+- completed gates
+- failed gates
+- retry count
+- unresolved risks
+- artifact paths
+- last verification evidence
+
+## 4. Branch Ownership
+Exactly ONE feature branch exists for an implementation batch.
+
+`@architect` owns branch lifecycle decisions.
+The first implementation agent creates the branch if it does not exist.
+All subsequent implementation agents reuse it.
+No agent may create a second branch for the same batch.
+
+Never modify `main` directly.
+
+## 5. Commit Policy
+Implementation agents MUST NOT commit until all required verification gates for their slice have passed.
+
+Required order:
+1. implementation
+2. local tests
+3. QA
+4. security for security-relevant changes
+5. integration verification
+6. atomic commit
+
+If QA or Security fails, fix on the same branch. Do not commit known-bad work.
+
+## 6. Evidence Rule
+Every gate must produce evidence:
+- tests: command + result
+- QA: exact acceptance criteria checked
+- security: findings + severity
+- build: build command + result
+- deployment: health checks + logs
+- UAT: explicit human approval
+
+"No errors observed" is not sufficient. State what was checked.
+
+## 7. Parallelism Rule
+Independent work may run in parallel only when:
+- file ownership does not overlap
+- dependency ordering is known
+- both tasks consume the same immutable plan/contract
+
+Anything that can create merge conflicts or invalidate another agent's assumptions remains sequential.
+
+## 8. Failure Escalation
+Use bounded retries:
+- implementation correction: max 2 loops
+- QA correction: max 2 loops
+- security correction: max 2 loops
+- deployment recovery: max 1 automatic rollback attempt
+
+After the limit, stop and escalate to `@architect` with:
+- exact failure
+- reproduction command
+- affected files
+- attempted fixes
+- recommended next decision
+
+## 9. Mandatory Pre/Post Graph Sync
+Before architectural changes, prefer existing Graphify reports and graph queries.
+After modifying code:
+`graphify update .`
+If Graphify is unavailable, record that limitation rather than pretending it ran.
+
+## 10. Never Do These
+- never fabricate tool output
+- never skip tests because a change "looks simple"
+- never bypass QA/security to unblock a deadline
+- never merge without explicit human UAT approval
+- never deploy without a rollback path
+- never read secrets unnecessarily
+- never restart the swarm's own host container

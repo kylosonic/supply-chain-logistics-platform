@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import type { DockAppointment } from '../services/logisticsApi';
 
 interface Props {

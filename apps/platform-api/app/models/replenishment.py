@@ -12,6 +12,11 @@ from app.db.custom_types import UUIDType
 class ReplenishmentPlan(UUIDTimestampMixin, Base):
     __tablename__ = 'replenishment_plans'
 
+    # NB-64 (audit H-1): tenant scoping. Nullable for legacy rows created
+    # before org scoping; backfilled in migration 20260811_0019.
+    organization_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True
+    )
     warehouse_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('warehouses.id', ondelete='CASCADE'), nullable=False, index=True)
     item_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('items.id', ondelete='CASCADE'), nullable=False, index=True)
     horizon_weeks: Mapped[int] = mapped_column(Integer, default=4, nullable=False)

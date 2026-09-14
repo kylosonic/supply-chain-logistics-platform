@@ -1,3 +1,12 @@
+/** Any JSON value as it arrives from the server (no `any` on the wire). */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 export type InventoryOverviewRow = {
   warehouse_code: string;
   warehouse_name: string;
@@ -142,7 +151,12 @@ export type Alert = {
   resolved_by_user_id: string | null;
   resolved_at: string | null;
   resolution_note: string | null;
-  payload?: { rerouting_plan?: any; [key: string]: any } | null;
+  /**
+   * Server-computed extras attached to an alert. The re-routing plan is the
+   * only member the console reads; it is an opaque server payload, so it is
+   * typed as a recursive JSON value rather than `any` (NB-77 lint gate).
+   */
+  payload?: { rerouting_plan?: JsonValue; [key: string]: JsonValue | undefined } | null;
 };
 
 export type ReplenishmentPlanStatus = 'pending_approval' | 'approved' | 'rejected';

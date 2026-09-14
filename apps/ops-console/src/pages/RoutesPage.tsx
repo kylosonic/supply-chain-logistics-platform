@@ -12,6 +12,7 @@ import { useActivationState } from '../hooks/queries';
 import { useLivePayloadStream } from '../hooks/useLiveUpdates';
 import { getRouteOptimizationHistory, getRouteSchedules, getWeatherRiskZones } from '../services/logisticsApi';
 import type { RouteOptimizationRunSummary, RouteOptimizeResponse, RouteScheduleSummary, RouteStop, WeatherRiskZone } from '../types/api';
+import { apiErrorMessage } from '../services/authErrors';
 
 export function RoutesPage() {
   const activationQ = useActivationState();
@@ -39,8 +40,8 @@ export function RoutesPage() {
       setSchedules(scheduleData);
       setHistory(historyData);
       setRiskZones(riskData);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err.message || 'Failed to load route schedules');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to load route schedules'));
     }
   }
 

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FreightPilot — EAII Second-Round Submission</title>
+<meta name="description" content="FreightPilot pitch deck, pitch video, and weekly availability for the EAII AI Startup Support Program, second-round screening." />
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  :root {
+    --ink: #070c16;
+    --ink-2: #0d1524;
+    --card: #131d30;
+    --line: #2a3a58;
+    --text: #e8eef9;
+    --muted: #9fb0cc;
+    --accent: #38bdf8;
+    --accent-2: #22d3ee;
+    --good: #34d399;
+    --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: radial-gradient(1200px 600px at 15% -5%, #14243d 0%, var(--ink) 55%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+  header { padding: 52px 0 34px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+  .mark {
+    width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+    background: linear-gradient(140deg, var(--accent), var(--accent-2));
+    color: #04121f; font-weight: 800; font-size: 15px; letter-spacing: -0.02em;
+  }
+  .brand-name { font-weight: 700; letter-spacing: 0.14em; font-size: 12px; color: var(--muted); }
+  .eyebrow {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 14px;
+  }
+  h1 { font-size: clamp(28px, 4.4vw, 44px); line-height: 1.1; letter-spacing: -0.02em; font-weight: 800; }
+  header p.lede { margin-top: 16px; font-size: 17px; color: var(--muted); max-width: 68ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .pill {
+    font-size: 11.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); background: rgba(19,29,48,0.6);
+  }
+  .pill.good { color: var(--good); border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.08); }
+  .pill.acc { color: var(--accent); border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.08); }
+  section { padding: 44px 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: none; }
+  h2 { font-size: 23px; font-weight: 800; letter-spacing: -0.015em; margin-bottom: 8px; }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 10px; }
+  .section-note { color: var(--muted); font-size: 14.5px; margin-bottom: 22px; max-width: 74ch; }
+  .grid { display: grid; gap: 18px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .g4 { grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); }
+  .card {
+    background: linear-gradient(165deg, rgba(19,29,48,0.95), rgba(11,18,32,0.95));
+    border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px;
+  }
+  .card h3 { font-size: 15.5px; margin-bottom: 10px; font-weight: 700; }
+  .card p { color: var(--muted); font-size: 14.5px; }
+  .card p + p { margin-top: 9px; }
+  ul { list-style: none; }
+  li { color: var(--muted); font-size: 14.5px; padding-left: 20px; position: relative; margin-bottom: 9px; }
+  li::before {
+    content: ""; position: absolute; left: 0; top: 9px; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--accent);
+  }
+  li strong, .card strong { color: var(--text); }
+  .metric { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .metric-label { font-size: 12.5px; color: var(--muted); margin-top: 5px; line-height: 1.4; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+  a.btn {
+    display: inline-flex; align-items: center; gap: 9px; text-decoration: none;
+    padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 14.5px;
+    border: 1px solid var(--line); color: var(--text); background: rgba(19,29,48,0.8);
+    transition: border-color 140ms ease, transform 140ms ease;
+  }
+  a.btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+  a.btn.primary {
+    background: linear-gradient(140deg, var(--accent), var(--accent-2));
+    color: #04121f; border-color: transparent;
+  }
+  .deckframe {
+    margin-top: 22px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    background: #0b1220;
+  }
+  .deckframe iframe { width: 100%; height: 640px; border: 0; display: block; }
+  .vidframe {
+    margin-top: 20px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    background: #0b1220; aspect-ratio: 16 / 9; position: relative;
+  }
+  .vidframe iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .vidframe .placeholder {
+    position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+    padding: 30px; color: var(--muted); font-size: 14.5px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  th {
+    text-align: left; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); padding: 9px 12px; border-bottom: 1px solid var(--line); font-weight: 700;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(42,58,88,0.5); color: var(--muted); vertical-align: top; }
+  td strong { color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  .honest {
+    border-left: 3px solid var(--warn); background: rgba(251,191,36,0.06);
+    border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 20px;
+  }
+  .honest h3 { color: var(--warn); font-size: 14px; margin-bottom: 8px; }
+  .honest li::before { background: var(--warn); }
+  .evidence { border-left: 3px solid var(--good); background: rgba(52,211,153,0.06);
+    border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 20px; }
+  .evidence h3 { color: var(--good); font-size: 14px; margin-bottom: 8px; }
+  .evidence li::before { background: var(--good); }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px;
+    background: rgba(34,211,238,0.09); color: var(--accent-2); padding: 2px 6px; border-radius: 5px;
+  }
+  footer { padding: 34px 0 56px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 24px; }
+  .toc a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+  .toc a:hover { color: var(--accent); }
+  @media (max-width: 720px) { .deckframe iframe { height: 420px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark">FP</div>
+      <div class="brand-name">FREIGHTPILOT · OPERATIONS PLATFORM</div>
+    </div>
+    <div class="eyebrow">EAII Second-Round Screening Submission</div>
+    <h1>FreightPilot — logistics operations control for Ethiopian operators.</h1>
+    <p class="lede">
+      One operator surface that takes a logistics team from signup to a planned, monitored and
+      reconciled day: route optimisation, exception handling, operational data intake, and
+      bank-transfer receipt reconciliation, with every surface scoped to one company.
+    </p>
+    <div class="meta">
+      <span class="pill acc">Founder: FreightPilot</span>
+      <span class="pill">Submitted for the AI Startup Support Program</span>
+      <span class="pill good">Pitch deck · Pitch video · Weekly availability</span>
+    </div>
+    <div class="toc">
+      <a href="#deck">Pitch deck</a>
+      <a href="#video">Pitch video</a>
+      <a href="#availability">Weekly availability</a>
+      <a href="#status">Product status</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ DECK ============ -->
+<section id="deck">
+  <div class="wrap">
+    <h2><span class="num">01</span>Pitch Deck</h2>
+    <p class="section-note">
+      Seven slides covering all ten required sections: Problem, Solution, Market Opportunity,
+      Traction, Business Model, Go-to-Market, Competition, Core Team &amp; Advisors, Financial
+      Projection, and The Ask.
+    </p>
+    <div class="btnrow">
+      <a class="btn primary" href="./deck.pdf" target="_blank" rel="noopener">Open the deck (PDF)</a>
+      <a class="btn" href="./deck.pptx" download>Download editable PowerPoint</a>
+      <a class="btn" href="./deck.pdf" download>Download PDF</a>
+    </div>
+    <div class="deckframe">
+      <iframe src="./deck.pdf#view=FitH" title="FreightPilot EAII pitch deck (7 slides)"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VIDEO ============ -->
+<section id="video">
+  <div class="wrap">
+    <h2><span class="num">02</span>Pitch Video</h2>
+    <p class="section-note">
+      A 4-minute product-led pitch: the problem in the operator's own terms, a live walkthrough from
+      signup to a real route plan, the cashflow reconciliation layer, and the security and
+      multi-tenant work behind the product.
+    </p>
+    <div class="btnrow">
+      <a class="btn primary" href="__VIDEO_URL__" target="_blank" rel="noopener">Watch the pitch video</a>
+    </div>
+    <div class="vidframe">
+      <div class="placeholder">
+        Paste the pitch video link into the button above.<br />
+        <span style="font-size:13px;opacity:.8">
+          Replace <code>__VIDEO_URL__</code> in this page, or use the video link submitted in the form.
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AVAILABILITY ============ -->
+<section id="availability">
+  <div class="wrap">
+    <h2><span class="num">03</span>Weekly Availability</h2>
+    <p class="section-note">
+      The program requires a minimum of three days per week for its full 4–6 month duration.
+      Stated commitment, including the working grid and what the time will be spent on:
+    </p>
+    <div class="grid g4">
+      <div class="card"><div class="metric">5</div><div class="metric-label">days per week committed (Mon–Fri)</div></div>
+      <div class="card"><div class="metric">40</div><div class="metric-label">hours per week, 09:00–17:00 EAT core</div></div>
+      <div class="card"><div class="metric">4–6</div><div class="metric-label">months — full program duration</div></div>
+      <div class="card"><div class="metric">+2</div><div class="metric-label">days above the three-day minimum</div></div>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h3>Declaration</h3>
+      <p>
+        I confirm availability for the full duration of the AI Startup Support Program at a minimum
+        of three days per week, and I am committing <strong>five days per week (Monday–Friday)</strong>
+        — above the stated minimum. I will attend scheduled program sessions, mentor meetings and
+        cohort activities throughout, and will give at least 48 hours' notice of any unavoidable
+        change.
+      </p>
+      <p style="margin-top:12px">
+        <strong>Time allocation:</strong> 40% customer discovery and design-partner onboarding ·
+        25% go-to-market and pricing validation · 20% product iteration ·
+        10% fundraising readiness · 5% closing the open cashflow verification gate.
+      </p>
+    </div>
+    <div class="btnrow">
+      <a class="btn" href="./weekly-availability.pdf" target="_blank" rel="noopener">Full availability statement (PDF)</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STATUS ============ -->
+<section id="status">
+  <div class="wrap">
+    <h2><span class="num">04</span>What is built, and what is not</h2>
+    <p class="section-note">
+      Every figure below is reproducible from the repository and the running platform. Where
+      something is unfinished, it is listed as unfinished.
+    </p>
+
+    <div class="grid g4">
+      <div class="card"><div class="metric">81</div><div class="metric-label">live API endpoints</div></div>
+      <div class="card"><div class="metric">604</div><div class="metric-label">automated tests passing</div></div>
+      <div class="card"><div class="metric">19</div><div class="metric-label">database migrations</div></div>
+      <div class="card"><div class="metric">22/22</div><div class="metric-label">launch-funnel steps verified end to end</div></div>
+    </div>
+
+    <div class="grid g2" style="margin-top:18px">
+      <div class="card">
+        <h3>Working and verified</h3>
+        <ul>
+          <li><strong>Signup to first route plan.</strong> A new company workspace is created, seeded with sample operational data, and the first optimisation returns a real plan — <strong>21.07 km, 31.61 ETB</strong> — persisted to run history.</li>
+          <li><strong>Multi-tenant isolation.</strong> A second organisation cannot list, read or mutate the first organisation's rows. Cross-tenant reads answer <code>404</code>, never <code>403</code>, so record existence is never leaked. Pinned by a two-organisation regression suite.</li>
+          <li><strong>Cashflow operations.</strong> Receipt ingestion, invoice matching, wallet credits, disputes, and reversals that are themselves audited and undoable.</li>
+          <li><strong>Commercial controls.</strong> Subscription tiers, server-side usage metering with threshold events at 80%, 100% and overage, and bring-your-own-key provider management with encrypted storage.</li>
+          <li><strong>Release discipline.</strong> Hash-verified dependency lockfiles, and CI running tests, lint, type-check, production builds and dependency audits on every push.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Engineering posture</h3>
+        <ul>
+          <li><strong>Security audit completed and remediated.</strong> An independent audit found one critical and six high findings — including a committed placeholder signing key and a cross-tenant authorisation gap. All are remediated, with the remediation pinned by tests.</li>
+          <li><strong>Four deployable surfaces.</strong> FastAPI platform API, React operations console, Next.js product site, and an Electron desktop shell.</li>
+          <li><strong>Zero known critical or high advisories</strong> in the deployed dependency set.</li>
+          <li><strong>~20,000 lines</strong> across backend and frontend, with a contract-driven build: behaviour written first, then implementation, then verification.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="honest">
+      <h3>Stated plainly — what is not finished</h3>
+      <ul>
+        <li><strong>Pre-revenue.</strong> There are no paying customers yet. The product is built and verified; commercial validation is what this program is for.</li>
+        <li><strong>The hosted production database needs its credentials reissued.</strong> The platform code and schema are verified working end to end; the hosted environment's database connection is the outstanding item before the public site accepts signups again.</li>
+        <li><strong>No signed desktop installer yet.</strong> The Electron shell runs from source; a signed, auto-updating installer is planned work.</li>
+        <li><strong>One open human verification gate.</strong> Confirming CBE and Dashen transfer fee schedules in the 5,000–50,000 ETB band against a ±1,000 ETB tolerance. This blocks <em>paid</em> launch, not the product.</li>
+      </ul>
+    </div>
+
+    <div class="evidence">
+      <h3>Verification evidence available on request</h3>
+      <ul>
+        <li>Automated test run: 399 backend tests passing on the exact locked dependency set; 143 console and 62 website tests passing.</li>
+        <li>Launch-funnel verification log: 22 of 22 steps, including the produced route plan and a cross-tenant <code>404</code>.</li>
+        <li>Security audit report with each finding and its remediation status.</li>
+        <li>Repository history with the behaviour, plan, implementation and verification commits for each change.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>
+      FreightPilot — EAII AI Startup Support Program, second-round screening submission.
+      Pitch deck, pitch video and weekly availability are provided on this page and in the
+      submission form.
+    </p>
+    <p style="margin-top:10px">
+      Links on this page are set to be viewable by anyone with the link.
+      Contact: <a href="mailto:founder@freightpilot.example">founder@freightpilot.example</a>
+      <!-- Replace the address above with the real submission contact before sharing. -->
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

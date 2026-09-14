@@ -21,7 +21,7 @@ const sessionMock = (() => {
 })();
 
 const localMock = (() => {
-  let store: Record<string, string> = {};
+  const store: Record<string, string> = {};
   return {
     getItem: (k: string) => store[k] ?? null,
     setItem: (k: string, v: string) => { store[k] = String(v); },

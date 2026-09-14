@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useActivationState } from '../hooks/queries';
+import { apiErrorMessage } from '../services/authErrors';
 import {
   uploadFleetAssetsCsv,
   uploadInventoryCsv,
@@ -89,10 +90,10 @@ export function CsvUploadPanel() {
         }));
         // NB-30.4: milestone state reflects without a page reload.
         queryClient.invalidateQueries({ queryKey: ['activation'] });
-    } catch (err: any) {
+    } catch (err) {
         setResults((prev) => ({
           ...prev,
-          [kind]: `${kind} import failed: ${err?.response?.data?.detail || err.message}`,
+          [kind]: `${kind} import failed: ${apiErrorMessage(err, 'import failed')}`,
         }));
     } finally {
         setActiveKind(null);

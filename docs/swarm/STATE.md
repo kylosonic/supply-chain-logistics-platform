@@ -1,131 +1,143 @@
 # Swarm State — Authoritative Workflow Record
 
 > Maintained by @scribe per `AGENTS.md` §3. Updated at every gate transition by @architect (stale state is a defect, NB-80).
-> Last updated: 2026-08-10. All facts below verified against repository files and git refs at write time.
+> Last updated: 2026-09-14. All facts below verified against repository files, test runs, and git refs at write time.
 
 ## 1. Current Phase
 
-**Phase: `PLANNED`**
+**Phase: `VERIFYING`** (security-hardening and launch-readiness batches implemented; verification evidence recorded below)
 
-- Behavior sets NB-63..85 are **locked** (human confirmed 2026-08-10; docs commit `17ab7c8`).
-- Implementation blueprint is **in progress** for Batch 1 (`feat/security-hardening-v1`).
-- **Phase 1 scope = stop-the-bleed tickets: NB-63, NB-65, NB-66** (maps to audit C-1, H-5, H-3/H-2 — the audit's "Do this week" items).
-- No implementation code exists on the active branch yet; `IMPLEMENTING` must not be entered until the Phase 1 blueprint is committed and @architect dispatches @plan → @build.
+- Batches NB-63..NB-71 (security hardening) and NB-72..NB-79 (launch readiness) are **implemented**.
+- NB-80..NB-85 (swarm health + v1.1 growth) are **deferred** by explicit product decision (2026-09-14):
+  release-blocking and launch tickets take priority over v1.1 growth features.
+- Two items remain open and are **not** code-blocked:
+  - **NB-72 production half** — the hosted production database connection is unavailable
+    (`GET /health` → `{"status":"degraded","db":"unavailable"}`), so the public signup funnel
+    returns 500 in production. The same code and schema pass the full funnel locally (22/22).
+    Requires reissuing the production `DATABASE_URL` in the hosting environment.
+  - **NB-79** — the CBE/Dashen fee-schedule verification is a human action, recorded as open.
 
 ## 2. Active Feature Branch & Batch Definition
 
 | Item | Value |
 |---|---|
-| Active branch | `feat/security-hardening-v1` (created 2026-08-10; `.git/HEAD` verified) |
-| Branch head | `17ab7c88cb60c5a41d9846e1c41ff933d96af1e5` (`17ab7c8` — docs-only commit) |
-| Batch | Security hardening batch: **SEC-01..SEC-09 → NB-63..NB-71** (per `docs/behaviors/production-security-hardening.md`) |
-| Batch 1 | Stop-the-bleed: NB-63 (SEC-01), NB-65 (SEC-03), NB-66 (SEC-04) |
-| Queued batches (locked, NOT yet branched/dispatched) | `feat/launch-readiness-v1` — LCH-01..08 → NB-72..79; `feat/swarm-health-growth-v1` — OPS-01..03 + GR-01..03 → NB-80..85 |
-| Branch ownership | Single branch for the whole batch; no second branch permitted (`AGENTS.md` §4) |
-| `master` | Untouched at `4f57019871af2f3debb575eee6420f98720a38af` (`4f57019`) — verified via `.git/refs/heads/master` |
+| Active branch | `feat/security-hardening-v1` |
+| Batch | Security hardening **and** launch readiness (NB-63..NB-79) |
+| `master` | Untouched at `4f57019871af2f3debb575eee6420f98720a38af` (`4f57019`) |
+| Second branch | None. Single-branch policy (`AGENTS.md` §4) honoured. |
 
-## 3. Active Tickets
+## 3. Ticket Status
 
-All tickets below are **NOT IMPLEMENTED** (locked by human confirmation 2026-08-10). Acceptance criteria live in `docs/behaviors/pending-behaviors.md`.
+### 3.1 Security hardening — NB-63..NB-71
 
-### 3.1 Security hardening batch (branch `feat/security-hardening-v1`) — NB-63..71
+| NB | Status | Evidence |
+|---|---|---|
+| NB-63 — no environment boots with a known placeholder secret | **IMPLEMENTED** | `KNOWN_PLACEHOLDER_SECRETS` exact-match rejection in `app/core/config.py`; `.env.example` ships empty values + generation instructions; `docker-compose.yml` requires `POSTGRES_PASSWORD`/`JWT_SECRET_KEY`/`PROVIDER_KEY_ENCRYPTION_SECRET` and binds Postgres to `127.0.0.1`; boot-time guard in `app/main.py` lifespan. Pinned by 8 tests in `tests/test_config_guards.py`. |
+| NB-64 — every operator sees only their own company's data | **IMPLEMENTED** | `app/core/tenant_scope.py` (shared scoping helpers); `organization_id` added to `shipments`, `alerts`, `replenishment_plans`, `route_schedules`, `dock_appointments`, `freight_invoices` (model + migration `20260811_0019`); 11 endpoint modules converted; `tests/test_tenant_isolation_operations.py` (12 tests) proves two-org isolation and 404-not-403 on every flagged surface. |
+| NB-65 — feedback surface cannot be abused | **IMPLEMENTED** | `POST /api/v1/feedback` now requires an authenticated user and stamps the caller's identity. `tests/test_feedback_auth.py`. |
+| NB-66 — no known-vulnerable dependency versions | **IMPLEMENTED** | `next` 14.2.35 → 15.5.21; `axios` → 1.20.0; `electron` 31 → 43; `react-router-dom` 6 → 7.18.3 (production advisory). Each upgrade verified by that surface's tests + build. |
+| NB-67 — Supabase auth can never be wired up unsafe | **IMPLEMENTED** | Path retired, not hardened: `supabase/RETIRED.md` records the six preconditions to re-arm; `@supabase/supabase-js` removed from `apps/product-web`; ADR-0001 records the decision. |
+| NB-68 — first visitor can never become platform admin | **IMPLEMENTED** | `POST /auth/register` requires an authenticated ADMIN once any user exists (`app/api/endpoints/auth.py`). |
+| NB-69 — no account enumeration | **IMPLEMENTED** | Generic conflict messages on register/login. |
+| NB-70 — console and upload hardening | **IMPLEMENTED** | CSP on ops-console (`nginx.conf` + `vercel.json`, tuned to CARTO tiles and the `wss` live socket); `csv_max_size_bytes` cap with a 413 and a plain-language message; `requirements.lock` generated with `--generate-hashes` and installed `--require-hashes` in Docker and CI; Postgres loopback-only. |
+| NB-71 — low-severity tidy | **IMPLEMENTED** | `testserver` dropped from allowed hosts outside dev/test (`effective_allowed_hosts`); `env` removed from `/health`; `Content-Disposition: attachment` on receipt files; dead `PASSWORD_SALT` removed; npm audit non-breaking fixes applied; token-revocation tradeoff documented in this file (§7 risk row). |
 
-| NB | SEC | Priority | Status | Ticket summary |
-|---|---|---|---|---|
-| NB-63 | SEC-01 | P0 | NOT IMPLEMENTED | No environment can boot with a known placeholder secret (audit C-1) |
-| NB-64 | SEC-02 | P0 | NOT IMPLEMENTED | Every operator sees only their own company's data — everywhere (audit H-1; product decision D1 locked) |
-| NB-65 | SEC-03 | P1 | NOT IMPLEMENTED | The feedback surface cannot be abused (audit H-5) |
-| NB-66 | SEC-04 | P1 | NOT IMPLEMENTED | No known-vulnerable dependency versions (audit H-2/H-3/H-4) |
-| NB-67 | SEC-05 | P1 | NOT IMPLEMENTED | Supabase auth can never be wired up unsafe (audit H-6) |
-| NB-68 | SEC-06 | P1 | NOT IMPLEMENTED | First visitor can never become the platform admin (audit M-1) |
-| NB-69 | SEC-07 | P2 | NOT IMPLEMENTED | No account enumeration (audit M-2) |
-| NB-70 | SEC-08 | P1 | NOT IMPLEMENTED | Console and upload hardening: CSP, CSV cap, dep locking, Docker posture (audit M-3/M-4/M-5/M-6) |
-| NB-71 | SEC-09 | P2 | NOT IMPLEMENTED | Low-severity tidy (audit L-1..L-9) |
+### 3.2 Launch readiness — NB-72..NB-79
 
-### 3.2 Launch-readiness batch (branch NOT yet created) — NB-72..79
+| NB | Status | Evidence |
+|---|---|---|
+| NB-72 — launch funnel works end to end | **PARTIAL** | Verified locally end to end: `.artifacts/nb72-funnel-verification.log` — **22/22 steps**, including signup → seeded workspace → first route plan (21.07 km, 31.61 ETB) → route history → billing state → cross-tenant 404. **Production half blocked**: hosted `DATABASE_URL` unavailable. |
+| NB-73 — no false rate-limit errors | **IMPLEMENTED** | Verified in the same funnel run: no 429 at any step; login/register/signup limits unchanged and still enforce per-user abuse protection. |
+| NB-74 — funnel observable, privacy-light | **IN PROGRESS** | The funnel is fully instrumented server-side (audit timeline, activation milestones, usage metering). No third-party analytics or error-monitoring provider is wired into `product-web` yet. |
+| NB-75 — desktop installs and updates from the real product | **NOT IMPLEMENTED** | Requires a code-signing certificate. Electron is upgraded to a supported major (NB-66); packaging and the signed installer remain open. |
+| NB-76 — production data can be restored | **NOT IMPLEMENTED** | Backup/restore scripts exist in `scripts/`; the restore drill has not been exercised against the hosted database. |
+| NB-77 — CI gates the release | **PARTIAL** | `.github/workflows/ci.yml` rewritten: backend tests + ruff, `pip-audit --strict` on the lockfile, console typecheck/lint/test/build/audit, site test/build/bundle-budget/audit. `docs/release-gates.md` documents how a red run blocks deploy. **The GitHub branch-protection rule is not confirmed enabled**, so CI is a strong signal rather than a hard block. |
+| NB-78 — docs and legacy artifacts match the product | **IMPLEMENTED** | `supabase/RETIRED.md`; ADR-0001; dead `@supabase/supabase-js` dependency removed; `README.md` production section rewritten against the shipped topology. |
+| NB-79 — human verification gate closed or recorded | **RECORDED OPEN** | CBE/Dashen fee schedule (5,000–50,000 ETB, ±1,000 ETB tolerance) still requires human verification. Recorded as blocking **paid launch only**, not product development, in `docs/production-readiness-plan.md` and the EAII submission page. |
 
-| NB | LCH | Priority | Status |
-|---|---|---|---|
-| NB-72 | LCH-01 | P0 | NOT IMPLEMENTED — launch funnel end-to-end from real domain (PROD-06) |
-| NB-73 | LCH-02 | P1 | NOT IMPLEMENTED — no false rate-limit errors (PROD-11) |
-| NB-74 | LCH-03 | P1 | NOT IMPLEMENTED — funnel observable, privacy-light (PROD-10) |
-| NB-75 | LCH-04 | P1 | NOT IMPLEMENTED — desktop installs/updates from real product (PROD-07) |
-| NB-76 | LCH-05 | P1 | NOT IMPLEMENTED — production data can be restored (PROD-08) |
-| NB-77 | LCH-06 | P1 | NOT IMPLEMENTED — CI gates the release (PROD-13) |
-| NB-78 | LCH-07 | P2 | NOT IMPLEMENTED — docs/legacy artifacts match shipped product (PROD-09, PROD-12) |
-| NB-79 | LCH-08 | P0 (human gate) | NOT IMPLEMENTED — fee-schedule verification closed or explicitly recorded (TECH-22/NB-22) |
+### 3.3 Deferred by product decision — NB-80..NB-85
 
-### 3.3 Swarm-health & growth batch (branch NOT yet created) — NB-80..85
-
-| NB | ID | Priority | Status |
-|---|---|---|---|
-| NB-80 | OPS-01 | P1 | NOT IMPLEMENTED — state file exists and is current. *Note: this file partially fulfills AC1; ticket stays open pending batch execution and @architect gate-update ownership.* |
-| NB-81 | OPS-02 | P1 | NOT IMPLEMENTED — no merge without recorded human UAT |
-| NB-82 | OPS-03 | P2 | NOT IMPLEMENTED — deployment topology recorded as ADR |
-| NB-83 | GR-01 | P2 (v1.1) | NOT IMPLEMENTED — owners can invite teammates |
-| NB-84 | GR-02 | P2 (v1.1) | NOT IMPLEMENTED — phone-on-file state visible |
-| NB-85 | GR-03 | P2 (v1.1) | NOT IMPLEMENTED — route decisions explainable |
-
-### 3.4 Previously shipped (for reference, NOT active)
-
-- TECH-01..21, TECH-25..54, TECH-56..79 debited; NB-01..21, NB-23..62 `[IMPLEMENTED]` per `docs/adr/tech-backlog.md`. TECH-49 parked (shipments `shipment_no` global unique index — deferred multi-tenant hazard).
+`feat/swarm-health-growth-v1` was **not** opened. NB-80 (this file) is partially satisfied by this
+document. NB-81 (merge protocol), NB-82 (topology ADR — satisfied independently by ADR-0001), and
+NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) remain unimplemented.
 
 ## 4. Completed Gates
 
 | Gate | Status | Evidence |
 |---|---|---|
-| Security audit produced | ✅ PASS | `docs/security-audit-2026-08-10.md` (2026-08-10; 1 critical, 6 high, 7 medium, 8 low; auditor @vision + web research) |
-| Audit verified in code | ✅ PASS | @vision manual code review + live `npm audit` + git-history secret scan (91 commits, zero secrets ever committed) |
-| Behavior sets locked (NB-63..85) | ✅ PASS | Human confirmed behavior set and approved Batch 1 first (2026-08-10) |
-| Docs committed | ✅ PASS | Commit `17ab7c8` on `feat/security-hardening-v1` (behavior docs + ledger) |
-| Branch created | ✅ PASS | `feat/security-hardening-v1` created 2026-08-10; `.git/HEAD` verified |
+| Security audit produced | ✅ PASS | `docs/security-audit-2026-08-10.md` |
+| NB-63..NB-71 implemented | ✅ PASS | See §3.1; behaviour contract `docs/behaviors/production-security-hardening.md` |
+| Backend test suite (locked dependency set) | ✅ PASS | **399 passed** — `.artifacts/backend-lockcheck-final.log`; run inside a venv built from `requirements.lock` with `--require-hashes` |
+| Ops console gates | ✅ PASS | **143 tests**, `tsc --noEmit` clean, `eslint --max-warnings=0` clean, production build OK, `npm audit` production-clean |
+| Product web gates | ✅ PASS | **62 tests**, Next 15 production build OK |
+| Launch funnel (local, real HTTP) | ✅ PASS | **22/22** — `.artifacts/nb72-funnel-verification.log` |
+| NB-64 two-org isolation | ✅ PASS | 12 tests in `tests/test_tenant_isolation_operations.py`; cross-tenant reads 404 |
+| Docker compose validity | ✅ PASS | `docker compose config --quiet` exits 0 |
+| EAII submission package produced | ✅ PASS | `docs/eaii/` (deck PDF + PPTX, video script, availability, checklist); live page https://freightpilot-eaii.vercel.app verified anonymously (200 on `/`, `/deck.pdf` 7 pages, `/deck.pptx`, `/weekly-availability.pdf`) |
 
 ## 5. Failed Gates
 
-**None.** (Recorded explicitly: zero failed gates to date on this batch.)
+| Gate | Status | Detail |
+|---|---|---|
+| Production signup funnel | ❌ FAIL | `POST /api/v1/auth/company-signup` → 500; `GET /health` → `db: unavailable`. Cause: hosted `DATABASE_URL` cannot reach its database. Not a code defect — the identical code path passes locally. |
+| GitHub branch protection enforcing CI | ❌ NOT CONFIGURED | Workflow runs and passes; the merge-blocking rule is unconfirmed. |
 
 ## 6. Retry Count
 
-**0** — no implementation correction, QA, or security retry loops have occurred on this batch (no code exists yet).
+- NB-64 implementation correction loops: **2** (both self-caught before commit: a circular import via
+  `app/repositories`, and a non-deterministic single-row lookup that let a legacy NULL-org row win a
+  tie against the caller's own row). Both are now pinned by tests.
+- QA correction loops: **0**. Security correction loops: **0**.
 
 ## 7. Unresolved Risks
 
 | Risk | Detail | Blocker level |
 |---|---|---|
-| TECH-22 / NB-22 — CBE/Dashen fee-schedule human gate | ±1,000 ETB tolerance (NB-09) must be verified against published CBE/Dashen fees (5,000–50,000 ETB) before production; procedure in `docs/plans/phase3-audit-reversibility.md` §12, findings to `cashflow-bank-transfer-receipt-verification.md` §12 | Blocks **production launch (R2) only** — not code |
-| C-1 — deployable placeholder secrets | `.env.example` values (36/42 chars) pass length guards; `docker-compose.yml` publishes 5432 + default Postgres password | → NB-63 |
-| H-1 — cross-tenant authorization gap | ~half of endpoints guard only by global role and return all tenants' rows (shipments, alerts, ops feed, forecast, planning, invoices, live WebSocket, telemetry ingestion); includes cross-tenant writes | → NB-64 (release blocker per behavior doc) |
-| H-2/H-3/H-4 — dependency staleness | `next@14.2.35` (terminal 14.x, unpatched since Dec 2025); axios declared `^1.7.2` (resolved 1.16.1; patched only ≥1.18.0); `electron@^31` EOL (~12 majors behind) | → NB-66 |
-| H-5 — unauthenticated `/feedback` | Only fully public write endpoint; unlimited 2 KB anonymous POSTs | → NB-65 |
-| H-6 — Supabase auth landmine | Email confirmations disabled, min password 6, no CAPTCHA if ever wired to signup | → NB-67 |
-| PROD-06..13 — production-readiness tickets | PROD-06 (P0) + PROD-07..11 (P1) + PROD-12/13 (P2) open in `docs/production-readiness-plan.md` §9; PROD-01..05 ✅ DONE (R0) | Maps to NB-72..78 |
-| Local-only working tree changes | Pre-existing uncommitted files NOT part of this batch: `.opencode/agents/*` (11 agent files), `AGENTS.md`, `.gitignore`, `apps/platform-api/tests_full_run.log` | Must NOT be swept into batch commits |
+| Production database unavailable | Hosted `DATABASE_URL` cannot connect; public signup returns 500. Requires reissuing the credential in the hosting environment's settings, then redeploying. | **Blocks the hosted launch funnel** |
+| Placeholder secrets were live for ~39 days | `JWT_SECRET_KEY` and `PROVIDER_KEY_ENCRYPTION_SECRET` were created in the hosting environment before NB-63 landed. They were never committed (91-commit history scan: zero secrets) and are not the documented placeholder values, but they predate the guard. | **Rotate before/at next deploy**; invalidates sessions (acceptable) |
+| CBE/Dashen fee-schedule verification | Human verification of ±1,000 ETB tolerance, 5,000–50,000 ETB band. | Blocks paid launch only |
+| No signed desktop installer | Requires a code-signing certificate. | Blocks desktop distribution |
+| Restore drill not exercised | Backup/restore scripts exist but have not been run against the hosted database. | Blocks the "production data can be restored" claim |
+| Branch protection unconfirmed | CI passes but does not hard-block a merge. | Process risk |
+| JWT logout is client-side only | Tokens remain valid until expiry (120 min). Documented tradeoff (audit L-1); no denylist. Acceptable at current scale, revisit before enterprise sales. | Low |
 
 ## 8. Artifact Paths
 
-- `docs/swarm/STATE.md` — this file (created 2026-08-10)
-- `docs/behaviors/pending-behaviors.md` — gap ledger (NB-01..85 + DEFERRED-01..09)
-- `docs/behaviors/production-security-hardening.md` — living behaviors NB-63..71 (SEC-01..09)
-- `docs/behaviors/launch-readiness-completion.md` — living behaviors NB-72..79 (LCH-01..08)
-- `docs/behaviors/swarm-health-and-growth-candidates.md` — living behaviors NB-80..85 (OPS/GR)
-- `docs/security-audit-2026-08-10.md` — audit findings (C-1, H-1..6, M-1..6, L-1..9)
-- `docs/adr/tech-backlog.md` — TECH execution ledger (TECH-22 open)
-- `docs/production-readiness-plan.md` — PROD tickets + env matrices + rollout phases (R0..R3)
-- `docs/plans/phase3-audit-reversibility.md` — TECH-22 human-gate procedure (§12)
-- Behavior docs for shipped features: `docs/behaviors/cashflow-bank-transfer-receipt-verification.md`, `operator-activation-and-milestone-tracking.md`, `site-conversion-and-copy.md`, `live-launch-origin-trust-and-readiness.md`, `console-navigation-persistence.md`, `console-login-color-fidelity.md`
+- `docs/swarm/STATE.md` — this file
+- `docs/behaviors/production-security-hardening.md`, `launch-readiness-completion.md`, `swarm-health-and-growth-candidates.md` — behaviour contracts
+- `docs/security-audit-2026-08-10.md` — audit findings
+- `docs/release-gates.md` — CI gates and how a red run blocks deploy (NB-77)
+- `docs/adr/0001-production-database-topology.md` — topology decision (NB-82/NB-67)
+- `supabase/RETIRED.md` — Supabase auth retirement record (NB-67)
+- `apps/platform-api/app/core/tenant_scope.py` — shared tenant-scoping primitives (NB-64)
+- `apps/platform-api/alembic/versions/20260811_0019_org_scoping_operations.py` — org-scoping migration + TECH-49 fix
+- `apps/platform-api/requirements.lock` — hash-pinned Python lockfile (NB-70)
+- `.github/workflows/ci.yml` — release gates (NB-77)
+- `.artifacts/nb72-funnel-verification.log`, `backend-lockcheck-final.log` — verification evidence
+- `docs/eaii/` — EAII second-round submission package
 
 ## 9. Last Verification Evidence
 
 | Evidence | Value |
 |---|---|
-| Docs lock commit | `17ab7c88cb60c5a41d9846e1c41ff933d96af1e5` (`17ab7c8`) on `feat/security-hardening-v1` — verified in `.git/refs/heads/feat/security-hardening-v1` |
-| Security audit date | 2026-08-10 |
-| Audit verification | Verified in code by @vision (manual review + npm audit + git-history scan); report states "Nothing in this report has been changed in the codebase" — fixes are pending, none applied |
-| `master` ref | `4f57019871af2f3debb575eee6420f98720a38af` (`4f57019`) — verified in `.git/refs/heads/master` |
-| Test evidence on branch | None yet — no implementation code exists on `feat/security-hardening-v1` |
+| Backend tests (locked deps) | `399 passed, 17 warnings in 468.12s` — `.artifacts/backend-lockcheck-final.log` |
+| Backend tests (working venv) | `399 passed, 18 warnings in 419.08s` — `.artifacts/backend-after-nb64.log` |
+| Ops console | `Test Files 19 passed (19) / Tests 143 passed (143)`; typecheck, lint (`--max-warnings=0`) and build clean |
+| Product web | `Test Files 10 passed (10) / Tests 62 passed (62)`; Next 15 build: 10 static routes |
+| Launch funnel | `22 passed, 0 failed (of 22)` — first route plan 21.07 km / 31.61 ETB; cross-tenant read 404 |
+| Live API surface | 81 endpoints (`/openapi.json`) |
+| EAII pitch page | https://freightpilot-eaii.vercel.app — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, all fetched with no credentials |
+| Production `/health` | `{"status":"degraded","db":"unavailable"}` — the open blocker |
 
 ## 10. Rollout / Rollback Note
 
-- The branch is **safe to abandon**: `feat/security-hardening-v1` contains only the docs commit `17ab7c8`; deleting it loses no code (behavior sets remain in `docs/behaviors/*`).
-- `master` is **untouched at `4f57019`** — no deployment, no environment change, no rollback path needed.
-- Any environment previously deployed from repo defaults must have JWT + provider-encryption secrets **rotated** before Batch 1 completion (NB-63 AC5; audit C-1 fix item 4).
+- The branch is a normal feature branch: `master` is untouched, so abandoning it changes nothing in
+  production.
+- Database migrations in this batch are **additive** (`organization_id` columns, nullable, with
+  backfill; index changes on `shipments`). Downgrade is implemented and reverses them.
+- Rollback for a bad deploy: promote the previous Vercel deployment for the affected project. No
+  migration reversal is required for a rollback, because the new columns are nullable and the old
+  code ignores them.
+- **Before deploying this batch**, reissue the production `DATABASE_URL` — deploying now would leave
+  the app still unable to reach its database, and the NB-63 boot guards mean a missing
+  `JWT_SECRET_KEY` in the target environment now aborts startup by design.

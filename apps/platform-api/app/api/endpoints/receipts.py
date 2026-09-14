@@ -233,7 +233,16 @@ def receipt_queue_file(
     receipt = receipts_service.get_queue_item(db, receipt_id)
     if receipt is None:
         raise HTTPException(status_code=404, detail='Receipt not found')
-    return Response(content=receipt.file_data, media_type=receipt.content_type)
+    # NB-71 (audit L-4): the stored content_type is client-supplied. Force a
+    # download disposition so a crafted type can never be rendered in the
+    # console origin (nosniff is already set globally).
+    return Response(
+        content=receipt.file_data,
+        media_type=receipt.content_type,
+        headers={
+            'Content-Disposition': f'attachment; filename="{receipt.id}.bin"',
+        },
+    )
 
 
 @router.post('/{receipt_id}/decision', response_model=ReceiptRead)

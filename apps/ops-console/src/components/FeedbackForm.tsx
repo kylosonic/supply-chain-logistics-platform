@@ -14,7 +14,7 @@ export function FeedbackForm() {
       await submitFeedback({ category, message, user_email: email });
       setStatus('success');
       setMessage('');
-    } catch (err) {
+    } catch {
       setStatus('error');
     }
   };

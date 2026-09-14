@@ -142,3 +142,35 @@ def require_org_roles(*allowed: OrganizationRole):
         return membership
 
     return checker
+
+
+# ---------------------------------------------------------------------------
+# NB-64 — tenant scoping helpers (audit H-1)
+# ---------------------------------------------------------------------------
+# Implementation lives in ``app.core.tenant_scope`` so repositories can apply
+# the same filter without importing this FastAPI dependency module (which would
+# create a cycle via ``app.repositories``). Re-exported here because every
+# endpoint already imports its security dependencies from this module.
+from app.core.tenant_scope import (  # noqa: E402  (kept beside its consumers)
+    actor_organization_id,
+    order_by_organization_first,
+    organization_scoped_get,
+    resolve_scoped_organization,
+    scoped_to_organization,
+)
+
+__all__ = [
+    'actor_organization_id',
+    'bearer_scheme',
+    'get_current_membership',
+    'get_current_user',
+    'get_current_user_from_token',
+    'get_optional_membership',
+    'order_by_organization_first',
+    'organization_scoped_get',
+    'require_org_roles',
+    'require_roles',
+    'require_writable_workspace',
+    'resolve_scoped_organization',
+    'scoped_to_organization',
+]

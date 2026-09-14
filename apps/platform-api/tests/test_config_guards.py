@@ -113,6 +113,54 @@ def test_development_defaults_skip_guards():
     assert s.effective_database_url == 'sqlite+pysqlite:///:memory:'
 
 
+# --- NB-63: known-placeholder secret rejection (audit C-1) ------------------
+
+def test_production_rejects_known_jwt_placeholder():
+    """40-char committed .env.example placeholder must raise naming the var."""
+    s = _prod_settings(jwt_secret_key='change-me-in-production-minimum-32-bytes')
+    with pytest.raises(ValueError, match='JWT_SECRET_KEY'):
+        s.effective_jwt_secret_key
+
+
+def test_production_rejects_known_provider_placeholder():
+    """43-char committed provider placeholder must raise naming the var."""
+    s = _prod_settings(provider_key_encryption_secret='change-me-provider-key-secret-min-32-chars!')
+    with pytest.raises(ValueError, match='PROVIDER_KEY_ENCRYPTION_SECRET'):
+        s.effective_provider_key_encryption_secret
+
+
+def test_production_rejects_compose_jwt_fallback():
+    """23-char docker-compose fallback rejected exact-match (adjudication 6)."""
+    s = _prod_settings(jwt_secret_key='change-me-in-production')
+    with pytest.raises(ValueError, match='JWT_SECRET_KEY'):
+        s.effective_jwt_secret_key
+
+
+def test_production_rejects_dev_fallback_default():
+    """Copy-paste of the dev default into prod is also rejected."""
+    s = _prod_settings(jwt_secret_key='dev-secret-do-not-use-in-production-minimum-32')
+    with pytest.raises(ValueError, match='JWT_SECRET_KEY'):
+        s.effective_jwt_secret_key
+
+
+def test_production_accepts_novel_long_secret():
+    """A secret not in the placeholder set is a real secret decision."""
+    s = _prod_settings(jwt_secret_key='x' * 40)
+    assert s.effective_jwt_secret_key == 'x' * 40
+
+
+def test_development_placeholder_values_allowed():
+    """Dev defaults stay permissive (production-security-hardening.md:30)."""
+    s = Settings(
+        _env_file=None,
+        app_env='development',
+        jwt_secret_key='change-me-in-production-minimum-32-bytes',
+        provider_key_encryption_secret='change-me-provider-key-secret-min-32-chars!',
+    )
+    assert s.effective_jwt_secret_key == 'change-me-in-production-minimum-32-bytes'
+    assert s.effective_provider_key_encryption_secret == 'change-me-provider-key-secret-min-32-chars!'
+
+
 def test_fernet_binding_uses_effective_encryption_secret(monkeypatch):
     """The provider-key Fernet must seed from the PROD-05 effective property:
     a 32+ char production secret round-trips; a different secret cannot

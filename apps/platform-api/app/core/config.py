@@ -18,6 +18,17 @@ DEFAULT_CORS_ORIGINS = [
     'https://ops-console-azure.vercel.app',
 ]
 
+# NB-63 (audit C-1): every committed placeholder value that is long enough
+# to pass the length-only guards. Exact-match rejection only — a secret that
+# differs by a single character is a real secret decision
+# (production-security-hardening.md:30). Dev/test environments stay permissive.
+KNOWN_PLACEHOLDER_SECRETS = frozenset({
+    'change-me-in-production',                                # 23 — docker-compose legacy JWT fallback
+    'change-me-in-production-minimum-32-bytes',               # 40 — committed platform-api/.env.example value
+    'change-me-provider-key-secret-min-32-chars!',            # 43 — committed provider encryption placeholder
+    'dev-secret-do-not-use-in-production-minimum-32',         # 46 — dev fallback copy-pasted into prod
+})
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
@@ -33,6 +44,9 @@ class Settings(BaseSettings):
     allowed_hosts: Annotated[list[str], NoDecode] = [
         'localhost',
         '127.0.0.1',
+        # 'testserver' is required by Starlette's TestClient Host header and is
+        # never reachable in production — see the non-dev guard in
+        # ``effective_allowed_hosts`` (NB-71 / audit L-2).
         'testserver',
         'platform-api-smoky.vercel.app',
     ]
@@ -55,6 +69,9 @@ class Settings(BaseSettings):
     receipt_extraction_base_url: str = 'https://api.openai.com/v1'
     receipt_extraction_model: str = 'gpt-4o-mini'
     receipt_max_size_bytes: int = 5 * 1024 * 1024
+    # NB-70 (audit M-4): CSV ingestion was unbounded — an authenticated
+    # operator could stream an arbitrarily large body into memory.
+    csv_max_size_bytes: int = 10 * 1024 * 1024
     wallet_auto_forward_tolerance_etb: Decimal = Decimal('1000.00')
     reversal_undo_window_hours: int = 24
     sms_brand_name: str = 'FreightPilot'
@@ -76,6 +93,11 @@ class Settings(BaseSettings):
         if self.jwt_secret_key:
             if len(self.jwt_secret_key) < 32 and self.app_env not in ('development', 'test'):
                 raise ValueError('JWT_SECRET_KEY must be at least 32 characters in non-dev environments')
+            if (
+                self.app_env not in ('development', 'test')
+                and self.jwt_secret_key in KNOWN_PLACEHOLDER_SECRETS
+            ):
+                raise ValueError('JWT_SECRET_KEY must not be a known placeholder value')
             return self.jwt_secret_key
         if self.app_env in ('development', 'test'):
             return 'dev-secret-do-not-use-in-production-minimum-32'
@@ -147,7 +169,22 @@ class Settings(BaseSettings):
                 'PROVIDER_KEY_ENCRYPTION_SECRET must be at least 32 characters '
                 'in non-dev environments'
             )
+        if self.provider_key_encryption_secret in KNOWN_PLACEHOLDER_SECRETS:
+            raise ValueError('PROVIDER_KEY_ENCRYPTION_SECRET must not be a known placeholder value')
         return self.provider_key_encryption_secret
+
+    @property
+    def effective_allowed_hosts(self) -> list[str]:
+        """Allowed hosts actually enforced by ``TrustedHostMiddleware``.
+
+        NB-71 (audit L-2): ``testserver`` is a Starlette TestClient artefact. It
+        is needed for the test suite but must never be an accepted ``Host`` on a
+        deployed environment, so it is dropped outside dev/test even if it
+        appears in ``ALLOWED_HOSTS``.
+        """
+        if self.app_env in ('development', 'test'):
+            return list(self.allowed_hosts)
+        return [host for host in self.allowed_hosts if host != 'testserver']
 
     @field_validator('cors_origins', mode='before')
     @classmethod

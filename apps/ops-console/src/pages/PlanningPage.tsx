@@ -13,6 +13,7 @@ import {
   rejectReplenishmentPlan,
 } from '../services/logisticsApi';
 import type { ReplenishmentPlan } from '../types/api';
+import { apiErrorMessage } from '../services/authErrors';
 
 function statusTone(status: ReplenishmentPlan['status']) {
   if (status === 'approved') return 'success';
@@ -83,8 +84,8 @@ export function PlanningPage() {
       setError(null);
       const data = await listReplenishmentPlans();
       setPlans(data);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to load plans');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to load plans'));
     } finally {
       setLoading(false);
     }
@@ -100,8 +101,8 @@ export function PlanningPage() {
       setIsGenerating(true);
       await generateReplenishmentPlans(horizon);
       await loadPlans();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to generate plans');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to generate plans'));
     } finally {
       setIsGenerating(false);
     }
@@ -111,8 +112,8 @@ export function PlanningPage() {
     try {
       await approveReplenishmentPlan(planId);
       await loadPlans();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to approve plan');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to approve plan'));
     }
   }
 
@@ -121,8 +122,8 @@ export function PlanningPage() {
     try {
       await rejectReplenishmentPlan(rejectDialog.plan.id, reason);
       await loadPlans();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to reject plan');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to reject plan'));
     } finally {
       setRejectDialog(null);
     }

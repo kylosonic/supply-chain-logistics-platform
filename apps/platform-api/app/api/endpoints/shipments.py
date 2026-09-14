@@ -6,7 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles, require_writable_workspace
+from app.api.security import (
+    actor_organization_id,
+    order_by_organization_first,
+    organization_scoped_get,
+    require_roles,
+    require_writable_workspace,
+    resolve_scoped_organization,
+    scoped_to_organization,
+)
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.models.item import Item
@@ -50,9 +58,14 @@ def _shipment_to_read(db: Session, shipment: Shipment) -> ShipmentRead:
 @router.get('', response_model=list[ShipmentRead])
 def list_shipments(
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    shipments = db.execute(select(Shipment).order_by(asc(Shipment.created_at))).scalars().all()
+    # NB-64 (audit H-1): shipments are tenant data. An org-scoped actor sees
+    # their own rows plus unattributed legacy rows; an org-less actor keeps the
+    # pre-NB-64 pass-through behaviour.
+    organization_id = actor_organization_id(actor, db)
+    stmt = scoped_to_organization(select(Shipment), Shipment, organization_id)
+    shipments = db.execute(stmt.order_by(asc(Shipment.created_at))).scalars().all()
     return [_shipment_to_read(db, shipment) for shipment in shipments]
 
 
@@ -63,31 +76,69 @@ def create_shipment(
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+    organization_id = resolve_scoped_organization(actor, writable)
 
-    existing = db.execute(select(Shipment).where(Shipment.shipment_no == payload.shipment_no)).scalar_one_or_none()
+    # Duplicate-number pre-check is equality-only per org (mirrors TECH-58):
+    # a legacy unattributed row with the same number must not false-409 a
+    # first create for a scoped org.
+    exists_stmt = select(Shipment).where(Shipment.shipment_no == payload.shipment_no)
+    if organization_id is not None:
+        exists_stmt = exists_stmt.where(Shipment.organization_id == organization_id)
+    existing = db.execute(exists_stmt).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail='Shipment number already exists')
 
-    origin = db.execute(select(Warehouse).where(Warehouse.code == payload.origin_warehouse_code)).scalar_one_or_none()
+    # Referenced warehouses and items must belong to the caller's tenant.
+    # Every lookup below prefers an own-org row over a same-code legacy
+    # NULL-org row (seed data repeats codes across orgs), so ``first()`` is
+    # used rather than ``scalar_one_or_none()`` which would raise on a tie.
+    origin_stmt = order_by_organization_first(
+        scoped_to_organization(
+            select(Warehouse).where(Warehouse.code == payload.origin_warehouse_code),
+            Warehouse,
+            organization_id,
+        ),
+        Warehouse,
+    )
+    origin = db.execute(origin_stmt).scalars().first()
     if not origin:
         raise HTTPException(status_code=404, detail='Origin warehouse code not found')
 
-    destination = db.execute(
-        select(Warehouse).where(Warehouse.code == payload.destination_warehouse_code)
-    ).scalar_one_or_none()
+    destination_stmt = order_by_organization_first(
+        scoped_to_organization(
+            select(Warehouse).where(Warehouse.code == payload.destination_warehouse_code),
+            Warehouse,
+            organization_id,
+        ),
+        Warehouse,
+    )
+    destination = db.execute(destination_stmt).scalars().first()
     if not destination:
         raise HTTPException(status_code=404, detail='Destination warehouse code not found')
 
-    item = db.execute(select(Item).where(Item.sku == payload.sku)).scalar_one_or_none()
+    item_stmt = order_by_organization_first(
+        scoped_to_organization(select(Item).where(Item.sku == payload.sku), Item, organization_id),
+        Item,
+    )
+    item = db.execute(item_stmt).scalars().first()
     if not item:
         raise HTTPException(status_code=404, detail='SKU not found')
 
     if payload.route_schedule_id:
-        route = db.get(RouteSchedule, payload.route_schedule_id)
+        route_stmt = order_by_organization_first(
+            scoped_to_organization(
+                select(RouteSchedule).where(RouteSchedule.id == payload.route_schedule_id),
+                RouteSchedule,
+                organization_id,
+            ),
+            RouteSchedule,
+        )
+        route = db.execute(route_stmt).scalars().first()
         if not route:
             raise HTTPException(status_code=404, detail='Route schedule not found')
 
     shipment = Shipment(
+        organization_id=organization_id,
         shipment_no=payload.shipment_no,
         route_schedule_id=payload.route_schedule_id,
         origin_warehouse_id=origin.id,
@@ -124,11 +175,15 @@ def create_shipment(
 def get_shipment(
     shipment_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    shipment = db.get(Shipment, shipment_id)
-    if not shipment:
-        raise HTTPException(status_code=404, detail='Shipment not found')
+    shipment = organization_scoped_get(
+        db,
+        Shipment,
+        shipment_id,
+        actor_organization_id(actor, db),
+        not_found_detail='Shipment not found',
+    )
     return _shipment_to_read(db, shipment)
 
 
@@ -140,10 +195,13 @@ def update_shipment_status(
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
-
-    shipment = db.get(Shipment, shipment_id)
-    if not shipment:
-        raise HTTPException(status_code=404, detail='Shipment not found')
+    shipment = organization_scoped_get(
+        db,
+        Shipment,
+        shipment_id,
+        resolve_scoped_organization(actor, writable),
+        not_found_detail='Shipment not found',
+    )
 
     if payload.status == ShipmentStatus.DELAYED and not payload.delay_reason:
         raise HTTPException(status_code=400, detail='delay_reason is required when marking a shipment delayed')
@@ -173,6 +231,7 @@ def update_shipment_status(
         if not existing_alert:
             db.add(
                 Alert(
+                    organization_id=shipment.organization_id,
                     alert_type=AlertType.DELAYED_SHIPMENT,
                     severity=AlertSeverity.HIGH,
                     status=AlertStatus.OPEN,

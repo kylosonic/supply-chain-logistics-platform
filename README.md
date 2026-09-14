@@ -34,8 +34,38 @@ Full-stack logistics platform with an operations console, API backend, and a pro
 - Product website (Vercel): https://product-web-chi.vercel.app
 - Operations console (Vercel): https://ops-console-azure.vercel.app
 - Backend API (Vercel): https://platform-api-smoky.vercel.app
-- Supabase project ref: `azljjrjatdpkcvjbpztn`
-- Supabase API base: `https://azljjrjatdpkcvjbpztn.supabase.co`
+- EAII submission page (Vercel): https://freightpilot-eaii.vercel.app
+
+**Database:** the production database is a Supabase-hosted Postgres, reached over the connection
+pooler. `DATABASE_URL` is supplied per environment (locally in `.env`, in production by the host's
+encrypted environment variables) and is never committed. See
+`docs/adr/0001-production-database-topology.md` for the recorded topology decision.
+
+> Supabase **Auth** is retired — the platform's own FastAPI service owns identity end to end. See
+> `supabase/RETIRED.md` for the record and the preconditions required to re-arm it.
+
+### Release gates
+
+CI (`.github/workflows/ci.yml`) runs the same gates a release depends on: backend tests + ruff,
+`pip-audit` against the hash-pinned `requirements.lock`, and console/site typecheck, lint, tests,
+production builds, bundle-weight budget and dependency audits. See `docs/release-gates.md` for how a
+red run blocks a deploy — and for the one configuration step (GitHub branch protection) that is
+still required to make that block authoritative.
+
+### Check the deployment's health
+
+`GET /health` reports whether the API process is up **and** whether its database is reachable:
+
+```bash
+curl -s https://platform-api-smoky.vercel.app/health
+# {"status":"ok","db":"ok"}          -> healthy
+# {"status":"degraded","db":"unavailable"} -> the API is up but cannot reach its database
+```
+
+A `500` on `POST /api/v1/auth/company-signup` with `db: unavailable` means the database connection
+is misconfigured or unreachable — not an application defect. The connect timeout is bounded to 5s so
+this surface fails fast rather than hanging.
+
 
 ## Vercel monorepo setup
 
@@ -73,32 +103,40 @@ Production deployments are Git-driven. Pushing to `master` triggers fresh produc
 
 Vercel CLI generates local environment files under `.vercel/.env.production.local` when you run `vercel pull`. Those files are machine-local deployment state and should stay uncommitted.
 
-## Supabase CLI workflow (database + auth)
+## Database schema workflow
 
-From repo root:
-
-```bash
-npx supabase link --project-ref azljjrjatdpkcvjbpztn --password <db-password>
-npx supabase db push --linked --yes
-```
-
-Apply backend schema migrations to the same Supabase database:
+The application's own Alembic chain is the single source of truth for the operational schema:
 
 ```bash
 cd apps/platform-api
-set DATABASE_URL=postgresql+psycopg://postgres.azljjrjatdpkcvjbpztn:<db-password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
+set DATABASE_URL=postgresql+psycopg://postgres.<project-ref>:<db-password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
 python -m alembic upgrade head
 ```
 
-Applied migration in this repo:
+Migration chain head: `20260811_0019` (org scoping for operational surfaces + the `shipment_no`
+uniqueness repair). Chain integrity is pinned by `tests/test_migration_chain_integrity.py`.
 
-- `supabase/migrations/20260727153410_company_onboarding_and_profiles.sql`
+### Supabase CLI (database operations only — auth is retired)
 
-This migration provisions:
+The CLI remains useful for database operations against the linked project:
 
-- `public.company_profiles` table for company onboarding state
-- Row-level security policies tied to `auth.uid()`
-- Update timestamp trigger for profile mutations
+```bash
+npx supabase link --project-ref <project-ref> --password <db-password>
+npx supabase db push --linked --yes
+```
+
+The linked project ref is stored in `supabase/.temp/linked-project.json` (machine-local). The single
+SQL migration in `supabase/migrations/` provisions the legacy `public.company_profiles` table with
+`auth.uid()`-scoped RLS policies; it is applied history and is **not** used by the application. Do
+not extend it — schema changes belong in the Alembic chain.
+
+**Supabase Auth is retired.** See `supabase/RETIRED.md` for why, and for the six settings that would
+have to change before any signup flow could point at it again.
+
+> **Environment note:** `vercel env pull` writes redacted/empty placeholder values for
+> encrypted-and-sensitive variables. A pulled `.env.production.local` showing
+> `DATABASE_URL=""` does **not** mean the variable is unset in the deployment — check
+> `vercel env ls production` in the project directory to see what is actually configured.
 
 ## Root workspace scripts
 

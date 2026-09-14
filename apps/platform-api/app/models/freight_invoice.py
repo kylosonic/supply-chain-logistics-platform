@@ -10,6 +10,11 @@ from app.db.custom_types import UUIDType
 class FreightInvoice(UUIDTimestampMixin, Base):
     __tablename__ = 'freight_invoices'
 
+    # NB-64 (audit H-1): tenant scoping. Nullable for legacy rows created
+    # before org scoping; backfilled in migration 20260811_0019.
+    organization_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True
+    )
     order_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('historical_orders.id', ondelete='CASCADE'), index=True, nullable=False)
     carrier_id: Mapped[str] = mapped_column(String(128), nullable=False)
     quoted_rate: Mapped[float] = mapped_column(Float, nullable=False)

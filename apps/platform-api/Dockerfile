@@ -10,7 +10,14 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e .
+COPY requirements.lock ./
+# NB-70 (audit M-5): install from the committed, hash-pinned lockfile so a
+# fresh image can never resolve an unpatched transitive dependency (the audit
+# found every dependency declared as an open ``>=`` range with no lockfile).
+# ``--require-hashes`` makes pip refuse any artifact whose digest does not
+# match the lock.
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock \
+    && pip install --no-cache-dir --no-deps -e .
 
 COPY alembic.ini ./
 COPY alembic ./alembic

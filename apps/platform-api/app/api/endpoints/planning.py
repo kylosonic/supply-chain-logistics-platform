@@ -7,7 +7,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
-from app.api.security import get_current_user, require_roles, require_writable_workspace
+from app.api.security import (
+    actor_organization_id,
+    get_current_user,
+    order_by_organization_first,
+    organization_scoped_get,
+    require_roles,
+    require_writable_workspace,
+    scoped_to_organization,
+)
 from app.db.session import get_db
 from app.models.inventory import Inventory
 from app.models.item import Item
@@ -51,14 +59,17 @@ def _to_read(plan: ReplenishmentPlan, warehouse_code: str, sku: str) -> Replenis
 @router.get('/replenishment', response_model=list[ReplenishmentPlanRead])
 def list_replenishment_plans(
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    rows = db.execute(
+    # NB-64 (audit H-1): replenishment plans are tenant data.
+    stmt = scoped_to_organization(
         select(ReplenishmentPlan, Warehouse.code, Item.sku)
         .join(Warehouse, Warehouse.id == ReplenishmentPlan.warehouse_id)
-        .join(Item, Item.id == ReplenishmentPlan.item_id)
-        .order_by(asc(ReplenishmentPlan.created_at))
-    ).all()
+        .join(Item, Item.id == ReplenishmentPlan.item_id),
+        ReplenishmentPlan,
+        actor_organization_id(actor, db),
+    )
+    rows = db.execute(stmt.order_by(asc(ReplenishmentPlan.created_at))).all()
     return [_to_read(row.ReplenishmentPlan, row.code, row.sku) for row in rows]
 
 
@@ -73,8 +84,18 @@ def generate_replenishment_plans(
     if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
         raise HTTPException(status_code=403, detail='Insufficient role')
 
-    inventories = db.execute(select(Inventory, Warehouse.code, Item.sku, Item.reorder_level).join(Warehouse).join(Item)).all()
-    orders = db.execute(select(HistoricalOrder)).scalars().all()
+    # NB-64: generate only from the caller's own inventory and order history,
+    # and stamp the plan with the caller's org.
+    organization_id = writable.organization_id if writable else None
+
+    inventory_stmt = scoped_to_organization(
+        select(Inventory, Warehouse.code, Item.sku, Item.reorder_level).join(Warehouse).join(Item),
+        Inventory,
+        organization_id,
+    )
+    inventories = db.execute(inventory_stmt).all()
+    order_stmt = scoped_to_organization(select(HistoricalOrder), HistoricalOrder, organization_id)
+    orders = db.execute(order_stmt).scalars().all()
 
     demand_by_pair: dict[tuple[str, str], dict[str, int | datetime.date | None]] = {}
     for order in orders:
@@ -107,16 +128,24 @@ def generate_replenishment_plans(
             continue
 
         existing_pending = db.execute(
-            select(ReplenishmentPlan).where(
-                ReplenishmentPlan.warehouse_id == row.Inventory.warehouse_id,
-                ReplenishmentPlan.item_id == row.Inventory.item_id,
-                ReplenishmentPlan.status == ReplenishmentPlanStatus.PENDING_APPROVAL,
+            order_by_organization_first(
+                scoped_to_organization(
+                    select(ReplenishmentPlan).where(
+                        ReplenishmentPlan.warehouse_id == row.Inventory.warehouse_id,
+                        ReplenishmentPlan.item_id == row.Inventory.item_id,
+                        ReplenishmentPlan.status == ReplenishmentPlanStatus.PENDING_APPROVAL,
+                    ),
+                    ReplenishmentPlan,
+                    organization_id,
+                ),
+                ReplenishmentPlan,
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if existing_pending:
             continue
 
         plan = ReplenishmentPlan(
+            organization_id=organization_id,
             warehouse_id=row.Inventory.warehouse_id,
             item_id=row.Inventory.item_id,
             horizon_weeks=payload.horizon_weeks,
@@ -158,9 +187,13 @@ def approve_replenishment_plan(
 
     if user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail='Admin role required')
-    plan = db.get(ReplenishmentPlan, plan_id)
-    if not plan:
-        raise HTTPException(status_code=404, detail='Plan not found')
+    plan = organization_scoped_get(
+        db,
+        ReplenishmentPlan,
+        plan_id,
+        writable.organization_id if writable else actor_organization_id(user, db),
+        not_found_detail='Plan not found',
+    )
     if plan.status != ReplenishmentPlanStatus.PENDING_APPROVAL:
         raise HTTPException(status_code=400, detail='Only pending plans can be approved')
 
@@ -202,9 +235,13 @@ def reject_replenishment_plan(
 
     if user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail='Admin role required')
-    plan = db.get(ReplenishmentPlan, plan_id)
-    if not plan:
-        raise HTTPException(status_code=404, detail='Plan not found')
+    plan = organization_scoped_get(
+        db,
+        ReplenishmentPlan,
+        plan_id,
+        writable.organization_id if writable else actor_organization_id(user, db),
+        not_found_detail='Plan not found',
+    )
     if plan.status != ReplenishmentPlanStatus.PENDING_APPROVAL:
         raise HTTPException(status_code=400, detail='Only pending plans can be rejected')
 

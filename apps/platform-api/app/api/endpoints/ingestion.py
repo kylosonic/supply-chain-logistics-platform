@@ -8,7 +8,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles, require_writable_workspace
+from app.api.security import (
+    order_by_organization_first,
+    require_roles,
+    require_writable_workspace,
+    scoped_to_organization,
+)
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.models.fleet_asset import FleetAsset
@@ -35,7 +41,22 @@ router = APIRouter()
 def _read_csv_to_df(file: UploadFile) -> pd.DataFrame:
     if not file.filename or not file.filename.lower().endswith('.csv'):
         raise HTTPException(status_code=400, detail='Only CSV files are accepted')
-    content = file.file.read()
+
+    # NB-70 (audit M-4): bound the read before it happens. Receipts had a 5 MB
+    # cap; CSVs had none, so an authenticated operator could stream an
+    # arbitrarily large body into memory and OOM the API process. Read at most
+    # cap+1 bytes so an oversized upload is detected without buffering it.
+    cap = settings.csv_max_size_bytes
+    content = file.file.read(cap + 1)
+    if len(content) > cap:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f'CSV file is too large. The maximum upload size is '
+                f'{cap // (1024 * 1024)} MB.'
+            ),
+        )
+
     try:
         return pd.read_csv(io.BytesIO(content))
     except Exception as exc:
@@ -162,11 +183,15 @@ async def ingest_telematics(
 
     Looks up the asset by its vehicle_code (asset_id), updates its GPS
     coordinates and telemetry timestamp.  Returns 404 if the asset is
-    not registered.
+    not registered **for the caller's organization** (NB-64: a telematics
+    write must never move another tenant's vehicle).
     """
-    asset = db.execute(
-        select(FleetAsset).where(FleetAsset.vehicle_code == payload.asset_id)
-    ).scalar_one_or_none()
+    organization_id = writable.organization_id if writable else None
+    asset_stmt = select(FleetAsset).where(FleetAsset.vehicle_code == payload.asset_id)
+    asset_stmt = order_by_organization_first(
+        scoped_to_organization(asset_stmt, FleetAsset, organization_id), FleetAsset
+    )
+    asset = db.execute(asset_stmt).scalars().first()
 
     if asset is None:
         raise HTTPException(
@@ -195,7 +220,15 @@ async def ingest_iot_telemetry(
     db: Session = Depends(get_db),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
-    item = db.execute(select(Item).where(Item.sku == payload.sku)).scalar_one_or_none()
+    # NB-64: resolve the SKU inside the caller's tenant, and stamp any alert it
+    # raises with that tenant so a stranger cannot inject alerts into another
+    # company's exception queue.
+    organization_id = writable.organization_id if writable else None
+    item_stmt = select(Item).where(Item.sku == payload.sku)
+    item_stmt = order_by_organization_first(
+        scoped_to_organization(item_stmt, Item, organization_id), Item
+    )
+    item = db.execute(item_stmt).scalars().first()
 
     if not item:
         raise HTTPException(
@@ -206,6 +239,7 @@ async def ingest_iot_telemetry(
     alert_triggered = False
     if item.temperature_threshold is not None and payload.temperature_c > item.temperature_threshold:
         alert = Alert(
+            organization_id=item.organization_id,
             alert_type=AlertType.TEMPERATURE_EXCURSION,
             severity=AlertSeverity.HIGH,
             status=AlertStatus.OPEN,

@@ -12,6 +12,7 @@
     "doctor": "node scripts/ensure-electron-binary.cjs --check"
   },
   "devDependencies": {
-    "electron": "^31.0.2"
+    "electron": "^43.0.2",
+    "extract-zip": "^2.0.1"
   }
 }

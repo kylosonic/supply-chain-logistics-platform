@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -12,7 +12,36 @@ from app.db.custom_types import UUIDType
 class Shipment(UUIDTimestampMixin, Base):
     __tablename__ = 'shipments'
 
-    shipment_no: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    # TECH-49 / NB-64: a shipment number is unique *within its tenant*, not
+    # globally. Two partial unique indexes are used instead of one composite
+    # index because SQL treats NULLs as distinct, which would leave
+    # unattributed legacy rows unconstrained; mirror of migration
+    # 20260811_0019 ``_repair_shipment_number_uniqueness``.
+    __table_args__ = (
+        Index(
+            'uq_shipments_org_shipment_no',
+            'organization_id',
+            'shipment_no',
+            unique=True,
+            sqlite_where=text('organization_id IS NOT NULL'),
+            postgresql_where=text('organization_id IS NOT NULL'),
+        ),
+        Index(
+            'uq_shipments_unattributed_shipment_no',
+            'shipment_no',
+            unique=True,
+            sqlite_where=text('organization_id IS NULL'),
+            postgresql_where=text('organization_id IS NULL'),
+        ),
+        Index('ix_shipments_shipment_no_lookup', 'shipment_no'),
+    )
+
+    # NB-64 (audit H-1): tenant scoping. Nullable for legacy rows created
+    # before org scoping; backfilled in migration 20260811_0019.
+    organization_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True
+    )
+    shipment_no: Mapped[str] = mapped_column(String(64), nullable=False)
     route_schedule_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('route_schedules.id', ondelete='SET NULL'), nullable=True)
     origin_warehouse_id: Mapped[UUID] = mapped_column(UUIDType, ForeignKey('warehouses.id', ondelete='RESTRICT'), nullable=False, index=True)
     destination_warehouse_id: Mapped[str] = mapped_column(

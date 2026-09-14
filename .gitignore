@@ -26,3 +26,13 @@ apps/product-web/.vite/
 .idea/
 
 .vercel/
+
+.vercel
+
+.artifacts/
+
+pitch-page/.vercel/
+
+.local-funnel.db
+
+*.tsbuildinfo

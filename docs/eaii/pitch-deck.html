@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>FreightPilot — EAII Second-Round Pitch Deck</title>
+<style>
+  @page { size: 13.333in 7.5in; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0b1220;
+    --ink-2: #121c2e;
+    --ink-3: #1b2740;
+    --line: #2a3a58;
+    --text: #e8eef9;
+    --muted: #9fb0cc;
+    --accent: #38bdf8;
+    --accent-2: #22d3ee;
+    --good: #34d399;
+    --warn: #fbbf24;
+    --bad: #fb7185;
+  }
+  html, body { background: #05080f; color: var(--text);
+    font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide {
+    position: relative; width: 13.333in; height: 7.5in; padding: 0.52in 0.62in;
+    background: linear-gradient(160deg, #070c16 0%, #0b1220 55%, #0d1524 100%);
+    border-bottom: 1px solid #000; overflow: hidden; page-break-after: always;
+    display: flex; flex-direction: column;
+  }
+  .slide:last-child { page-break-after: auto; }
+  .slide::after {
+    content: ""; position: absolute; right: -1.4in; top: -1.6in;
+    width: 5.2in; height: 5.2in; border-radius: 50%;
+    background: radial-gradient(circle, rgba(56,189,248,0.13) 0%, rgba(56,189,248,0) 68%);
+    pointer-events: none;
+  }
+  .eyebrow { font-size: 10.5pt; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; }
+  h1 { font-size: 33pt; line-height: 1.06; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 23pt; line-height: 1.12; font-weight: 800; letter-spacing: -0.015em; }
+  h3 { font-size: 12.5pt; font-weight: 700; color: var(--text); margin-bottom: 4pt; }
+  .sub { color: var(--muted); font-size: 12.5pt; line-height: 1.42; }
+  .rule { height: 3px; width: 62pt; background: var(--accent); border-radius: 2px; margin: 9pt 0 12pt; }
+  .grid { display: grid; gap: 0.17in; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .card {
+    background: linear-gradient(165deg, rgba(27,39,64,0.92), rgba(15,23,38,0.92));
+    border: 1px solid var(--line); border-radius: 9pt; padding: 0.15in 0.17in;
+  }
+  .card.tight { padding: 0.12in 0.14in; }
+  .card p { font-size: 10.5pt; line-height: 1.38; color: var(--muted); }
+  .card p + p { margin-top: 5pt; }
+  .card strong { color: var(--text); }
+  ul { list-style: none; }
+  li { font-size: 10.5pt; line-height: 1.34; color: var(--muted); padding-left: 13pt;
+    position: relative; margin-bottom: 4.5pt; }
+  li::before { content: ""; position: absolute; left: 0; top: 4.5pt; width: 5pt; height: 5pt;
+    border-radius: 50%; background: var(--accent); }
+  li strong { color: var(--text); }
+  .metric { font-size: 27pt; font-weight: 800; letter-spacing: -0.03em; color: var(--text);
+    line-height: 1; font-variant-numeric: tabular-nums; }
+  .metric.sm { font-size: 20pt; }
+  .metric-label { font-size: 9.5pt; color: var(--muted); margin-top: 4pt; line-height: 1.3; }
+  .pill { display: inline-block; font-size: 9pt; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; padding: 2.5pt 7pt; border-radius: 20pt;
+    border: 1px solid var(--line); color: var(--muted); }
+  .pill.good { color: var(--good); border-color: rgba(52,211,153,0.42); background: rgba(52,211,153,0.09); }
+  .pill.warn { color: var(--warn); border-color: rgba(251,191,36,0.42); background: rgba(251,191,36,0.09); }
+  .pill.bad { color: var(--bad); border-color: rgba(251,113,133,0.42); background: rgba(251,113,133,0.09); }
+  .pill.acc { color: var(--accent); border-color: rgba(56,189,248,0.42); background: rgba(56,189,248,0.09); }
+  table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  th { text-align: left; font-size: 8.5pt; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700; padding: 5pt 7pt; border-bottom: 1px solid var(--line); }
+  td { padding: 5.5pt 7pt; border-bottom: 1px solid rgba(42,58,88,0.5); color: var(--muted);
+    vertical-align: top; }
+  td strong { color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  .foot { margin-top: auto; padding-top: 8pt; border-top: 1px solid rgba(42,58,88,0.55);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 8.5pt; color: #64748b; letter-spacing: .04em; }
+  .foot .brand { color: var(--muted); font-weight: 700; letter-spacing: .12em; }
+  .two-col { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 0.2in; flex: 1; min-height: 0; }
+  .stack { display: flex; flex-direction: column; gap: 0.14in; }
+  .evidence { background: rgba(6,11,20,0.72); border: 1px solid rgba(42,58,88,0.8);
+    border-left: 3px solid var(--good); border-radius: 6pt; padding: 0.11in 0.13in; }
+  .evidence .k { font-size: 9pt; color: var(--good); font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; margin-bottom: 3pt; }
+  .evidence p { font-size: 9.5pt; color: var(--muted); line-height: 1.36; }
+  code { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 9pt;
+    color: var(--accent-2); background: rgba(34,211,238,0.08); padding: 1pt 4pt; border-radius: 3pt; }
+  .flow { display: flex; align-items: stretch; gap: 0.09in; }
+  .flow .step { flex: 1; background: rgba(27,39,64,0.7); border: 1px solid var(--line);
+    border-radius: 7pt; padding: 0.1in; }
+  .flow .step .n { font-size: 8pt; font-weight: 800; color: var(--accent); letter-spacing: .1em; }
+  .flow .step .t { font-size: 9.5pt; color: var(--text); font-weight: 700; margin: 2pt 0 3pt; line-height: 1.2; }
+  .flow .step .d { font-size: 8.5pt; color: var(--muted); line-height: 1.3; }
+  .askbox { background: linear-gradient(150deg, rgba(56,189,248,0.16), rgba(34,211,238,0.06));
+    border: 1px solid rgba(56,189,248,0.4); border-radius: 10pt; padding: 0.2in 0.22in; }
+  .tag { font-size: 9pt; color: var(--muted); }
+  .tight-list li { margin-bottom: 3.2pt; font-size: 10pt; }
+</style>
+</head>
+<body>
+
+<!-- ==================== SLIDE 1 : PROBLEM + SOLUTION ==================== -->
+<section class="slide">
+  <div class="eyebrow">FreightPilot · EAII Second-Round Submission</div>
+  <h1 style="margin-top:8pt">Ethiopian logistics teams run on spreadsheets,<br />phone calls and guesswork.</h1>
+  <div class="rule"></div>
+  <div class="two-col">
+    <div class="stack">
+      <div class="card">
+        <h3>1 · The problem</h3>
+        <p>An Ethiopian freight and distribution operator plans routes in Excel, learns about a delayed
+        truck by phone, and discovers a stock-out only when a customer complains. Four failures repeat daily:</p>
+        <ul class="tight-list" style="margin-top:7pt">
+          <li><strong>Routes are planned by habit.</strong> No repeatable way to weigh distance, time, cost and vehicle capacity.</li>
+          <li><strong>Exceptions arrive too late.</strong> Delays and low stock surface after the money is lost.</li>
+          <li><strong>Cash is reconciled by hand.</strong> Bank-transfer receipts are matched to invoices manually, and reversals leave no audit trail.</li>
+          <li><strong>Data lives in files.</strong> Warehouses, items, fleet and orders sit in disconnected CSVs nobody trusts.</li>
+        </ul>
+        <p style="margin-top:7pt">The result: avoidable cost on every trip, and no single view an owner can act on.</p>
+      </div>
+      <div class="evidence">
+        <div class="k">Evidence it is real</div>
+        <p>Built against the operating reality of Ethiopian operators: CBE and Dashen transfer receipts
+        (5,000–50,000 ETB), Addis Ababa warehouse geography, and 3G-grade connections — not a
+        Western SaaS template with the currency swapped.</p>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>2 · The solution</h3>
+        <p><strong>FreightPilot</strong> is one operator surface that takes a logistics team from signup to a
+        planned, monitored, reconciled day of operations.</p>
+        <div class="flow" style="margin-top:9pt">
+          <div class="step"><div class="n">01</div><div class="t">Onboard</div><div class="d">Company workspace in one form.</div></div>
+          <div class="step"><div class="n">02</div><div class="t">Import</div><div class="d">Warehouses, items, fleet, inventory, orders by CSV.</div></div>
+          <div class="step"><div class="n">03</div><div class="t">Optimize</div><div class="d">Weighted route plans on real geography.</div></div>
+          <div class="step"><div class="n">04</div><div class="t">Monitor</div><div class="d">Live feed, alerts, exception queue.</div></div>
+          <div class="step"><div class="n">05</div><div class="t">Reconcile</div><div class="d">Receipts, wallet and audit trail.</div></div>
+        </div>
+        <p style="margin-top:9pt">Every screen is role-governed and scoped to one company, so an operator
+        sees their own operation and nothing else.</p>
+      </div>
+      <div class="grid g3">
+        <div class="card tight"><div class="metric sm">81</div><div class="metric-label">live API endpoints</div></div>
+        <div class="card tight"><div class="metric sm">4</div><div class="metric-label">surfaces: web, console, API, desktop</div></div>
+        <div class="card tight"><div class="metric sm">19</div><div class="metric-label">schema migrations</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">FREIGHTPILOT</span><span>Slide 1 of 7 · Problem &amp; Solution</span></div>
+</section>
+
+<!-- ==================== SLIDE 2 : MARKET OPPORTUNITY ==================== -->
+<section class="slide">
+  <div class="eyebrow">3 · Market Opportunity</div>
+  <h2 style="margin-top:8pt">A large, underserved operator base that is already digitising — just not with software built for it.</h2>
+  <div class="rule"></div>
+  <div class="two-col">
+    <div class="stack">
+      <div class="card">
+        <h3>Who we sell to</h3>
+        <ul class="tight-list">
+          <li><strong>Primary:</strong> Ethiopian freight forwarders, distributors and 3PL operators running 5–50 vehicles and 1–10 warehouses.</li>
+          <li><strong>Buyer:</strong> the owner or operations manager — one person who feels route cost, stock-outs and cash reconciliation every week.</li>
+          <li><strong>Users per account:</strong> 3–25 (dispatchers, warehouse operators, finance, owners).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Why now</h3>
+        <ul class="tight-list">
+          <li><strong>Digital payments reached operational scale.</strong> Bank-transfer receipts are now the normal settlement path, which makes receipt-to-invoice reconciliation a real software problem.</li>
+          <li><strong>Smartphone and 3G coverage is good enough</strong> for a browser console — no desktop install required to start.</li>
+          <li><strong>Incumbents are priced and shaped for other markets.</strong> Global TMS products assume carrier settlement breadth and English-first workflows that a 20-truck operator cannot absorb.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>Market shape (bottom-up)</h3>
+        <p>We deliberately do not quote a top-down TAM. The serviceable entry market is countable:</p>
+        <table style="margin-top:7pt">
+          <tr><td><strong>Serviceable operators</strong><br /><span class="tag">Ethiopian freight / distribution / 3PL firms with a real fleet</span></td><td style="text-align:right"><strong>Low thousands</strong></td></tr>
+          <tr><td><strong>Target ACV</strong><br /><span class="tag">Mid tier, per workspace per year</span></td><td style="text-align:right"><strong>Recurring, ETB-priced</strong></td></tr>
+          <tr><td><strong>Expansion path</strong><br /><span class="tag">Adjacent East African corridors with the same receipt-and-cashflow reality</span></td><td style="text-align:right"><strong>Same product, new currency</strong></td></tr>
+        </table>
+        <p style="margin-top:8pt">This is a <strong>wedge into a regional logistics-software market</strong>, not a
+        bet on a single national market: the hard parts we have built (multi-tenant scoping,
+        receipt reconciliation, route optimisation on local geography) transfer directly.</p>
+      </div>
+      <div class="evidence">
+        <div class="k">Honest framing</div>
+        <p>We are pre-revenue with a working product. This slide states the market we can
+        <em>count</em> and how we reach it — not a fabricated market-size number.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">FREIGHTPILOT</span><span>Slide 2 of 7 · Market Opportunity</span></div>
+</section>
+
+<!-- ==================== SLIDE 3 : TRACTION + BUSINESS MODEL ==================== -->
+<section class="slide">
+  <div class="eyebrow">4 · Traction &nbsp;·&nbsp; 5 · Business Model</div>
+  <h2 style="margin-top:8pt">A production platform, verified end to end — and a business model wired into the product.</h2>
+  <div class="rule"></div>
+  <div class="grid g4" style="margin-bottom:0.16in">
+    <div class="card tight"><div class="metric">399</div><div class="metric-label">backend tests passing on the locked dependency set</div></div>
+    <div class="card tight"><div class="metric">143 + 62</div><div class="metric-label">console + website tests passing</div></div>
+    <div class="card tight"><div class="metric">22/22</div><div class="metric-label">launch-funnel steps verified end to end</div></div>
+    <div class="card tight"><div class="metric">0</div><div class="metric-label">known critical/high advisories in deployed dependencies</div></div>
+  </div>
+  <div class="two-col">
+    <div class="stack">
+      <div class="card">
+        <h3>Traction — what is actually built and proven</h3>
+        <ul class="tight-list">
+          <li><strong>Signup to first route plan works.</strong> Verified: workspace created, sample data seeded, first optimisation returned a real plan — <strong>21.07 km, 31.61 ETB</strong> — and persisted to route history.</li>
+          <li><strong>Multi-tenant isolation is enforced and regression-tested.</strong> A second organisation cannot list, read or mutate the first organisation's rows; cross-tenant reads answer <code>404</code>, never <code>403</code>, so record existence never leaks.</li>
+          <li><strong>Cashflow operations ship.</strong> Receipt ingestion, wallet credits, reversals with a reversible audit trail, dispute threads, and admin verification queue.</li>
+          <li><strong>Commercial controls ship.</strong> Subscription tiers, metered usage with 80%/100%/overage threshold events, and BYOK provider-key management with encrypted storage.</li>
+          <li><strong>Security work is closed and gated.</strong> An independent audit's critical and high findings were remediated, with CI now running tests, lint, typecheck, builds and dependency audits on every push.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>Business model</h3>
+        <p><strong>B2B SaaS, sold per company workspace</strong> — not per seat, because the value is
+        operational (routes planned, exceptions caught) rather than per-user.</p>
+        <table style="margin-top:7pt">
+          <tr><th>Layer</th><th>Mechanism</th></tr>
+          <tr><td><strong>Subscription</strong></td><td>Tiered plans with a free entry tier that onboards a real workspace on sample data.</td></tr>
+          <tr><td><strong>Usage metering</strong></td><td>Delivery tasks and route optimisations are metered, with threshold events at 80%, 100% and overage.</td></tr>
+          <tr><td><strong>Expansion</strong></td><td>Tier upgrade when a workspace outgrows its included units.</td></tr>
+          <tr><td><strong>Bring-your-own-key</strong></td><td>Customers can attach their own AI provider key, so inference cost scales with the customer, not with us.</td></tr>
+        </table>
+      </div>
+      <div class="evidence">
+        <div class="k">Why this model fits</div>
+        <p>Metering is already server-side and audited, so the pricing conversation is backed by the
+        customer's own operational record — an upgrade is a decision about their data, not a sales claim.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">FREIGHTPILOT</span><span>Slide 3 of 7 · Traction &amp; Business Model</span></div>
+</section>
+
+<!-- ==================== SLIDE 4 : GO-TO-MARKET + COMPETITION ==================== -->
+<section class="slide">
+  <div class="eyebrow">6 · Go-to-Market &nbsp;·&nbsp; 7 · Competition</div>
+  <h2 style="margin-top:8pt">Land with a free working workspace. Expand on the operator's own numbers.</h2>
+  <div class="rule"></div>
+  <div class="two-col">
+    <div class="stack">
+      <div class="card">
+        <h3>Go-to-market: product-led land, operator-led expand</h3>
+        <ul class="tight-list">
+          <li><strong>Land.</strong> A prospect signs up on the website with a business email and lands in a workspace already seeded with sample operational data — route value is visible in the first session, before any procurement.</li>
+          <li><strong>Activate.</strong> The product tracks a five-step activation path (warehouses, items, fleet, inventory, orders) and shows the operator exactly what is still sample data versus their own uploads. Real data replaces samples.</li>
+          <li><strong>Prove.</strong> The first route optimisation is the "aha": a plan with distance, cost and stops the operator can act on today.</li>
+          <li><strong>Expand.</strong> Metered usage crossing 80% and 100% is the natural upgrade moment, surfaced in-product.</li>
+          <li><strong>Channel.</strong> Logistics associations, freight-forwarding communities and direct founder-led onboarding of the first cohort of design partners.</li>
+        </ul>
+      </div>
+      <div class="evidence">
+        <div class="k">Distribution advantage</div>
+        <p>The funnel is already instrumented end to end and verified: <code>signup → seeded workspace → first optimisation</code>
+        with zero security-blocked requests, no CORS failures and no host rejection.</p>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>Competition</h3>
+        <table>
+          <tr><th>Alternative</th><th>What it does</th><th>Where FreightPilot differs</th></tr>
+          <tr>
+            <td><strong>Spreadsheets</strong></td>
+            <td>Universal, free, already in use.</td>
+            <td>No route optimisation, no exception detection, no audit trail, no shared state across roles.</td>
+          </tr>
+          <tr>
+            <td><strong>Global TMS / routing suites</strong></td>
+            <td>Deep transport management at enterprise breadth.</td>
+            <td>Shaped for carrier settlement and large fleets; priced and configured beyond a 20-vehicle operator. We scope to the operator, not the enterprise.</td>
+          </tr>
+          <tr>
+            <td><strong>Local point tools</strong></td>
+            <td>Single-purpose (GPS tracking, accounting).</td>
+            <td>One surface linking data intake, planning, execution and cashflow reconciliation — the operator stops stitching tools together.</td>
+          </tr>
+          <tr>
+            <td><strong>Generic ERP add-ons</strong></td>
+            <td>Broad back-office coverage.</td>
+            <td>We are not an ERP replacement; we are the operational layer an ERP does not cover.</td>
+          </tr>
+        </table>
+      </div>
+      <div class="evidence">
+        <div class="k">Defensible position</div>
+        <p>Two things are hard to copy: <strong>tenant-safe operational software</strong> (scoping enforced on every
+        surface and pinned by regression tests) and <strong>receipt-to-cashflow reconciliation</strong> tuned to
+        Ethiopian bank-transfer reality.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">FREIGHTPILOT</span><span>Slide 4 of 7 · Go-to-Market &amp; Competition</span></div>
+</section>
+
+<!-- ==================== SLIDE 5 : CORE TEAM AND ADVISORS ==================== -->
+<section class="slide">
+  <div class="eyebrow">8 · Core Team &amp; Advisors</div>
+  <h2 style="margin-top:8pt">A small team with an engineered product — and named gaps we intend to fill with this program.</h2>
+  <div class="rule"></div>
+  <div class="two-col">
+    <div class="stack">
+      <div class="card">
+        <h3>Core team</h3>
+        <table>
+          <tr><th>Role</th><th>Owns</th></tr>
+          <tr>
+            <td><strong>Founder / CEO</strong></td>
+            <td>Product direction, customer discovery with Ethiopian operators, commercial model and pricing, fundraising.</td>
+          </tr>
+          <tr>
+            <td><strong>Engineering</strong></td>
+            <td>Four deployable surfaces (FastAPI platform API, React operations console, Next.js product site, Electron desktop shell), the data model, and release engineering. Delivered as a contract-driven build with QA and security gates on every change.</td>
+          </tr>
+        </table>
+      </div>
+      <div class="evidence">
+        <div class="k">What "engineering" means here, concretely</div>
+        <p>11,236 lines of Python across 23 API modules, 8,666 lines of TypeScript across the operations
+        console, a 19-migration schema, 81 live endpoints, and 604 automated tests — with an audit trail
+        that records security findings, their remediation, and the verification evidence for each.</p>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>Advisors — declared honestly</h3>
+        <p>We are not padding this slide. What we have today:</p>
+        <ul class="tight-list" style="margin-top:7pt">
+          <li><strong>Design-partner operators.</strong> Working relationships with logistics operators who review workflows and validate whether the product matches how they actually run a day.</li>
+          <li><strong>Domain validation on cashflow.</strong> The receipt-verification behaviour is built against published CBE and Dashen transfer practice, with a named human verification gate still open before paid launch (see slide 7).</li>
+        </ul>
+        <p style="margin-top:8pt"><strong>What we are explicitly seeking from EAII:</strong> an advisor or
+        mentor with logistics-operations depth in Ethiopia or comparable East African markets, and a
+        go-to-market advisor for B2B SaaS sold into owner-operated firms.</p>
+      </div>
+      <div class="evidence">
+        <div class="k">Why this is the honest answer</div>
+        <p>An accelerator is a place to close gaps, not to pretend they are closed. The gap we need
+        filled is commercial and domain mentorship, not engineering capacity.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">FREIGHTPILOT</span><span>Slide 5 of 7 · Core Team &amp; Advisors</span></div>
+</section>
+
+<!-- ==================== SLIDE 6 : FINANCIAL PROJECTION ==================== -->
+<section class="slide">
+  <div class="eyebrow">9 · Financial Projection</div>
+  <h2 style="margin-top:8pt">Plan built from cost we control and customers we can name — not from a growth curve.</h2>
+  <div class="rule"></div>
+  <div class="two-col">
+    <div class="stack">
+      <div class="card">
+        <h3>Where the money goes (next 12 months)</h3>
+        <table>
+          <tr><th>Category</th><th>Driver</th><th>Posture</th></tr>
+          <tr><td><strong>Cloud &amp; database</strong></td><td>Three Vercel projects + managed Postgres</td><td>Low and variable; scales with usage, not headcount</td></tr>
+          <tr><td><strong>AI inference</strong></td><td>Receipt extraction only</td><td><strong>Customer-funded</strong> via bring-your-own-key, so it is not a fixed cost</td></tr>
+          <tr><td><strong>Team</strong></td><td>Founder + engineering</td><td>Largest line; the program's support lets us extend runway rather than expand headcount</td></tr>
+          <tr><td><strong>Customer acquisition</strong></td><td>Founder-led + community channel</td><td>Deliberately near-zero paid spend at this stage</td></tr>
+        </table>
+      </div>
+      <div class="evidence">
+        <div class="k">Cost structure advantage</div>
+        <p>Because inference and heavy compute are either customer-funded or usage-metered, our cost to
+        serve a new workspace is close to flat. Gross margin improves with tier, not with volume alone.</p>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>Revenue projection logic</h3>
+        <p>We project on <strong>named-account capacity</strong>, because that is what a founder-led motion can
+        actually deliver and defend:</p>
+        <ul class="tight-list" style="margin-top:7pt">
+          <li><strong>Months 1–3 — design partners.</strong> Onboard a small cohort of Ethiopian operators on the free tier and convert on validated value. Revenue target: first paid workspaces.</li>
+          <li><strong>Months 4–8 — repeatable onboarding.</strong> The activation path becomes self-serve: fewer founder hours per workspace, more workspaces per month.</li>
+          <li><strong>Months 9–12 — metered expansion.</strong> Existing workspaces cross their included unit threshold and upgrade; net revenue retention becomes the primary growth lever.</li>
+        </ul>
+        <p style="margin-top:8pt">The three metrics we will manage the business on:</p>
+        <table style="margin-top:5pt">
+          <tr><td><strong>Time to first route plan</strong></td><td style="text-align:right">Activation</td></tr>
+          <tr><td><strong>Workspaces crossing 80% of included units</strong></td><td style="text-align:right">Expansion</td></tr>
+          <tr><td><strong>Net revenue retention</strong></td><td style="text-align:right">Health</td></tr>
+        </table>
+      </div>
+      <div class="evidence">
+        <div class="k">Honesty rule we hold ourselves to</div>
+        <p>We publish a projection based on explicit assumptions and named levers. Detailed month-by-month
+        figures with the underlying assumptions are provided in the data room and in the pitch video Q&amp;A.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">FREIGHTPILOT</span><span>Slide 6 of 7 · Financial Projection</span></div>
+</section>
+
+<!-- ==================== SLIDE 7 : THE ASK ==================== -->
+<section class="slide">
+  <div class="eyebrow">10 · The Ask</div>
+  <h2 style="margin-top:8pt">We are asking for the support that turns a working platform into a repeatable business.</h2>
+  <div class="rule"></div>
+  <div class="two-col">
+    <div class="stack">
+      <div class="askbox">
+        <h3 style="font-size:14pt">What we are asking EAII for</h3>
+        <ul class="tight-list" style="margin-top:8pt">
+          <li><strong>Domain mentorship.</strong> A logistics-operations advisor who has run freight or distribution in Ethiopia or a comparable market, to pressure-test our workflows against how operators really work.</li>
+          <li><strong>Go-to-market support.</strong> Help converting founder-led onboarding into a repeatable sales motion for owner-operated firms, and introductions to the first cohort of paying customers.</li>
+          <li><strong>Cashflow-gate resolution.</strong> Support in closing the one remaining human verification — confirming CBE and Dashen transfer fee schedules in the 5,000–50,000 ETB band against our ±1,000 ETB tolerance — which currently blocks <em>paid</em> launch, not the product.</li>
+          <li><strong>Fundraising readiness.</strong> Structured preparation for a seed conversation: metrics narrative, data room, and investor introductions.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="card">
+        <h3>What we bring</h3>
+        <ul class="tight-list">
+          <li><strong>A shipped product, not a prototype.</strong> Live website, operations console and API, plus a desktop shell.</li>
+          <li><strong>Engineering discipline the program can audit.</strong> 604 automated tests, dependency lockfiles with hash verification, CI gates on every push, and a written security audit with its findings remediated.</li>
+          <li><strong>Full-time founder commitment.</strong> Available <strong>five days per week</strong> for the duration of the program (requirement is a minimum of three), including on-site or remote sessions.</li>
+          <li><strong>Evidence over claims.</strong> Every number in this deck is reproducible from the repository and the running platform.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Where we are, stated plainly</h3>
+        <p>Pre-revenue, post-product. The platform is built and verified; the open work is
+        commercial validation and one human verification gate. That is exactly the stage where
+        accelerator support changes the outcome.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="brand">FREIGHTPILOT</span><span>Slide 7 of 7 · The Ask</span></div>
+</section>
+
+</body>
+</html>

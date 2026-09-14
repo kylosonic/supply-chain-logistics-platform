@@ -1,5 +1,13 @@
 name: CI
 
+# NB-77 (audit M-5): these gates are the release gate. A red run must block the
+# Vercel deploy for the affected project — wire that with the Vercel "Ignored
+# Build Step" / deployment-check setting documented in docs/release-gates.md.
+# This workflow deliberately runs the SAME commands a release depends on: full
+# backend tests, console tests + typecheck + lint + production build, site tests
+# + bundle-weight budget + production build, plus dependency vulnerability
+# scans for every language in the monorepo.
+
 on:
   push:
     branches:
@@ -9,6 +17,10 @@ on:
     branches:
       - master
       - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend-tests:
@@ -27,16 +39,43 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Install backend dependencies
+      - name: Install backend dependencies (lockfile, hash-verified)
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          # NB-70: the committed lockfile is authoritative for deployments, so
+          # CI installs exactly what Docker installs.
+          python -m pip install --require-hashes -r requirements.lock
+          python -m pip install --no-deps -e .
+          python -m pip install pytest pytest-timeout pytest-xdist ruff
 
       - name: Run backend tests
-        run: pytest -q
+        run: pytest -q --timeout=120 --timeout-method=thread -n 4
 
-  ops-console-tests:
-    name: ops-console-tests
+      - name: Lint backend (ruff)
+        run: ruff check app
+
+  backend-dependency-audit:
+    name: backend-dependency-audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/platform-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Audit locked Python dependencies
+        run: |
+          python -m pip install --upgrade pip pip-audit
+          pip-audit -r requirements.lock --strict --progress-spinner off
+
+  ops-console:
+    name: ops-console
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -45,12 +84,18 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: apps/ops-console/package-lock.json
 
       - name: Install ops console dependencies
-        run: npm --prefix apps/ops-console install
+        run: npm --prefix apps/ops-console ci
+
+      - name: Typecheck ops console
+        run: npm --prefix apps/ops-console run typecheck
+
+      - name: Lint ops console
+        run: npm --prefix apps/ops-console run lint
 
       - name: Run ops console tests
         run: npm --prefix apps/ops-console run test
@@ -58,8 +103,11 @@ jobs:
       - name: Build ops console
         run: npm --prefix apps/ops-console run build
 
-  product-web-tests:
-    name: product-web-tests
+      - name: Audit ops console dependencies
+        run: npm --prefix apps/ops-console audit --audit-level=high
+
+  product-web:
+    name: product-web
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -68,15 +116,21 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: apps/product-web/package-lock.json
 
       - name: Install product web dependencies
-        run: npm --prefix apps/product-web install
+        run: npm --prefix apps/product-web ci
 
       - name: Run product web tests
         run: npm --prefix apps/product-web run test
 
       - name: Build product web
         run: npm --prefix apps/product-web run build
+
+      - name: Check page-weight budget
+        run: npm --prefix apps/product-web run check:bundle
+
+      - name: Audit product web dependencies
+        run: npm --prefix apps/product-web audit --audit-level=high

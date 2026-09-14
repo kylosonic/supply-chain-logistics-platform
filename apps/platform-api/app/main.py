@@ -1,5 +1,6 @@
 import logging
 import time
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from fastapi import FastAPI
@@ -27,7 +28,25 @@ limiter = Limiter(
     default_limits=['200/minute'] if settings.app_env not in ('development', 'test') else [],
 )
 
-app = FastAPI(title='Supply Chain Logistics API', version='1.0.0')
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # NB-63.1 (audit C-1): touch every effective_* property at boot so a
+    # misconfigured non-dev environment aborts startup with an error naming
+    # the offending variable, instead of failing lazily on first use.
+    # Dev/test guards skip, so the pytest suite is unaffected.
+    settings.effective_database_url
+    settings.effective_jwt_secret_key
+    settings.effective_provider_key_encryption_secret
+    settings.effective_receipt_extraction_mode
+    settings.effective_cbe_account_holder
+    settings.effective_cbe_account_number
+    settings.effective_dashen_account_holder
+    settings.effective_dashen_account_number
+    yield
+
+
+app = FastAPI(title='Supply Chain Logistics API', version='1.0.0', lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda _request, _exc: JSONResponse(status_code=429, content={'detail': 'Too many requests'}))
 app.add_middleware(SlowAPIMiddleware)
@@ -40,8 +59,8 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-if settings.allowed_hosts:
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
+if settings.effective_allowed_hosts:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.effective_allowed_hosts)
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -81,4 +100,7 @@ def health() -> dict:
         db_status = 'ok'
     except Exception:
         db_status = 'unavailable'
-    return {'status': 'ok' if db_status == 'ok' else 'degraded', 'db': db_status, 'env': settings.app_env}
+    # NB-71 (audit L-3): the environment name is deployment detail and is not
+    # returned on a publicly reachable endpoint. Liveness/readiness consumers
+    # only need the two status fields below.
+    return {'status': 'ok' if db_status == 'ok' else 'degraded', 'db': db_status}

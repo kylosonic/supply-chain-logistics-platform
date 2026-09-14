@@ -56,8 +56,14 @@ class RouteOptimizeResponse(BaseModel):
     data_origin: str | None = None
 
 
-class RouteScheduleSummary(BaseModel):
-    id: str
+class RouteScheduleSummary(ORMBase):
+    """NB-64 fix: this summary previously extended plain ``BaseModel`` while
+    declaring ``id: str``, so serialising a real ``RouteSchedule`` row (whose
+    ``id`` is a ``UUID``) raised ``ResponseValidationError`` -> HTTP 500 on
+    ``GET /routes/schedules``. It was invisible only because no test listed a
+    schedule that a request had persisted. ``ORMBase`` coerces UUIDs to strings
+    (same contract as ``RouteOptimizationRunSummary``)."""
+
     route_name: str
     schedule_date: date
     total_distance_km: float

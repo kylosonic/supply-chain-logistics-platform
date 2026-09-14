@@ -122,15 +122,19 @@ export function DashboardPage() {
     invalidateLivePayload(payload);
   });
 
-  const inventory = inventoryQ.data ?? [];
-  const forecast = forecastQ.data?.points ?? [];
-  const schedules = schedulesQ.data ?? [];
-  const shipments = shipmentsQ.data ?? [];
-  const plans = plansQ.data ?? [];
+  // NB-77 lint gate: derive each list with a stable identity. A bare
+  // `data ?? []` allocates a new array on every render, so the `summary` memo
+  // below would recompute on each pass and the exhaustive-deps rule flagged
+  // the six list inputs as unstable dependencies.
+  const inventory = useMemo(() => inventoryQ.data ?? [], [inventoryQ.data]);
+  const forecast = useMemo(() => forecastQ.data?.points ?? [], [forecastQ.data]);
+  const schedules = useMemo(() => schedulesQ.data ?? [], [schedulesQ.data]);
+  const shipments = useMemo(() => shipmentsQ.data ?? [], [shipmentsQ.data]);
+  const plans = useMemo(() => plansQ.data ?? [], [plansQ.data]);
   const usage = usageQ.data ?? null;
   const exceptionFeed = feedQ.data ?? null;
   const auditEvents = auditQ.data ?? [];
-  const riskZones = riskQ.data ?? [];
+  const riskZones = useMemo(() => riskQ.data ?? [], [riskQ.data]);
   const appointments = appointmentsQ.data ?? [];
 
   // NB-29: milestone = 6 once m6 completes, else the sequential N-of-5.

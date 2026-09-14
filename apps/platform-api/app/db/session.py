@@ -18,6 +18,13 @@ if settings.effective_database_url.startswith('postgresql'):
         'pool_size': 10,
         'max_overflow': 20,
         'pool_recycle': 3600,
+        # NB-72/health: without a connect timeout a missing or firewalled
+        # database makes every connect attempt hang for the OS TCP timeout
+        # (~2 min), so ``GET /health`` never answers and the readiness probe
+        # looks *up* while the database is actually down. Bound the connect
+        # (and any transient statement) so the health surface fails fast and
+        # reports ``degraded`` instead of hanging.
+        'connect_args': {'connect_timeout': 5},
     })
 
 engine = create_engine(settings.effective_database_url, **_engine_kwargs)

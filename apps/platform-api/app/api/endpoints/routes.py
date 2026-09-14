@@ -6,7 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import asc, or_, select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles, require_writable_workspace
+from app.api.security import (
+    actor_organization_id,
+    order_by_organization_first,
+    organization_scoped_get,
+    require_roles,
+    require_writable_workspace,
+    scoped_to_organization,
+)
 from app.db.session import get_db
 from app.models.membership import OrganizationMembership
 from app.models.route import RouteSchedule, RouteStop
@@ -46,14 +53,7 @@ def optimize_routes(
     # never collide (MultipleResultsFound -> 500 on persist=true).
     organization_id = resolve_actor_organization_id(db, actor)
 
-    nodes_query = select(Warehouse)
-    if organization_id is not None:
-        nodes_query = nodes_query.where(
-            or_(
-                Warehouse.organization_id == organization_id,
-                Warehouse.organization_id.is_(None),
-            )
-        )
+    nodes_query = scoped_to_organization(select(Warehouse), Warehouse, organization_id)
     warehouses = db.execute(nodes_query).scalars().all()
     if not warehouses:
         raise HTTPException(status_code=400, detail='No warehouses available')
@@ -121,16 +121,11 @@ def optimize_routes(
     # the start warehouse AND every delivery-target warehouse row used in
     # the run exist with data_origin='real' (one IN-select, not N queries).
     used_codes = {payload.start_warehouse_code} | {d.warehouse_code for d in payload.deliveries}
-    origin_query = select(Warehouse.code, Warehouse.data_origin).where(
-        Warehouse.code.in_(list(used_codes))
+    origin_query = scoped_to_organization(
+        select(Warehouse.code, Warehouse.data_origin).where(Warehouse.code.in_(list(used_codes))),
+        Warehouse,
+        organization_id,
     )
-    if organization_id is not None:
-        origin_query = origin_query.where(
-            or_(
-                Warehouse.organization_id == organization_id,
-                Warehouse.organization_id.is_(None),
-            )
-        )
     origin_rows = db.execute(origin_query).all()
     origin_by_code = {row.code: row.data_origin for row in origin_rows}
     run_origin = 'real'
@@ -168,16 +163,19 @@ def optimize_routes(
     db.add(history_run)
 
     if payload.persist_schedule:
-        start_query = select(Warehouse).where(Warehouse.code == payload.start_warehouse_code)
-        if organization_id is not None:
-            start_query = start_query.where(
-                or_(
-                    Warehouse.organization_id == organization_id,
-                    Warehouse.organization_id.is_(None),
-                )
-            )
-        start_wh = db.execute(start_query).scalar_one()
+        start_query = order_by_organization_first(
+            scoped_to_organization(
+                select(Warehouse).where(Warehouse.code == payload.start_warehouse_code),
+                Warehouse,
+                organization_id,
+            ),
+            Warehouse,
+        )
+        start_wh = db.execute(start_query).scalars().first()
+        if start_wh is None:
+            raise HTTPException(status_code=404, detail='start_warehouse_code not found')
         schedule = RouteSchedule(
+            organization_id=organization_id or start_wh.organization_id,
             route_name=payload.route_name,
             schedule_date=payload.schedule_date,
             start_warehouse_id=start_wh.id,
@@ -193,15 +191,15 @@ def optimize_routes(
 
         current_time = datetime.now(UTC)
         for stop in result['stops']:
-            stop_query = select(Warehouse).where(Warehouse.code == stop['warehouse_code'])
-            if organization_id is not None:
-                stop_query = stop_query.where(
-                    or_(
-                        Warehouse.organization_id == organization_id,
-                        Warehouse.organization_id.is_(None),
-                    )
-                )
-            row_wh = db.execute(stop_query).scalar_one_or_none()
+            stop_query = order_by_organization_first(
+                scoped_to_organization(
+                    select(Warehouse).where(Warehouse.code == stop['warehouse_code']),
+                    Warehouse,
+                    organization_id,
+                ),
+                Warehouse,
+            )
+            row_wh = db.execute(stop_query).scalars().first()
             if not row_wh:
                 continue
             arrival = stop['estimated_arrival']
@@ -272,20 +270,25 @@ def optimize_routes(
 @router.get('/schedules', response_model=list[RouteScheduleSummary])
 def list_route_schedules(
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    return RouteScheduleRepository(db).list_all_sorted()
+    # NB-64 (audit H-1): route schedules are tenant data.
+    return RouteScheduleRepository(db).list_all_sorted(actor_organization_id(actor, db))
 
 
 @router.get('/schedules/{schedule_id}', response_model=RouteScheduleDetail)
 def route_schedule_detail(
     schedule_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    schedule = RouteScheduleRepository(db).get_by_id(schedule_id)
-    if not schedule:
-        raise HTTPException(status_code=404, detail='Route schedule not found')
+    schedule = organization_scoped_get(
+        db,
+        RouteSchedule,
+        schedule_id,
+        actor_organization_id(actor, db),
+        not_found_detail='Route schedule not found',
+    )
 
     stops = db.execute(
         select(RouteStop, Warehouse.code, Warehouse.latitude, Warehouse.longitude)
@@ -323,20 +326,25 @@ def route_schedule_detail(
 @router.get('/history', response_model=list[RouteOptimizationRunSummary])
 def list_route_optimization_history(
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    return RouteOptimizationRunRepository(db).list_all_desc()
+    # NB-64: run history carries route names, warehouse codes and costs.
+    return RouteOptimizationRunRepository(db).list_all_desc(actor_organization_id(actor, db))
 
 
 @router.get('/history/{run_id}', response_model=RouteOptimizationRunDetail)
 def route_optimization_history_detail(
     run_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    run = RouteOptimizationRunRepository(db).get_by_id(run_id)
-    if not run:
-        raise HTTPException(status_code=404, detail='Route optimization run not found')
+    run = organization_scoped_get(
+        db,
+        RouteOptimizationRun,
+        run_id,
+        actor_organization_id(actor, db),
+        not_found_detail='Route optimization run not found',
+    )
 
     return RouteOptimizationRunDetail(
         id=run.id,

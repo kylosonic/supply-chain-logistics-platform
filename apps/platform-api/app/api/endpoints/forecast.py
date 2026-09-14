@@ -4,7 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles, require_writable_workspace
+from app.api.security import (
+    actor_organization_id,
+    require_roles,
+    require_writable_workspace,
+    resolve_scoped_organization,
+    scoped_to_organization,
+)
 from app.db.session import get_db
 from app.models.item import Item
 from app.models.membership import OrganizationMembership
@@ -23,9 +29,12 @@ router = APIRouter()
 def weekly_demand_forecast(
     payload: ForecastRequest,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+    # NB-64 (audit H-1): a forecast must be computed from the caller's own
+    # order history, never from every tenant's combined demand.
+    organization_id = resolve_scoped_organization(actor, writable) or actor_organization_id(actor, db)
 
     stmt = (
         select(
@@ -42,6 +51,7 @@ def weekly_demand_forecast(
         .join(Warehouse, Warehouse.id == HistoricalOrder.warehouse_id)
         .join(Item, Item.id == HistoricalOrder.item_id)
     )
+    stmt = scoped_to_organization(stmt, HistoricalOrder, organization_id)
     rows = db.execute(stmt).all()
     if not rows:
         raise HTTPException(status_code=400, detail='No historical orders found')

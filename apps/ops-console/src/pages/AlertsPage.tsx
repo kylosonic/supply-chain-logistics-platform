@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { Dialog } from '../components/ui/Dialog';
 import { MetricTile } from '../components/ui/MetricTile';
@@ -7,6 +7,7 @@ import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { acknowledgeAlert, autoResolveAlert, createAlert, listAlerts, resolveAlert, scanAlerts } from '../services/logisticsApi';
 import type { Alert, AlertStatus, AlertSeverity } from '../types/api';
+import { apiErrorMessage } from '../services/authErrors';
 
 function severityTone(severity: AlertSeverity) {
   if (severity === 'critical') return 'danger';
@@ -78,21 +79,23 @@ export function AlertsPage() {
   const [resolveDialog, setResolveDialog] = useState<{ alert: Alert } | null>(null);
   const [form, setForm] = useState({ title: '', message: '', severity: 'medium' as AlertSeverity });
 
-  async function loadAlerts(filter = statusFilter) {
+  // NB-77 lint gate: memoise the loader so the mount effect can depend on it
+  // honestly (it reads `statusFilter`), instead of suppressing the rule.
+  const loadAlerts = useCallback(async (filter: AlertStatus | 'all' = statusFilter) => {
     try {
       setError(null);
       const data = await listAlerts(filter === 'all' ? undefined : filter);
       setAlerts(data);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to load alerts');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to load alerts'));
     } finally {
       setLoading(false);
     }
-  }
+  }, [statusFilter]);
 
   useEffect(() => {
-    loadAlerts();
-  }, []);
+    void loadAlerts();
+  }, [loadAlerts]);
 
   async function onCreate(event: FormEvent) {
     event.preventDefault();
@@ -100,8 +103,8 @@ export function AlertsPage() {
       await createAlert(form);
       setForm({ title: '', message: '', severity: 'medium' });
       await loadAlerts();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to create alert');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to create alert'));
     }
   }
 
@@ -111,8 +114,8 @@ export function AlertsPage() {
       setIsScanning(true);
       await scanAlerts();
       await loadAlerts();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to scan for alerts');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to scan for alerts'));
     } finally {
       setIsScanning(false);
     }
@@ -122,8 +125,8 @@ export function AlertsPage() {
     try {
       await acknowledgeAlert(alertId);
       await loadAlerts();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to acknowledge alert');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to acknowledge alert'));
     }
   }
 
@@ -132,8 +135,8 @@ export function AlertsPage() {
     try {
       await resolveAlert(resolveDialog.alert.id, note);
       await loadAlerts();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to resolve alert');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to resolve alert'));
     } finally {
       setResolveDialog(null);
     }
@@ -143,8 +146,8 @@ export function AlertsPage() {
     try {
       await autoResolveAlert(alertId);
       await loadAlerts();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Failed to auto-resolve alert');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to auto-resolve alert'));
     }
   }
 

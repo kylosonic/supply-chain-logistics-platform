@@ -10,6 +10,7 @@ import {
 } from '../services/logisticsApi';
 import type { ProviderKey } from '../types/api';
 import { useAuth } from '../context/AuthContext';
+import { apiErrorMessage } from '../services/authErrors';
 
 export function ProvidersPage() {
   const { user } = useAuth();
@@ -32,8 +33,8 @@ export function ProvidersPage() {
       setIsLoading(true);
       const data = await listProviderKeys();
       setKeys(data);
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err.message || 'Failed to fetch provider keys.');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to fetch provider keys.'));
     } finally {
       setIsLoading(false);
     }
@@ -64,8 +65,8 @@ export function ProvidersPage() {
       setKeyName('');
       setApiKey('');
       await fetchKeys();
-    } catch (err: any) {
-      setTestError(err?.response?.data?.detail || err.message || 'Failed to create provider key.');
+    } catch (err) {
+      setTestError(apiErrorMessage(err, 'Failed to create provider key.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -76,8 +77,8 @@ export function ProvidersPage() {
     try {
       await revokeProviderKey(keyId);
       await fetchKeys();
-    } catch (err: any) {
-      alert(err?.response?.data?.detail || 'Failed to revoke key.');
+    } catch (err) {
+      alert(apiErrorMessage(err, 'Failed to revoke key.'));
     }
   }
 

@@ -6,7 +6,16 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
-from app.api.security import get_current_user, require_roles, require_writable_workspace
+from app.api.security import (
+    actor_organization_id,
+    get_current_user,
+    order_by_organization_first,
+    organization_scoped_get,
+    require_roles,
+    require_writable_workspace,
+    resolve_scoped_organization,
+    scoped_to_organization,
+)
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.models.inventory import Inventory
@@ -27,12 +36,14 @@ router = APIRouter()
 def list_alerts(
     status: AlertStatus | None = Query(default=None),
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    stmt = select(Alert).order_by(asc(Alert.created_at))
+    # NB-64 (audit H-1): alerts are tenant data.
+    organization_id = actor_organization_id(actor, db)
+    stmt = scoped_to_organization(select(Alert), Alert, organization_id)
     if status:
         stmt = stmt.where(Alert.status == status)
-    return db.execute(stmt).scalars().all()
+    return db.execute(stmt.order_by(asc(Alert.created_at))).scalars().all()
 
 
 @router.post('', response_model=AlertRead, status_code=201)
@@ -42,8 +53,10 @@ def create_alert(
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
+    organization_id = resolve_scoped_organization(actor, writable)
 
     alert = Alert(
+        organization_id=organization_id,
         alert_type=payload.alert_type,
         severity=payload.severity,
         status=AlertStatus.OPEN,
@@ -76,30 +89,39 @@ def scan_alerts(
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
-
+    # NB-64: a scan must only ever generate alerts from the caller's own
+    # inventory and shipments, and stamp them with the caller's org.
+    organization_id = resolve_scoped_organization(actor, writable)
     generated: list[Alert] = []
 
-    low_stock_rows = db.execute(
+    inventory_stmt = (
         select(Inventory, Warehouse.code, Item.sku)
         .join(Warehouse, Warehouse.id == Inventory.warehouse_id)
         .join(Item, Item.id == Inventory.item_id)
+    )
+    low_stock_rows = db.execute(
+        scoped_to_organization(inventory_stmt, Inventory, organization_id)
     ).all()
     for row in low_stock_rows:
         if row.Inventory.quantity_on_hand >= row.Inventory.safety_stock:
             continue
         related_id = f'{row.code}:{row.sku}'
+        exists_stmt = select(Alert).where(
+            Alert.alert_type == AlertType.LOW_STOCK,
+            Alert.status.in_([AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED]),
+            Alert.related_entity_type == 'inventory',
+            Alert.related_entity_id == related_id,
+        )
         exists = db.execute(
-            select(Alert).where(
-                Alert.alert_type == AlertType.LOW_STOCK,
-                Alert.status.in_([AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED]),
-                Alert.related_entity_type == 'inventory',
-                Alert.related_entity_id == related_id,
+            order_by_organization_first(
+                scoped_to_organization(exists_stmt, Alert, organization_id), Alert
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if exists:
             continue
         generated.append(
             Alert(
+                organization_id=organization_id,
                 alert_type=AlertType.LOW_STOCK,
                 severity=AlertSeverity.HIGH,
                 status=AlertStatus.OPEN,
@@ -110,23 +132,34 @@ def scan_alerts(
             )
         )
 
-    delayed_shipments = db.execute(select(Shipment).where(Shipment.status == 'delayed')).scalars().all()
+    delayed_stmt = scoped_to_organization(
+        select(Shipment).where(Shipment.status == 'delayed'), Shipment, organization_id
+    )
+    delayed_shipments = db.execute(delayed_stmt).scalars().all()
     now = datetime.now(UTC)
     tasks_to_queue = []
     
     for shipment in delayed_shipments:
         exists = db.execute(
-            select(Alert).where(
-                Alert.alert_type == AlertType.DELAYED_SHIPMENT,
-                Alert.status.in_([AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED]),
-                Alert.related_entity_type == 'shipment',
-                Alert.related_entity_id == shipment.id,
+            order_by_organization_first(
+                scoped_to_organization(
+                    select(Alert).where(
+                        Alert.alert_type == AlertType.DELAYED_SHIPMENT,
+                        Alert.status.in_([AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED]),
+                        Alert.related_entity_type == 'shipment',
+                        Alert.related_entity_id == shipment.id,
+                    ),
+                    Alert,
+                    organization_id,
+                ),
+                Alert,
             )
-        ).scalar_one_or_none()
+        ).scalars().first()
         if exists:
             continue
             
         alert = Alert(
+            organization_id=organization_id,
             alert_type=AlertType.DELAYED_SHIPMENT,
             severity=AlertSeverity.CRITICAL,
             status=AlertStatus.OPEN,
@@ -176,9 +209,13 @@ def acknowledge_alert(
 
     if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
         raise HTTPException(status_code=403, detail='Insufficient role')
-    alert = db.get(Alert, alert_id)
-    if not alert:
-        raise HTTPException(status_code=404, detail='Alert not found')
+    alert = organization_scoped_get(
+        db,
+        Alert,
+        alert_id,
+        resolve_scoped_organization(user, writable) or actor_organization_id(user, db),
+        not_found_detail='Alert not found',
+    )
     if alert.status == AlertStatus.RESOLVED:
         raise HTTPException(status_code=400, detail='Cannot acknowledge a resolved alert')
 
@@ -214,9 +251,13 @@ def resolve_alert(
 
     if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
         raise HTTPException(status_code=403, detail='Insufficient role')
-    alert = db.get(Alert, alert_id)
-    if not alert:
-        raise HTTPException(status_code=404, detail='Alert not found')
+    alert = organization_scoped_get(
+        db,
+        Alert,
+        alert_id,
+        resolve_scoped_organization(user, writable) or actor_organization_id(user, db),
+        not_found_detail='Alert not found',
+    )
 
     alert.status = AlertStatus.RESOLVED
     if not alert.acknowledged_by_user_id:
@@ -252,9 +293,13 @@ def auto_resolve_alert(
 
     if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
         raise HTTPException(status_code=403, detail='Insufficient role')
-    alert = db.get(Alert, alert_id)
-    if not alert:
-        raise HTTPException(status_code=404, detail='Alert not found')
+    alert = organization_scoped_get(
+        db,
+        Alert,
+        alert_id,
+        resolve_scoped_organization(user, writable) or actor_organization_id(user, db),
+        not_found_detail='Alert not found',
+    )
 
     if alert.status == AlertStatus.RESOLVED:
         raise HTTPException(status_code=400, detail='Alert already resolved')

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderToString } from 'react-dom/server';
 import { Route, Routes } from 'react-router-dom';
-import { StaticRouter } from 'react-router-dom/server';
+import { StaticRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Layout } from './Layout';
