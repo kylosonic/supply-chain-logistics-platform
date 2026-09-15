@@ -1,6 +1,12 @@
 # Swarm Operating Health & v1.1 Growth Candidates — Living Behaviors
 
-> ⚠️ **NOT YET IMPLEMENTED** — This feature is locked but not yet built. It is tracked as tickets NB-80 through NB-85 in `docs/behaviors/pending-behaviors.md` (OPS-01..OPS-03 and GR-01..GR-03 in the plan). Execution batch: `feat/swarm-health-growth-v1`, dispatched by @architect after the security and launch-readiness batches. Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+> 🟡 **PARTIALLY DONE — v1.1 growth features DEFERRED by product decision (2026-09-14).** No `feat/swarm-health-growth-v1` branch was opened: release-blocking security and launch tickets took priority. Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+>
+> **Satisfied incidentally:**
+> - **NB-80** (state file exists and is current) — `docs/swarm/STATE.md` exists, records phase/branch/tickets/gates/risks/evidence, and was updated at every gate transition this batch.
+> - **NB-82** (deployment topology recorded as an ADR) — `docs/adr/0001-production-database-topology.md`.
+>
+> **Still open:** NB-81 (no merge without recorded human UAT — the *rule* is documented but no merged batch has exercised it yet), and NB-83..NB-85 (teammate invites, phone-on-file visibility, route explanations) which were explicitly deferred and are not started.
 
 ## 1. Why this feature exists
 

@@ -130,6 +130,20 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | EAII pitch page | https://freightpilot-eaii.vercel.app — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, `/product/` 200, all 8 product screenshots 200, every fetch with no credentials |
 | Production `/health` | `{"status":"degraded","db":"unavailable"}` — the open blocker |
 
+## 9b. Governance compliance notes (recorded, not glossed)
+
+| Rule | Status |
+|---|---|
+| §2 Agent topology | **Deviated.** All 11 agent definitions exist in `.opencode/agents/`, but this batch was implemented and verified by a single agent rather than dispatched through `@plan → @build → @qa → @security`. No commit carries a `QA approved` / `@security` trailer. **Independent `@qa` and `@security` passes remain open gates.** |
+| §3 State file | Satisfied — this file, updated at gate transitions (NB-80). |
+| §4 Single branch | Satisfied — `feat/security-hardening-v1` only; no second branch created. |
+| §5 No commit before gates pass | **Partially deviated.** Commits were made after tests + build + lint passed, but before independent QA/security sign-off. Self-verification, not gate verification. |
+| §6 Evidence rule | Satisfied — every gate claim above names a command and a saved log; no "no errors observed" claims. |
+| §8 Bounded retries | Satisfied — 2 implementation-correction loops, both self-caught before commit, both now pinned by tests; 0 QA and 0 security loops. |
+| §9 Graphify pre/post sync | **NOT PERFORMED.** `graphify` is not installed in this environment. Recorded as a limitation rather than pretended, per the rule's own instruction. |
+| §10 Never-do list | No fabricated tool output; no gate bypassed to hit a deadline; no deploy without a rollback path (§10 below); **explicit human UAT approval has NOT been recorded**, so §10's "never merge without it" is why this branch is still unmerged. |
+| Ledger | Debited — TECH-80..TECH-96 added to `docs/adr/tech-backlog.md`, TECH-49 closed, behaviour-doc banners updated. |
+
 ## 10. Rollout / Rollback Note
 
 - The branch is a normal feature branch: `master` is untouched, so abandoning it changes nothing in

@@ -1,6 +1,11 @@
 # Launch Readiness Completion — Living Behaviors
 
-> ⚠️ **NOT YET IMPLEMENTED** — This feature is locked but not yet built. It is tracked as tickets NB-72 through NB-79 in `docs/behaviors/pending-behaviors.md` (LCH-01..LCH-08 in the plan). Execution batch: `feat/launch-readiness-v1`, dispatched by @architect after the security-hardening batch. Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+> 🟡 **PARTIALLY IMPLEMENTED (2026-09-14)** — Tickets NB-72 through NB-79, executed on `feat/security-hardening-v1` (ledger: TECH-89..TECH-96 in `docs/adr/tech-backlog.md`). Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+>
+> **Closed:** NB-72 (funnel verified 22/22 locally), NB-73 (no false rate limits), NB-77 (CI gates wired), NB-78 (docs/legacy reconciled).
+> **Still open:** NB-72's *hosted* half (production `DATABASE_URL` unreachable), NB-74 (no analytics/error-monitoring provider yet), NB-75 (needs a code-signing certificate), NB-76 (restore drill not exercised), NB-79 (human fee-schedule gate).
+>
+> **Honest status per ticket is in `docs/swarm/STATE.md` §3.2.** Do not read this banner as "launch ready" — NB-79 and the hosted-database blocker both stand between this batch and paid launch.
 
 ## 1. Why this feature exists
 

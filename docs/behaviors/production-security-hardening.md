@@ -1,6 +1,10 @@
 # Production Security Hardening — Living Behaviors
 
-> ⚠️ **NOT YET IMPLEMENTED** — This feature is locked but not yet built. It is tracked as tickets NB-63 through NB-71 in `docs/behaviors/pending-behaviors.md` (SEC-01..SEC-09 in the plan). Execution batch: `feat/security-hardening-v1`, dispatched by @architect. Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+> ✅ **IMPLEMENTED (2026-09-14)** — Tickets NB-63 through NB-71, executed on the single branch `feat/security-hardening-v1` (ledger: TECH-80..TECH-88 in `docs/adr/tech-backlog.md`). Every rule below is written from the user's perspective (state, actions, consequences), not implementation mechanics.
+>
+> **Acceptance evidence:** 399 backend tests on the hash-locked dependency set, 143 console tests + typecheck + `eslint --max-warnings=0` + production build, 62 site tests + Next 15 build, launch funnel 22/22. Full itemisation in `docs/swarm/STATE.md` §4/§9.
+>
+> **Open gates before merge to `master`:** human UAT (NB-81), an independent `@qa`/`@security` pass, and the production deployment (blocked on the hosted `DATABASE_URL` — see `STATE.md` §7). Four defects found *while* verifying this batch, and one recorded process deviation, are listed in `docs/adr/tech-backlog.md` under the batch heading.
 
 ## 1. Why this feature exists
 
