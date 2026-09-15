@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import { companySignup, type SignupTier } from '@/lib/company-signup';
 import { cn } from '@/lib/cn';
+import { trackEvent } from '@/components/site/site-analytics';
 import {
   externalLinks,
   signupFormNote,
@@ -57,6 +58,11 @@ export function SignupForm() {
     setStatusMessage(null);
     setStatusTone(null);
 
+    // NB-74: the funnel's primary conversion point. No-ops when analytics is
+    // unconfigured, and never carries form contents — only the fact that the
+    // submit happened.
+    trackEvent('start_free_click');
+
     try {
       await companySignup({
         company_name: values.company_name,
@@ -66,6 +72,7 @@ export function SignupForm() {
         ...(values.subscription_tier ? { subscription_tier: values.subscription_tier } : {}),
       });
 
+      trackEvent('signup_success');
       setStatusTone('success');
       setStatusMessage(signupSuccessMessage);
       // The ops console bootstraps the session from the supply_chain_token
@@ -73,6 +80,12 @@ export function SignupForm() {
       // workspace, otherwise on its existing /login.
       window.location.assign(externalLinks.console);
     } catch (error) {
+      // Distinguish a rejected signup from a broken funnel: the behaviour
+      // contract requires launch-form errors to be visible within minutes, and
+      // an error count that includes validation failures would be noise.
+      trackEvent('signup_error', {
+        reason: error instanceof Error && error.message ? 'api_error' : 'unknown',
+      });
       setStatusTone('error');
       setStatusMessage(error instanceof Error ? error.message : 'Could not create the company workspace.');
     }

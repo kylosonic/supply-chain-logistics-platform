@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk } from 'next/font/google';
 import type { PropsWithChildren } from 'react';
 
 import { MotionProvider } from '@/components/site/motion-provider';
+import { SiteAnalytics } from '@/components/site/site-analytics';
 import { SiteChrome } from '@/components/site/site-chrome';
 
 import './globals.css';
@@ -88,6 +89,10 @@ export default function RootLayout({ children }: PropsWithChildren) {
         <MotionProvider>
           <SiteChrome>{children}</SiteChrome>
         </MotionProvider>
+        {/* NB-74: renders nothing unless NEXT_PUBLIC_ANALYTICS_DOMAIN and
+            NEXT_PUBLIC_ANALYTICS_SRC are both set. Placed last so it can never
+            delay the content above it. */}
+        <SiteAnalytics />
       </body>
     </html>
   );
