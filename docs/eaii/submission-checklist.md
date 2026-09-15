@@ -170,6 +170,20 @@ if the form asks for traction:
   complete signups again. The code and schema are verified; this is an access/credential task.
   If a reviewer clicks through to the live site and signup fails, that is why — mention it if asked
   rather than letting it be discovered.
+
+  One command closes it once you have the database password:
+
+  ```powershell
+  # Supabase Dashboard -> Settings -> Database -> Reset database password, then:
+  ./scripts/rotate_and_deploy.ps1 -DryRun -DatabaseUrl 'postgresql+psycopg://postgres.huukqxpbwqcepnkrfhdw:<PASSWORD>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require'
+  # inspect the printed plan, then re-run without -DryRun to apply
+  ```
+
+  The script verifies the URL actually connects, rotates `JWT_SECRET_KEY` and
+  `PROVIDER_KEY_ENCRYPTION_SECRET`, removes the dead `PASSWORD_SALT`, deploys all three Vercel
+  projects, and then verifies `GET /health` reports `db:ok`. Use `-SkipConnectivityCheck` only if
+  this machine is on a restricted network that cannot reach the database host.
+
 - **No signed desktop installer yet.** The Electron shell runs from source; a signed, auto-updating
   installer is planned work.
 - **The CBE/Dashen fee-schedule verification is still open.** It gates paid launch, not the product.

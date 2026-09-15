@@ -94,7 +94,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 
 | Risk | Detail | Blocker level |
 |---|---|---|
-| Production database unavailable | Hosted `DATABASE_URL` cannot connect; public signup returns 500. Requires reissuing the credential in the hosting environment's settings, then redeploying. | **Blocks the hosted launch funnel** |
+| Production database unavailable | Hosted `DATABASE_URL` cannot connect; public signup returns 500. The credential is a Vercel *sensitive* environment variable, so `vercel env pull` returns it redacted and no copy exists on disk or in shell history — the only way to obtain it is a dashboard action. Closed by `scripts/rotate_and_deploy.ps1`, which pre-verifies the new URL connects, rotates the secrets, deploys all three projects and re-checks `/health`. Guard paths tested: malformed URL → exit 2, unreachable DB → exit 3, dry run → exit 0. Supabase pooler confirmed reachable from this machine (176–382 ms). | **Blocks the hosted launch funnel** |
 | Placeholder secrets were live for ~39 days | `JWT_SECRET_KEY` and `PROVIDER_KEY_ENCRYPTION_SECRET` were created in the hosting environment before NB-63 landed. They were never committed (91-commit history scan: zero secrets) and are not the documented placeholder values, but they predate the guard. | **Rotate before/at next deploy**; invalidates sessions (acceptable) |
 | CBE/Dashen fee-schedule verification | Human verification of ±1,000 ETB tolerance, 5,000–50,000 ETB band. | Blocks paid launch only |
 | No signed desktop installer | Requires a code-signing certificate. | Blocks desktop distribution |
