@@ -177,7 +177,7 @@ metrics = [
     ('399', 'backend tests passing on the\nlocked dependency set'),
     ('205', 'console (143) + website (62)\ntests passing'),
     ('22/22', 'launch-funnel steps verified\nend to end'),
-    ('0', 'known critical/high advisories\nin deployed dependencies'),
+    ('0', 'known vulnerabilities in the\ndeployed dependency set'),
 ]
 for index, (value, label) in enumerate(metrics):
     left = 0.62 + index * 3.06

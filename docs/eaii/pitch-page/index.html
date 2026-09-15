@@ -300,7 +300,7 @@
         <ul>
           <li><strong>Security audit completed and remediated.</strong> An independent audit found one critical and six high findings — including a committed placeholder signing key and a cross-tenant authorisation gap. All are remediated, with the remediation pinned by tests.</li>
           <li><strong>Four deployable surfaces.</strong> FastAPI platform API, React operations console, Next.js product site, and an Electron desktop shell.</li>
-          <li><strong>Zero known critical or high advisories</strong> in the deployed dependency set.</li>
+          <li><strong>Every deployed dependency audited clean.</strong> A full audit of the shipped dependency set for all three web surfaces now reports <strong>zero known vulnerabilities</strong>. That includes a Next.js 14 → 16 upgrade undertaken specifically to clear a build-chain advisory that no patch-level bump could reach.</li>
           <li><strong>~20,000 lines</strong> across backend and frontend, with a contract-driven build: behaviour written first, then implementation, then verification.</li>
         </ul>
       </div>
@@ -313,6 +313,7 @@
         <li><strong>The hosted production database needs its credentials reissued.</strong> The platform code and schema are verified working end to end; the hosted environment's database connection is the outstanding item before the public site accepts signups again.</li>
         <li><strong>No signed desktop installer yet.</strong> The Electron shell runs from source; a signed, auto-updating installer is planned work.</li>
         <li><strong>One open human verification gate.</strong> Confirming CBE and Dashen transfer fee schedules in the 5,000–50,000 ETB band against a ±1,000 ETB tolerance. This blocks <em>paid</em> launch, not the product.</li>
+        <li><strong>Dev-only tooling advisories.</strong> The test runner and dev server (<code>vitest</code>, <code>vite</code>) carry advisories that need major-version migrations. Neither is shipped to users — they are build/test tooling only — so they are tracked rather than blocking release.</li>
       </ul>
     </div>
 

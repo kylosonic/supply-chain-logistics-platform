@@ -51,7 +51,7 @@
 | NB-74 — funnel observable, privacy-light | **IN PROGRESS** | The funnel is fully instrumented server-side (audit timeline, activation milestones, usage metering). No third-party analytics or error-monitoring provider is wired into `product-web` yet. |
 | NB-75 — desktop installs and updates from the real product | **NOT IMPLEMENTED** | Requires a code-signing certificate. Electron is upgraded to a supported major (NB-66); packaging and the signed installer remain open. |
 | NB-76 — production data can be restored | **NOT IMPLEMENTED** | Backup/restore scripts exist in `scripts/`; the restore drill has not been exercised against the hosted database. |
-| NB-77 — CI gates the release | **PARTIAL** | `.github/workflows/ci.yml` rewritten: backend tests + ruff, `pip-audit --strict` on the lockfile, console typecheck/lint/test/build/audit, site test/build/bundle-budget/audit. `docs/release-gates.md` documents how a red run blocks deploy. **The GitHub branch-protection rule is not confirmed enabled**, so CI is a strong signal rather than a hard block. |
+| NB-77 — CI gates the release | **PARTIAL** | `.github/workflows/ci.yml` rewritten: backend tests + ruff, `pip-audit --strict` on the lockfile, console typecheck/lint/test/build/audit, site test/build/bundle-budget/audit. `docs/release-gates.md` documents how a red run blocks deploy. GitHub refuses branch protection on private repositories on a free plan (`403: Upgrade to GitHub Pro or make this repository public`), so CI is a strong signal rather than a hard block. Recorded as plan-blocked, not unfinished. |
 | NB-78 — docs and legacy artifacts match the product | **IMPLEMENTED** | `supabase/RETIRED.md`; ADR-0001; dead `@supabase/supabase-js` dependency removed; `README.md` production section rewritten against the shipped topology. |
 | NB-79 — human verification gate closed or recorded | **RECORDED OPEN** | CBE/Dashen fee schedule (5,000–50,000 ETB, ±1,000 ETB tolerance) still requires human verification. Recorded as blocking **paid launch only**, not product development, in `docs/production-readiness-plan.md` and the EAII submission page. |
 
@@ -81,7 +81,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | Gate | Status | Detail |
 |---|---|---|
 | Production signup funnel | ❌ FAIL | `POST /api/v1/auth/company-signup` → 500; `GET /health` → `db: unavailable`. Cause: hosted `DATABASE_URL` cannot reach its database. Not a code defect — the identical code path passes locally. |
-| GitHub branch protection enforcing CI | ❌ NOT CONFIGURED | Workflow runs and passes; the merge-blocking rule is unconfirmed. |
+| GitHub branch protection enforcing CI | ❌ BLOCKED BY PLAN | Workflow runs and all four jobs pass, but GitHub requires a paid plan for branch protection on private repositories (`403`). Not configured and not configurable without upgrading or making the repo public. |
 
 ## 6. Retry Count
 
@@ -94,7 +94,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 
 | Risk | Detail | Blocker level |
 |---|---|---|
-| Production database unavailable | Hosted `DATABASE_URL` cannot connect; public signup returns 500. The credential is a Vercel *sensitive* environment variable, so `vercel env pull` returns it redacted and no copy exists on disk or in shell history — the only way to obtain it is a dashboard action. Closed by `scripts/rotate_and_deploy.ps1`, which pre-verifies the new URL connects, rotates the secrets, deploys all three projects and re-checks `/health`. Guard paths tested: malformed URL → exit 2, unreachable DB → exit 3, dry run → exit 0. Supabase pooler confirmed reachable from this machine (176–382 ms). | **Blocks the hosted launch funnel** |
+| Production database unavailable | **Corrected diagnosis (2026-09-14, security pass):** this is not a lost password. The Supabase pooler reports `FATAL: (ENOTFOUND) tenant/user postgres.<ref> not found` for **both** known project refs — `huukqxpbwqcepnkrfhdw` (current, per `supabase/.temp/linked-project.json`) and `azljjrjatdpkcvjbpztn` (legacy, per README) — and neither is recognised in any of 8 standard pooler regions. Both Supabase projects are deleted or long-paused. **Recovery requires provisioning a new managed Postgres and re-running the Alembic chain**, then `scripts/rotate_and_deploy.ps1` (which pre-verifies connectivity, rotates the secrets, deploys all three projects and re-checks `/health`). Guard paths tested: malformed URL → exit 2, unreachable DB → exit 3, dry run → exit 0. | **Blocks the hosted launch funnel** |
 | Placeholder secrets were live for ~39 days | `JWT_SECRET_KEY` and `PROVIDER_KEY_ENCRYPTION_SECRET` were created in the hosting environment before NB-63 landed. They were never committed (91-commit history scan: zero secrets) and are not the documented placeholder values, but they predate the guard. | **Rotate before/at next deploy**; invalidates sessions (acceptable) |
 | CBE/Dashen fee-schedule verification | Human verification of ±1,000 ETB tolerance, 5,000–50,000 ETB band. | Blocks paid launch only |
 | No signed desktop installer | Requires a code-signing certificate. | Blocks desktop distribution |

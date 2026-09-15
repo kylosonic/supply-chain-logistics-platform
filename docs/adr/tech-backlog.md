@@ -239,7 +239,7 @@ Source: `docs/behaviors/console-login-color-fidelity.md` (parent tickets NB-60..
 | ~~TECH-80~~ | NB-63 | ✅ IMPLEMENTED — Known-placeholder secrets rejected at boot by exact match against `KNOWN_PLACEHOLDER_SECRETS` (not length alone), error naming the offending variable; boot-time guard touches every `effective_*` property in `app/main.py` lifespan so a misconfigured non-dev environment aborts at startup; `.env.example` (root + app) ships empty values + generation instructions; `docker-compose.yml` requires `POSTGRES_PASSWORD`/`JWT_SECRET_KEY`/`PROVIDER_KEY_ENCRYPTION_SECRET` and binds Postgres to `127.0.0.1`. 8 tests in `tests/test_config_guards.py`. |
 | ~~TECH-81~~ | NB-64 | ✅ IMPLEMENTED — Tenant scoping across every flagged surface. New `app/core/tenant_scope.py` (no upstream imports, so repositories can use it without a cycle); `organization_id` added to `shipments`, `alerts`, `replenishment_plans`, `route_schedules`, `dock_appointments`, `freight_invoices` (model + migration `20260811_0019`, dialect-correct backfill from the parent chain); 11 endpoint modules converted; cross-tenant reads answer 404 never 403; `order_by_organization_first` makes an own-org row win a code tie against a legacy NULL-org row. 12 tests in `tests/test_tenant_isolation_operations.py`. |
 | ~~TECH-82~~ | NB-65 | ✅ IMPLEMENTED — `POST /api/v1/feedback` requires an authenticated user and stamps the caller's identity instead of trusting a client-supplied email. `tests/test_feedback_auth.py`. |
-| ~~TECH-83~~ | NB-66 | ✅ IMPLEMENTED — `next` 14.2.35→15.5.21 (plus `outputFileTracingRoot` pin for the Next 15 workspace-root change), `axios`→1.20.0, `electron` 31→43, `react-router-dom` 6→7.18.3 (production open-redirect advisory; 6 test files updated from the removed `react-router-dom/server` deep import to `react-router`). Each upgrade verified by that surface's tests + production build. |
+| ~~TECH-83~~ | NB-66 | ✅ IMPLEMENTED — `next` 14.2.35→16.3.5 (via 15.5.21; see TECH-97 for the second hop), `axios`→1.20.0, `electron` 31→43, `react-router-dom` 6→7.18.3 (production open-redirect advisory; 6 test files updated from the removed `react-router-dom/server` deep import to `react-router`). Each upgrade verified by that surface's tests + production build. |
 | ~~TECH-84~~ | NB-67 | ✅ IMPLEMENTED — Supabase auth **retired, not hardened**: `supabase/RETIRED.md` records the H-6 preconditions to re-arm; unused `@supabase/supabase-js` removed from `apps/product-web`; decision recorded in `docs/adr/0001-production-database-topology.md`. |
 | ~~TECH-85~~ | NB-68 | ✅ IMPLEMENTED — Open registration can no longer mint a global admin: `POST /auth/register` requires an authenticated ADMIN once any user exists; first-user bootstrap remains legal only on an empty database. |
 | ~~TECH-86~~ | NB-69 | ✅ IMPLEMENTED — Generic conflict messages on register/login (no "username already exists"), uniform timing. |
@@ -255,7 +255,6 @@ Source: `docs/behaviors/console-login-color-fidelity.md` (parent tickets NB-60..
 | TECH-96 | NB-79 | ⏳ **HUMAN GAP — OPEN, BLOCKS PAID LAUNCH ONLY.** Same gate as TECH-22: verify CBE + Dashen published fee schedules (5,000–50,000 ETB) against the ±1,000 ETB tolerance. Recorded as an explicit launch decision rather than silently deferred. |
 
 **Defects found and fixed while verifying this batch** (not in the original audit — recorded because the audit's scope did not include them):
-
 | Defect | Impact | Fix |
 |---|---|---|
 | `/health` opened a Postgres connect with no timeout | The readiness probe hung for the OS TCP timeout (~2 min) and looked *up* while the database was down | `connect_timeout: 5` in `app/db/session.py`; `/health` now fails fast and reports `degraded` |
@@ -266,6 +265,58 @@ Source: `docs/behaviors/console-login-color-fidelity.md` (parent tickets NB-60..
 **Execution protocol deviation (recorded honestly, per `AGENTS.md` §6):** this batch was implemented and verified by a single agent rather than dispatched through the `@plan → @build → @qa → @security` topology in `AGENTS.md` §2, and the commits carry no `QA approved` / `@security` sign-off trailer. The verification that *was* performed is itemised in `docs/swarm/STATE.md` §4/§9 with runnable commands and saved logs, so it is auditable — but it is self-verification, not independent QA. **Human UAT (NB-81) and an independent @qa/@security pass remain open gates before merge to `master`.**
 
 **Graphify limitation (recorded, not pretended — `AGENTS.md` §9):** `graphify` is not installed in this environment, so the mandatory pre/post graph sync was **not** performed for this batch. No `graphify update .` result is claimed.
+
+---
+
+## Security verification pass + dependency closure (2026-09-14, second session)
+
+### TECH-97 — Next 16 upgrade to clear a build-chain advisory — ✅ IMPLEMENTED
+
+A full `npm audit` run during the security pass found the earlier claim of "zero critical/high advisories in deployed dependencies" was **wrong**: `postcss <= 8.5.22` carries two HIGH and two MODERATE advisories (arbitrary `.map` file disclosure via attacker-controlled `sourceMappingURL`; XSS via unescaped `</style>`), and `next@15.5.21` pinned postcss to **exactly** `8.4.31`, so no patch-level bump could reach it and an `overrides` entry could not override an exact pin.
+
+Investigated whether it was actually exploitable before spending the upgrade:
+
+| Check | Result |
+|---|---|
+| postcss in the client bundle browsers download | **No** — 0 client chunks reference it |
+| `require('postcss')` anywhere in `.next/server` at runtime | **No** |
+| postcss vendored into `.next/standalone` (what the Docker image runs) | **No** |
+| Attacker-controllable CSS reaching the build | **No** — CSS is repo-authored and static |
+
+So the real deployed risk was nil, but it was still a production dependency with a HIGH advisory, which the release contract (`production-security-hardening.md` §6) treats as a release blocker. Resolved properly by upgrading to `next@16.3.5`, which ships `postcss@8.5.23`.
+
+**Cascade fixed as part of the upgrade (each verified):**
+
+1. **Turbopack became the default builder** and could not resolve the hoisted `next` in this npm workspace: *"Could not find the Next.js package (next/package.json)"*. Investigated overriding `turbopack.root`, but Next reads `outputFileTracingRoot` as the filesystem root and would not honour a separate Turbopack root. Since `outputFileTracingRoot` is required for the Docker standalone path (which **cannot be verified here — no Docker daemon**), the build script now pins the builder explicitly: `next build --webpack`. Reverting that pin trades a verifiable build for an unverifiable one.
+2. **`app-build-manifest.json` is no longer emitted**, so `check:bundle` failed outright. Rewritten to extract the `/_next/...` asset URLs from the prerendered HTML in `.next/server/app/**`. This is a *better* measurement than the old manifest walk: it is exactly the set of files the browser loads for that route. Verified PASSED — `/launch` is the heaviest route at 1,081,474 bytes against the 1,200,000 budget.
+3. `next-env.d.ts` and `tsconfig.json` were updated by the Next 16 CLI.
+
+**Verification after the upgrade:** 62/62 site tests, production build green, standalone `server.js` present at top level (Docker `CMD node server.js` still valid), `npm audit --omit=dev` → **found 0 vulnerabilities**, `check:bundle` PASSED. 143/143 console tests + typecheck + `--max-warnings=0` lint + build unchanged; backend 398/399 with one pre-existing flaky test (`test_0013_backfill_binds_new_ids_on_sqlite`, passes in isolation, unrelated to this change).
+
+### TECH-98 — Dev-only advisories scoped out of the release gate — ✅ IMPLEMENTED
+
+`vitest` (critical) and `vite` (high) remain in both apps, but both are **devDependencies** — a test runner and a dev server, neither shipped to users. Their fixes require major migrations (`vitest@5`, `vite@8`) that were not attempted in this pass. CI's audit steps now run `audit --omit=dev --audit-level=high` (the deployed set, which is the contract's actual scope) plus a non-blocking full `audit` for visibility. Rationale recorded in the workflow comments.
+
+### TECH-99 — Independent security verification pass — ✅ IMPLEMENTED (as a verification pass, not an independent auditor)
+
+Run by the same agent that wrote the code, so this is **verification, not independent assurance** — the §2 topology deviation still stands. What was actually checked:
+
+| Check | Command / method | Result |
+|---|---|---|
+| Python dependency vulnerabilities | `pip-audit -r requirements.lock --strict` | No known vulnerabilities |
+| Site deployed dependency vulnerabilities | `npm audit --omit=dev` (product-web) | **0 vulnerabilities** |
+| Console deployed dependency vulnerabilities | `npm audit --omit=dev` (ops-console) | **0 vulnerabilities** |
+| Client bundle exposure of postcss | grep client chunks | Not present |
+| Runtime exposure of postcss | grep `.next/server` + `.next/standalone` | Not present |
+| Dev-only advisories | `npm audit` (full) | vitest/vite only — see TECH-98 |
+| Production DB reachability | psycopg probe + TCP | Pooler reachable; **both project refs report `FATAL: (ENOTFOUND) tenant/user ... not found` across 8 pooler regions** — see TECH-89 |
+
+**Supabase finding (corrects TECH-89's diagnosis):** the production database is not failing on a wrong password. The pooler cannot find the *project*: both `huukqxpbwqcepnkrfhdw` (current, per `supabase/.temp/linked-project.json`) and `azljjrjatdpkcvjbpztn` (legacy, per README) return `ENOTFOUND`, and neither is recognised in any of the eight standard pooler regions. Both Supabase projects are therefore deleted or long-paused. **Recovering production requires creating a new Supabase project (or another managed Postgres) and re-running migrations — not merely re-entering a password.** `scripts/rotate_and_deploy.ps1` becomes usable once a reachable URL exists.
+
+### TECH-100 — Branch protection — ❌ BLOCKED BY PLAN, NOT SKIPPED
+
+Attempting to enable it returns `403: Upgrade to GitHub Pro or make this repository public to enable this feature`. The repository is **private on a free plan**, and GitHub restricts branch protection on private repos to paid plans. No client-side workaround exists: the setting is server-side. Options are (a) upgrade to GitHub Pro, (b) make the repo public, or (c) accept CI as a strong signal rather than a hard block — which is the current state and is documented as such in `docs/release-gates.md` §3.
+
 
 
 
