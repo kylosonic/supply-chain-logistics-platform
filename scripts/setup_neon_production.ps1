@@ -237,16 +237,34 @@ $enc = & $PythonExe -c "import secrets;print(secrets.token_urlsafe(48))"
 Push-Location $apiDir
 try {
     $ls = (& npx --no-install vercel env ls production 2>&1) -join "`n"
+
+    # Write each value through a FILE, never a PowerShell pipe.
+    #
+    # `$value | vercel env add NAME production` looks right but corrupts the
+    # value: the CLI reads stdin as "value, then optional description", and a
+    # piped string can be consumed such that a trailing fragment is lost. For a
+    # connection string that produced, at runtime,
+    #   invalid channel_binding value: "require
+    # -- an unterminated quote, because the URL had been split. The corruption
+    # is silent at write time and only appears as a connection failure, which is
+    # exactly how it presented during the Neon cutover.
     foreach ($entry in @(
             @{ Name = 'DATABASE_URL'; Value = $sqlalchemyUrl },
             @{ Name = 'JWT_SECRET_KEY'; Value = $jwt },
             @{ Name = 'PROVIDER_KEY_ENCRYPTION_SECRET'; Value = $enc }
         )) {
         if ($ls -match "(?m)^\s*$($entry.Name)\s") {
-            $entry.Value | npx --no-install vercel env rm $entry.Name production --yes 2>&1 | Out-Null
+            npx --no-install vercel env rm $entry.Name production --yes 2>&1 | Out-Null
         }
-        $entry.Value | npx --no-install vercel env add $entry.Name production 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { Die "failed to set $($entry.Name)" }
+        # No trailing newline: a newline inside a connection URL breaks it in
+        # ways that are painful to diagnose.
+        $tmp = [System.IO.Path]::GetTempFileName()
+        [System.IO.File]::WriteAllText($tmp, [string]$entry.Value, (New-Object System.Text.UTF8Encoding($false)))
+        try {
+            $result = & cmd /c "npx --no-install vercel env add $entry.Name production --force < `"$tmp`"" 2>&1
+            if ($LASTEXITCODE -ne 0) { Die "failed to set $($entry.Name):`n$($result | Select-Object -Last 4)" }
+        }
+        finally { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
         Ok "set $($entry.Name)"
     }
     if ($ls -match '(?m)^\s*PASSWORD_SALT\s') {
