@@ -320,3 +320,46 @@ Attempting to enable it returns `403: Upgrade to GitHub Pro or make this reposit
 
 
 
+
+---
+
+## Production recovery on Neon (2026-09-16) — TECH-101
+
+**Context.** TECH-89 recorded the production database as unreachable. The security pass (TECH-99) then
+established the real cause: the Supabase pooler answered `FATAL: (ENOTFOUND) tenant/user ... not
+found` for **both** known project refs (`huukqxpbwqcepnkrfhdw` per `supabase/.temp/linked-project.json`
+and the legacy README ref) and neither was recognised in any of 8 standard pooler regions — so both
+projects were deleted or long-paused, and no credential-recovery path existed.
+
+**Action.** Production was re-provisioned on Neon through `scripts/setup_neon_production.ps1`, fully
+CLI-driven (no dashboard): Neon project `summer-wind-82665524` in `aws-eu-west-2` (PG 18.6, pooled
+endpoint), 19 migrations applied, `DATABASE_URL` + `JWT_SECRET_KEY` +
+`PROVIDER_KEY_ENCRYPTION_SECRET` rotated, dead `PASSWORD_SALT` removed, all three Vercel projects
+deployed.
+
+**Verified.** `GET /health` → `{"status":"ok","db":"ok"}`; launch funnel **22/22 against production**
+(signup, seeded workspace, first route optimisation at 21.07 km / 31.61 ETB, billing state,
+cross-tenant read → 404). All three web surfaces return 200.
+
+**Two non-obvious failures found and fixed during the cutover**, both recorded because each cost real
+diagnostic time and neither was visible from the outside:
+
+1. **`$value | vercel env add NAME production` silently truncates the value.** The CLI reads stdin as
+   "value, then optional description", and a piped string can be split — for a connection string this
+   produced `invalid channel_binding value: "require` (an unterminated quote) at runtime. The write
+   *appears* to succeed. Fixed by writing through a file with a byte-exact redirect; verified 157
+   bytes written for a 157-character URL. The same bug would silently corrupt JWT secrets.
+2. **`vercel deploy --cwd apps/<name>` double-nests the path.** Each Vercel project already has
+   `rootDirectory = apps/<name>`, which Vercel applies relative to the deploy cwd, so the deploy fails
+   with "The provided path .../apps/<name>/apps/<name> does not exist" — a message that misleadingly
+   points at project settings. Resolved by deploying via git push to `master`, which is also the
+   documented production path for this repo.
+
+**Permanent improvement kept from this work:** `/health` now emits a structured single line
+(`health_db_unavailable type=... detail=...`, DSN password redacted) on database failure. Previously a
+`db: unavailable` result carried no reason at all, which is why this outage was expensive to
+diagnose. A temporary response-body diagnostic was used to find the truncation and has been removed;
+`/health` returns exactly `{status, db}`.
+
+**Follow-up opened:** NB-76 (restore drill) is now unblocked and has not been run; NB-75 still needs a
+code-signing certificate; NB-79 remains a human verification gate.

@@ -1,21 +1,23 @@
 # Swarm State — Authoritative Workflow Record
 
 > Maintained by @scribe per `AGENTS.md` §3. Updated at every gate transition by @architect (stale state is a defect, NB-80).
-> Last updated: 2026-09-14. All facts below verified against repository files, test runs, and git refs at write time.
+> Last updated: 2026-09-16. All facts below verified against repository files, test runs, and git refs at write time.
 
 ## 1. Current Phase
 
-**Phase: `VERIFYING`** (security-hardening and launch-readiness batches implemented; verification evidence recorded below)
+**Phase: `DEPLOYED`** — implementation, verification, and production deployment complete (2026-09-16)
 
-- Batches NB-63..NB-71 (security hardening) and NB-72..NB-79 (launch readiness) are **implemented**.
+- Batches NB-63..NB-71 (security hardening) and NB-72..NB-79 (launch readiness) are **implemented and deployed**.
 - NB-80..NB-85 (swarm health + v1.1 growth) are **deferred** by explicit product decision (2026-09-14):
   release-blocking and launch tickets take priority over v1.1 growth features.
-- Two items remain open and are **not** code-blocked:
-  - **NB-72 production half** — the hosted production database connection is unavailable
-    (`GET /health` → `{"status":"degraded","db":"unavailable"}`), so the public signup funnel
-    returns 500 in production. The same code and schema pass the full funnel locally (22/22).
-    Requires reissuing the production `DATABASE_URL` in the hosting environment.
-  - **NB-79** — the CBE/Dashen fee-schedule verification is a human action, recorded as open.
+- **Production is live and verified.** The hosted database was unrecoverable (both original Supabase
+  projects deleted — see §7), so production was re-provisioned on Neon (project
+  `summer-wind-82665524`, region `aws-eu-west-2`) with all 19 migrations applied and the JWT +
+  provider-encryption secrets rotated. `GET /health` → `{"status":"ok","db":"ok"}` and the launch
+  funnel passes **22/22 against production**.
+- Remaining open items are **not code-blocked**: NB-75 (needs a code-signing certificate), NB-76
+  (restore drill — now unblocked, not yet run), NB-79 (human fee-schedule verification), and GitHub
+  branch protection (requires a paid plan for a private repository).
 
 ## 2. Active Feature Branch & Batch Definition
 
@@ -46,7 +48,7 @@
 
 | NB | Status | Evidence |
 |---|---|---|
-| NB-72 — launch funnel works end to end | **PARTIAL** | Verified locally end to end: `.artifacts/nb72-funnel-verification.log` — **22/22 steps**, including signup → seeded workspace → first route plan (21.07 km, 31.61 ETB) → route history → billing state → cross-tenant 404. **Production half blocked**: hosted `DATABASE_URL` unavailable. |
+| NB-72 — launch funnel works end to end | **IMPLEMENTED** | Verified **in production** 2026-09-16: **22/22 steps** against `https://platform-api-smoky.vercel.app`, including signup → seeded workspace (3 warehouses, 3 items) → first route plan (21.07 km, 31.61 ETB) → route history → billing state → cross-tenant read 404. Evidence: `.artifacts/verify_funnel.py` output in this session and `.artifacts/nb72-funnel-verification.log`. |
 | NB-73 — no false rate-limit errors | **IMPLEMENTED** | Verified in the same funnel run: no 429 at any step; login/register/signup limits unchanged and still enforce per-user abuse protection. |
 | NB-74 — funnel observable, privacy-light | **IN PROGRESS** | The funnel is fully instrumented server-side (audit timeline, activation milestones, usage metering). No third-party analytics or error-monitoring provider is wired into `product-web` yet. |
 | NB-75 — desktop installs and updates from the real product | **NOT IMPLEMENTED** | Requires a code-signing certificate. Electron is upgraded to a supported major (NB-66); packaging and the signed installer remain open. |
@@ -80,7 +82,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 
 | Gate | Status | Detail |
 |---|---|---|
-| Production signup funnel | ❌ FAIL | `POST /api/v1/auth/company-signup` → 500; `GET /health` → `db: unavailable`. Cause: hosted `DATABASE_URL` cannot reach its database. Not a code defect — the identical code path passes locally. |
+| ~~Production signup funnel~~ | ✅ PASS (2026-09-16) | Re-verified against production after the Neon cutover: **22/22** steps in `.artifacts/verify_funnel.py`, including signup, seeded workspace (3 warehouses / 3 items), first route optimisation (21.07 km / 31.61 ETB), billing state and cross-tenant read → 404. |
 | GitHub branch protection enforcing CI | ❌ BLOCKED BY PLAN | Workflow runs and all four jobs pass, but GitHub requires a paid plan for branch protection on private repositories (`403`). Not configured and not configurable without upgrading or making the repo public. |
 
 ## 6. Retry Count
@@ -94,7 +96,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 
 | Risk | Detail | Blocker level |
 |---|---|---|
-| Production database unavailable | **Corrected diagnosis (2026-09-14, security pass):** this is not a lost password. The Supabase pooler reports `FATAL: (ENOTFOUND) tenant/user postgres.<ref> not found` for **both** known project refs — `huukqxpbwqcepnkrfhdw` (current, per `supabase/.temp/linked-project.json`) and `azljjrjatdpkcvjbpztn` (legacy, per README) — and neither is recognised in any of 8 standard pooler regions. Both Supabase projects are deleted or long-paused. **Recovery requires provisioning a new managed Postgres and re-running the Alembic chain**, then `scripts/rotate_and_deploy.ps1` (which pre-verifies connectivity, rotates the secrets, deploys all three projects and re-checks `/health`). Guard paths tested: malformed URL → exit 2, unreachable DB → exit 3, dry run → exit 0. | **Blocks the hosted launch funnel** |
+| ~~Production database unavailable~~ | **RESOLVED 2026-09-16.** Root cause was never a lost password: the Supabase pooler returned `FATAL: (ENOTFOUND) tenant/user ... not found` for both known project refs across 8 pooler regions, i.e. both projects were deleted or long-paused. Production was re-provisioned on **Neon** (project `summer-wind-82665524`, `aws-eu-west-2`, PG 18.6) via `scripts/setup_neon_production.ps1`: 19 migrations applied, DATABASE_URL + JWT + provider-encryption secrets rotated, dead PASSWORD_SALT removed, all three projects deployed. Verified: `/health` → `db: ok`, funnel 22/22 in production. | ~~Blocks the hosted launch funnel~~ **closed** |
 | Placeholder secrets were live for ~39 days | `JWT_SECRET_KEY` and `PROVIDER_KEY_ENCRYPTION_SECRET` were created in the hosting environment before NB-63 landed. They were never committed (91-commit history scan: zero secrets) and are not the documented placeholder values, but they predate the guard. | **Rotate before/at next deploy**; invalidates sessions (acceptable) |
 | CBE/Dashen fee-schedule verification | Human verification of ±1,000 ETB tolerance, 5,000–50,000 ETB band. | Blocks paid launch only |
 | No signed desktop installer | Requires a code-signing certificate. | Blocks desktop distribution |
@@ -128,7 +130,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | Launch funnel | `22 passed, 0 failed (of 22)` — first route plan 21.07 km / 31.61 ETB; cross-tenant read 404 |
 | Live API surface | 81 endpoints (`/openapi.json`) |
 | EAII pitch page | https://freightpilot-eaii.vercel.app — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, `/product/` 200, all 8 product screenshots 200, every fetch with no credentials |
-| Production `/health` | `{"status":"degraded","db":"unavailable"}` — the open blocker |
+| Production `/health` | `{"status":"ok","db":"ok"}` (2026-09-16) — Neon-backed, verified after the cutover |
 
 ## 9b. Governance compliance notes (recorded, not glossed)
 
