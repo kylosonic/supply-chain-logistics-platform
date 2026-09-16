@@ -93,6 +93,21 @@ app.add_middleware(RequestContextMiddleware)
 app.include_router(api_router, prefix='/api/v1')
 
 
+def _driver_probe() -> str:
+    """Which psycopg is importable in this runtime, and its version.
+
+    TEMPORARY diagnostic: a serverless bundle can ship without the driver even
+    when the local lockfile has it, and that failure looks identical to a bad
+    connection string from the outside.
+    """
+    try:
+        import psycopg
+
+        return f'psycopg {psycopg.__version__}'
+    except Exception as exc:  # noqa: BLE001
+        return f'psycopg MISSING ({type(exc).__name__})'
+
+
 @app.get('/health')
 def health() -> dict:
     """Liveness + database readiness.
@@ -113,6 +128,7 @@ def health() -> dict:
         with engine.connect() as conn:
             conn.execute(text('SELECT 1'))
         db_status = 'ok'
+        diag = None
     except Exception as exc:
         db_status = 'unavailable'
         # Text only, first line only: driver messages can be multi-line and can
@@ -124,4 +140,25 @@ def health() -> dict:
             type(exc).__name__,
             redacted[:300],
         )
-    return {'status': 'ok' if db_status == 'ok' else 'degraded', 'db': db_status}
+        # TEMPORARY (remove once production is verified): surfaces the failure
+        # reason to an operator who cannot reach the deployment logs. Reports
+        # the exception class, a credential-redacted message, and non-secret
+        # shape information about the configured URL. Never the password, host,
+        # or user.
+        import sys as _sys
+
+        from app.core.config import settings as _settings
+
+        _url = _settings.effective_database_url or ''
+        _after_scheme = _url.split('://', 1)[1] if '://' in _url else ''
+        diag = {
+            'exc': type(exc).__name__,
+            'msg': redacted[:220],
+            'python': _sys.version.split()[0],
+            'driver': _after_scheme.split(':', 1)[0] if _after_scheme else 'unknown',
+            'has_password': ':' in _after_scheme.split('@')[0] if '@' in _after_scheme else False,
+            'has_sslmode': 'sslmode' in _url,
+            'has_channel_binding': 'channel_binding' in _url,
+            'driver_installed': _driver_probe(),
+        }
+    return {'status': 'ok' if db_status == 'ok' else 'degraded', 'db': db_status, 'diag': diag}
