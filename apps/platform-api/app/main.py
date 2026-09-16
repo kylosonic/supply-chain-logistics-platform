@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from contextlib import asynccontextmanager
 from uuid import uuid4
@@ -94,13 +95,33 @@ app.include_router(api_router, prefix='/api/v1')
 
 @app.get('/health')
 def health() -> dict:
+    """Liveness + database readiness.
+
+    NB-71 (audit L-3) removed the environment name from this public endpoint:
+    deployment detail is not a health signal. Liveness/readiness consumers only
+    need the status fields.
+
+    The database failure is logged as a structured, single line. Without it a
+    `db: unavailable` result is undiagnosable from outside the deployment —
+    which is exactly the situation that made a production outage take far
+    longer to find than it should have. The exception TYPE and driver text are
+    logged for operators; the exception is never returned in the response, so
+    no connection detail (host, user, or which parameter is wrong) leaks to an
+    anonymous caller.
+    """
     try:
         with engine.connect() as conn:
             conn.execute(text('SELECT 1'))
         db_status = 'ok'
-    except Exception:
+    except Exception as exc:
         db_status = 'unavailable'
-    # NB-71 (audit L-3): the environment name is deployment detail and is not
-    # returned on a publicly reachable endpoint. Liveness/readiness consumers
-    # only need the two status fields below.
+        # Text only, first line only: driver messages can be multi-line and can
+        # echo the DSN, so the password is redacted before logging.
+        first_line = str(exc).strip().splitlines()[0] if str(exc).strip() else ''
+        redacted = re.sub(r'(?<=://)[^@\s]*@', '***@', first_line)
+        logger.error(
+            'health_db_unavailable type=%s detail=%s',
+            type(exc).__name__,
+            redacted[:300],
+        )
     return {'status': 'ok' if db_status == 'ok' else 'degraded', 'db': db_status}
