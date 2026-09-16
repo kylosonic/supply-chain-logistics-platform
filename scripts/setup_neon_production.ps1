@@ -37,6 +37,14 @@
 param(
     [string]$NeonApiKey = $env:NEON_API_KEY,
     [string]$ProjectName = 'freightpilot-prod',
+    # Pinned deliberately. Neon's default region is us-east-2, but the product
+    # targets East African operators and the API is deployed to Vercel iad1
+    # (Washington DC). eu-west-2 measured ~176ms from the dev machine versus
+    # ~380ms for us-east-1, and is the closest region to both the customer base
+    # and the existing org project, so the app-to-database hop is the shortest
+    # available.
+    [string]$RegionId = 'aws-eu-west-2',
+    [string]$OrgId = '',
     [string]$PythonExe = '',
     [switch]$DryRun
 )
@@ -92,21 +100,42 @@ if (-not (Test-Path $neon)) {
 $neonVersion = (& $neon --version 2>&1 | Select-Object -Last 1).Trim()
 Ok "neonctl $neonVersion"
 
-# Confirm the key authenticates before doing anything else.
-$projectsJson = & $neon projects list --api-key $NeonApiKey --output json 2>&1
-if ($LASTEXITCODE -ne 0 -or "$projectsJson" -match 'error|Unauthorized|401') {
-    Die "Neon API rejected the key:`n$projectsJson"
+# Resolve the organization id. neonctl prompts interactively when an account
+# belongs to an organization, which would hang an unattended run, so the id is
+# always passed explicitly.
+if (-not $OrgId) {
+    $orgsRaw = & $neon orgs list --api-key $NeonApiKey --output json 2>&1
+    try {
+        $orgs = ($orgsRaw -join "`n") | ConvertFrom-Json
+    } catch {
+        Die "could not list Neon organizations (is the key account-scoped?):`n$($orgsRaw | Select-Object -First 5)"
+    }
+    if (-not $orgs -or $orgs.Count -eq 0) { Die 'no Neon organization found for this API key' }
+    $OrgId = $orgs[0].id
+    if ($orgs.Count -gt 1) {
+        Warn2 "$($orgs.Count) organizations visible; using the first ($OrgId). Pass -OrgId to choose."
+    }
 }
-$existing = $projectsJson | ConvertFrom-Json
-Ok "key authenticates ($($existing.Count) existing project(s))"
+Ok "org: $OrgId"
 
-foreach ($p in $existing) { if ($p.name -eq $ProjectName) { Ok "found existing project '$ProjectName' (id $($p.id))" } }
+# Confirm the key authenticates before doing anything else.
+$projectsJson = & $neon projects list --org-id $OrgId --api-key $NeonApiKey --output json 2>&1
+if ($LASTEXITCODE -ne 0) { Die "Neon API rejected the key:`n$projectsJson" }
+try {
+    $existing = ($projectsJson -join "`n") | ConvertFrom-Json
+} catch {
+    Die "could not parse the project list:`n$($projectsJson | Select-Object -First 5)"
+}
+if ($null -eq $existing) { $existing = @() }
+Ok "key authenticates ($(@($existing).Count) existing project(s))"
+
+foreach ($p in @($existing)) { if ($p.name -eq $ProjectName) { Ok "found existing project '$ProjectName' (id $($p.id))" } }
 
 if ($DryRun) {
     Step 'Dry run complete'
-    Write-Host '  Would: create/reuse the Neon project, verify the connection,' -ForegroundColor Yellow
-    Write-Host '         run alembic upgrade head, rotate secrets, set DATABASE_URL,' -ForegroundColor Yellow
-    Write-Host '         deploy 3 Vercel projects, verify /health + the funnel.' -ForegroundColor Yellow
+    Write-Host "  Would create/reuse Neon project '$ProjectName' in $RegionId (org $OrgId)," -ForegroundColor Yellow
+    Write-Host '         verify the connection, run alembic upgrade head, rotate secrets,' -ForegroundColor Yellow
+    Write-Host '         set DATABASE_URL, deploy 3 Vercel projects, verify /health + funnel.' -ForegroundColor Yellow
     Write-Host '  Nothing was changed.' -ForegroundColor Yellow
     exit 0
 }
@@ -115,14 +144,18 @@ if ($DryRun) {
 # 1. Create or reuse the Neon project
 # ---------------------------------------------------------------------------
 Step "Neon project '$ProjectName'"
-$project = $existing | Where-Object { $_.name -eq $ProjectName } | Select-Object -First 1
+$project = @($existing) | Where-Object { $_.name -eq $ProjectName } | Select-Object -First 1
 if ($project) {
     Ok "reusing project $($project.id)"
 } else {
-    $created = & $neon projects create --name $ProjectName --api-key $NeonApiKey --output json 2>&1
-    if ($LASTEXITCODE -ne 0) { Die "project create failed:`n$created" }
-    $project = ($created | ConvertFrom-Json).project
-    Ok "created project $($project.id)"
+    $created = & $neon projects create --name $ProjectName --region-id $RegionId --org-id $OrgId --api-key $NeonApiKey --output json 2>&1
+    if ($LASTEXITCODE -ne 0) { Die "project create failed:`n$($created | Select-Object -First 8)" }
+    try {
+        $project = (($created -join "`n") | ConvertFrom-Json).project
+    } catch {
+        Die "could not parse the create response:`n$($created | Select-Object -First 8)"
+    }
+    Ok "created project $($project.id) in $($project.region_id)"
 }
 
 # ---------------------------------------------------------------------------
@@ -227,12 +260,18 @@ finally { Pop-Location }
 # 6. Deploy
 # ---------------------------------------------------------------------------
 Step 'Deploying to production'
+# Deploy from the REPO ROOT with --cwd, not by changing into the app directory.
+# Each Vercel project's rootDirectory is already set to apps/<name> in its
+# project settings, so Vercel resolves the app path relative to the repo root.
+# Running `vercel deploy` from inside apps/<name> therefore resolves to
+# apps/<name>/apps/<name> and fails with "The provided path ... does not exist".
 foreach ($app in @('platform-api', 'ops-console', 'product-web')) {
     Write-Host "  -> $app" -ForegroundColor Cyan
-    Push-Location (Join-Path $repoRoot "apps/$app")
+    Push-Location $repoRoot
     try {
-        $out = & npx --no-install vercel deploy --prod --yes 2>&1
-        $out | Select-Object -Last 2 | ForEach-Object { Write-Host "     $_" }
+        $out = & npx --no-install vercel deploy --prod --yes --cwd "apps/$app" 2>&1
+        $out | Select-Object -Last 3 | ForEach-Object { Write-Host "     $_" }
+        if ($LASTEXITCODE -ne 0) { Warn2 "$app deploy returned a non-zero exit; inspect the output above" }
     }
     finally { Pop-Location }
 }
