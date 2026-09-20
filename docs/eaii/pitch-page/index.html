@@ -186,48 +186,33 @@
   <div class="wrap">
     <h2><span class="num">02</span>Pitch Video</h2>
     <p class="section-note">
-      A 4-minute product-led pitch: the problem in the operator's own terms, a live walkthrough from
-      signup to a real route plan, the cashflow reconciliation layer, and the security and
-      multi-tenant work behind the product.
+      A 4-minute 34-second product-led pitch: the problem in the operator's own terms, a live
+      walkthrough from signup to a real route plan, the cashflow reconciliation layer, and the
+      security and multi-tenant work behind the product. Narrated, 1920×1080.
     </p>
-    <!--
-      VIDEO LINK SLOT.
-      Replace every __VIDEO_URL__ below with the shareable video URL (YouTube
-      Unlisted or Google Drive "anyone with the link"), then redeploy this
-      folder. Until then this section renders a note instead of a broken button,
-      so a reviewer never hits a 404.
-      Steps: docs/eaii/submission-checklist.md, Part B.
-    -->
     <div class="btnrow" id="video-link-slot">
-      <a class="btn primary" href="__VIDEO_URL__" target="_blank" rel="noopener" id="video-btn">Watch the pitch video</a>
+      <a class="btn primary" href="./pitch-video.mp4" target="_blank" rel="noopener" id="video-btn">Open the pitch video</a>
+      <a class="btn" href="./pitch-video.mp4" download>Download MP4 (18 MB)</a>
     </div>
     <div class="vidframe">
-      <div class="placeholder" id="video-placeholder">
-        <div>
-          <strong style="color:var(--text)">Pitch video</strong><br />
-          <span style="font-size:13px;opacity:.85">
-            The recorded pitch is submitted as its own shareable link alongside this page.
-            It is not embedded here yet.
-          </span>
-        </div>
-      </div>
+      <video
+        controls
+        preload="metadata"
+        playsinline
+        poster="./pitch-video-poster.jpg"
+        style="position:absolute;inset:0;width:100%;height:100%;background:#0b1220"
+      >
+        <source src="./pitch-video.mp4" type="video/mp4" />
+        Your browser cannot play this video.
+        <a href="./pitch-video.mp4">Download the MP4</a>.
+      </video>
     </div>
-    <script>
-      // If the placeholder was never replaced, hide the dead button rather than
-      // presenting a link that 404s. Runs after parse so the DOM is present.
-      (function () {
-        var btn = document.getElementById('video-btn');
-        if (!btn) return;
-        var href = btn.getAttribute('href') || '';
-        if (href.indexOf('__VIDEO_URL__') !== -1) {
-          var row = document.getElementById('video-link-slot');
-          if (row) {
-            row.innerHTML =
-              '<span class="pill warn">Video link not embedded — see the submission form</span>';
-          }
-        }
-      })();
-    </script>
+    <p class="section-note" style="margin-top:14px;font-size:13.5px">
+      For the submission form itself, host this video on <strong>YouTube (Unlisted)</strong>,
+      <strong>Vimeo</strong> or <strong>Google Drive</strong> and paste that link — EAII asks for a
+      video-platform link. The MP4 above is the exact file to upload; use the download button, then
+      follow <code>docs/eaii/submission-checklist.md</code> Part B and test the link signed out.
+    </p>
   </div>
 </section>
 

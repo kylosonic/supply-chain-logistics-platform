@@ -36,3 +36,19 @@ pitch-page/.vercel/
 .local-funnel.db
 
 *.tsbuildinfo
+
+brag-output-*/
+
+.agents/skills/brag/
+
+.claude/skills/brag/
+
+.opencode/skills/brag/assets/
+
+*.wav
+
+docs/eaii/pitch-page/*.mp4
+
+docs/eaii/pitch-page/*.jpg
+
+docs/eaii/pitch-page/*.wav

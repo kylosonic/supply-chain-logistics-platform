@@ -242,10 +242,10 @@ card(s, 6.86, 2.02, 5.86, 4.4, 'Competition', [
 footer(s, 4, 'Go-to-Market & Competition')
 
 # ---------------------------------------------------------------------------
-# Slide 5 — 8 Core Team and Advisors
+# Slide 5 — 8 Core Team and Advisor
 # ---------------------------------------------------------------------------
 s = add_slide()
-eyebrow(s, '8 · Core Team & Advisors')
+eyebrow(s, '8 · Core Team and Advisor')
 title(s, 'A small team with an engineered product —\nand named gaps we intend to fill with this program.')
 card(s, 0.62, 2.1, 6.0, 4.3, 'Core team', [
     'Founder / CEO — product direction, customer discovery with Ethiopian operators, commercial model and pricing, fundraising.',
@@ -262,7 +262,7 @@ card(s, 6.86, 2.1, 5.86, 4.3, 'Advisors — declared honestly', [
     '',
     'What we seek from EAII: an advisor or mentor with logistics-operations depth in Ethiopia or comparable East African markets, and a go-to-market advisor for B2B SaaS sold into owner-operated firms.',
 ])
-footer(s, 5, 'Core Team & Advisors')
+footer(s, 5, 'Core Team and Advisor')
 
 # ---------------------------------------------------------------------------
 # Slide 6 — 9 Financial Projection
