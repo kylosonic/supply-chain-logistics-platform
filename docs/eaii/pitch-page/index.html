@@ -190,17 +190,44 @@
       signup to a real route plan, the cashflow reconciliation layer, and the security and
       multi-tenant work behind the product.
     </p>
-    <div class="btnrow">
-      <a class="btn primary" href="__VIDEO_URL__" target="_blank" rel="noopener">Watch the pitch video</a>
+    <!--
+      VIDEO LINK SLOT.
+      Replace every __VIDEO_URL__ below with the shareable video URL (YouTube
+      Unlisted or Google Drive "anyone with the link"), then redeploy this
+      folder. Until then this section renders a note instead of a broken button,
+      so a reviewer never hits a 404.
+      Steps: docs/eaii/submission-checklist.md, Part B.
+    -->
+    <div class="btnrow" id="video-link-slot">
+      <a class="btn primary" href="__VIDEO_URL__" target="_blank" rel="noopener" id="video-btn">Watch the pitch video</a>
     </div>
     <div class="vidframe">
-      <div class="placeholder">
-        Paste the pitch video link into the button above.<br />
-        <span style="font-size:13px;opacity:.8">
-          Replace <code>__VIDEO_URL__</code> in this page, or use the video link submitted in the form.
-        </span>
+      <div class="placeholder" id="video-placeholder">
+        <div>
+          <strong style="color:var(--text)">Pitch video</strong><br />
+          <span style="font-size:13px;opacity:.85">
+            The recorded pitch is submitted as its own shareable link alongside this page.
+            It is not embedded here yet.
+          </span>
+        </div>
       </div>
     </div>
+    <script>
+      // If the placeholder was never replaced, hide the dead button rather than
+      // presenting a link that 404s. Runs after parse so the DOM is present.
+      (function () {
+        var btn = document.getElementById('video-btn');
+        if (!btn) return;
+        var href = btn.getAttribute('href') || '';
+        if (href.indexOf('__VIDEO_URL__') !== -1) {
+          var row = document.getElementById('video-link-slot');
+          if (row) {
+            row.innerHTML =
+              '<span class="pill warn">Video link not embedded — see the submission form</span>';
+          }
+        }
+      })();
+    </script>
   </div>
 </section>
 
