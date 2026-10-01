@@ -76,6 +76,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | NB-64 two-org isolation | ✅ PASS | 12 tests in `tests/test_tenant_isolation_operations.py`; cross-tenant reads 404 |
 | Docker compose validity | ✅ PASS | `docker compose config --quiet` exits 0 |
 | EAII submission package produced | ✅ PASS | `docs/eaii/` (deck PDF + PPTX, video script, availability, checklist, 8 product captures); live page https://freightpilot-eaii.vercel.app verified anonymously — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, `/product/` 200 with all 8 screenshots 200 |
+| EAII two required links hosted and verified | ✅ PASS | The form needs a **Pitch Deck URL** and a **Pitch Video URL**, both "anyone with the link". Added `/deck/` and `/watch/` to the same Vercel project so neither depends on a Google share setting. Anonymous verification 2026-09-20 (fresh HTTP client, no cookies): **13/13 routes 200**; `/watch/pitch-video.mp4` → `video/mp4`, `Accept-Ranges: bytes`, range request → **206 `bytes 0-1023/19010967`**; `/deck/` renders all 7 slides (screenshot byte-identical before/after the slide-path dedupe); all 10 EAII sections present in the deck page markup. Evidence: `.artifacts/url-proof/live-deck-full.png`, `live-watch-full.png`, `live-submission.png` |
 | Product screenshots captured from the running console | ✅ PASS | 8 captures at 1600×1000 in `docs/eaii/product-shots/` and on the product tour page. Taken through the real login form against the live API, showing a persisted route plan, shipment, replenishment plan and exception queue — not mock-ups |
 
 ## 5. Failed Gates
@@ -118,7 +119,11 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 - `apps/platform-api/requirements.lock` — hash-pinned Python lockfile (NB-70)
 - `.github/workflows/ci.yml` — release gates (NB-77)
 - `.artifacts/nb72-funnel-verification.log`, `backend-lockcheck-final.log` — verification evidence
+- `.artifacts/url-proof/` — screenshots of the two live form links (`live-deck-full.png`, `live-watch-full.png`, `live-submission.png`)
 - `docs/eaii/` — EAII second-round submission package
+- `docs/eaii/pitch-page/deck/index.html` — hosted deck page (**deck link** target)
+- `docs/eaii/pitch-page/watch/index.html` — hosted video page (**video link** target)
+- `docs/eaii/pitch-page/deck-slides/` — 7 slide rasters at 1920×1080, rendered from the deck PDF via PyMuPDF
 
 ## 9. Last Verification Evidence
 
@@ -131,6 +136,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | Launch funnel | `22 passed, 0 failed (of 22)` — first route plan 21.07 km / 31.61 ETB; cross-tenant read 404 |
 | Live API surface | 81 endpoints (`/openapi.json`) |
 | EAII pitch page | https://freightpilot-eaii.vercel.app — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, `/product/` 200, all 8 product screenshots 200, every fetch with no credentials |
+| **EAII form links (the two that get pasted)** | **Deck:** https://freightpilot-eaii.vercel.app/deck/ · **Video:** https://freightpilot-eaii.vercel.app/watch/ — both `200` anonymously; video `video/mp4` + `206` on range |
 | Production `/health` | `{"status":"ok","db":"ok"}` (2026-09-16) — Neon-backed, verified after the cutover |
 
 ## 9b. Governance compliance notes (recorded, not glossed)

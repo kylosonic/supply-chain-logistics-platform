@@ -11,15 +11,13 @@ The email asks for **three separate inputs**, not one package:
 
 | # | What EAII asks for | Where it goes | Status |
 |---|---|---|---|
-| 1 | Pitch Deck, as a **"shareable link"** | A field in the Google Form | ✅ Link ready |
-| 2 | Pitch Video (3–5 min), as a **"shareable link"** | A **separate** field in the Google Form | ⬜ You record it |
+| 1 | Pitch Deck, as a **"shareable link"** | A field in the Google Form | ✅ Hosted |
+| 2 | Pitch Video (3–5 min), as a **"shareable link"** | A **separate** field in the Google Form | ✅ Hosted |
 | 3 | Weekly Availability | A field (or an upload) in the Google Form | ✅ Text ready |
 
-The page at **https://freightpilot-eaii.vercel.app** is a *supporting* artefact. It holds the deck, the product tour and the availability statement behind one link — useful context, and it satisfies "shareable link" on its own. But **the video needs its own link**, because it lives on YouTube or Drive, not on that page.
-
-So: **two links go into the form, and one of them (the deck) can be the page URL.**
-
----
+Both required links are now **live pages on one Vercel project**, verified to open in a signed-out
+browser with no access request. That satisfies *"Anyone with the link can view"* by construction —
+a public static page has no permission model to misconfigure.
 
 ## 2. Field-by-field: what to paste
 
@@ -27,27 +25,36 @@ So: **two links go into the form, and one of them (the deck) can be the page URL
 Paste exactly this:
 
 ```
-https://freightpilot-eaii.vercel.app
+https://freightpilot-eaii.vercel.app/deck/
 ```
 
-Why the page rather than a direct PDF link: a reviewer lands on a page that opens with the deck (inline PDF viewer), and the deck is downloadable as PDF *and* as editable PowerPoint. If the form demands a file-type link, use the direct one instead:
+That page shows all 7 slides, maps each of the 10 required EAII sections to its slide, and offers
+the deck inline as PDF plus a downloadable editable PPTX. If the form insists on a file-extension
+link, either of these is also verified signed-out:
 
 ```
-https://freightpilot-eaii.vercel.app/deck.pdf
+https://freightpilot-eaii.vercel.app/deck/deck.pdf
+https://freightpilot-eaii.vercel.app/deck/deck.pptx
 ```
-
-Both are verified to open **signed out, with no access request**.
 
 ### Field: Pitch Video link
-⬜ **You supply this — it is the only thing not yet done.**
+Paste exactly this:
 
-1. Record from `docs/eaii/pitch-video-script.md` (4:10 target; 3:45 and 4:45 cuts included).
-2. Upload to **YouTube → Visibility: Unlisted** (not Private) *or* **Google Drive → General access: Anyone with the link → Viewer**.
-3. On YouTube you **must** also set **Audience → "No, it's not made for kids"**, or the video stays a draft and the link fails for everyone.
-4. Open the link in a **private window signed out of all accounts**. If it plays, it will play for EAII.
-5. Paste that URL into the form.
+```
+https://freightpilot-eaii.vercel.app/watch/
+```
 
-If you also want it on the submission page, send me the URL and I will embed it and redeploy — one command.
+A 4 m 34 s narrated pitch (273.6 s — inside the 3–5 minute requirement), playing from an HTML5
+player on a page that also lists the 11 chapters with timestamps. The underlying file is
+`https://freightpilot-eaii.vercel.app/watch/pitch-video.mp4` — `video/mp4`, byte-range enabled
+(returns `206`), so it seeks in-browser.
+
+> **Optional upgrade.** A YouTube or Drive link carries more reviewer trust than a raw file, and
+> YouTube is what most reviewers expect for a video field. If you want that, upload
+> `pitch-video.mp4` (download it from the `/watch/` page) to **YouTube → Unlisted**, then set
+> **Audience → "No, it's not made for kids"** — without that, the video stays a draft and the link
+> fails for everyone. Paste the YouTube URL instead; the Vercel link stays as a backup. The
+> `/watch/` link already works today, so this is a nice-to-have, not a blocker.
 
 ### Field: Weekly Availability
 Paste this text:
@@ -67,10 +74,13 @@ If the form has a file upload instead, download `weekly-availability.pdf` from t
 
 | Artefact | Live URL | Purpose |
 |---|---|---|
-| **Submission page** | `/` | The single link. Sections: 01 Pitch Deck · 02 Pitch Video · 03 Product Tour · 04 Weekly Availability · 05 Product status ("what is built, and what is not") |
-| **Pitch deck (PDF)** | `/deck.pdf` | The 7-slide deck. Print-ready, exactly 7 pages |
-| **Pitch deck (PPTX)** | `/deck.pptx` | Same deck, native editable PowerPoint — for a reviewer who wants to reuse slides |
-| **Product tour** | `/product/` | 8 screenshots of the running console on a real workspace. Also your visual reference while recording |
+| **Submission page** | `/` | Hub page. Sections: 01 Pitch Deck · 02 Pitch Video · 03 Product Tour · 04 Weekly Availability · 05 Product status ("what is built, and what is not") |
+| **Pitch deck (hosted)** | `/deck/` | **← deck link for the form.** All 7 slides, 10 required sections mapped |
+| **Pitch video (hosted)** | `/watch/` | **← video link for the form.** Player, poster, 11 chapters |
+| **Pitch deck (PDF)** | `/deck/deck.pdf` | The 7-slide deck. Print-ready, exactly 7 pages |
+| **Pitch deck (PPTX)** | `/deck/deck.pptx` | Same deck, native editable PowerPoint — for a reviewer who wants to reuse slides |
+| **Pitch video (MP4)** | `/watch/pitch-video.mp4` | The 4 m 34 s file itself. `video/mp4`, range-enabled |
+| **Product tour** | `/product/` | 8 screenshots of the running console on a real workspace |
 | **Availability (PDF)** | `/weekly-availability.pdf` | The 5-day commitment, working grid, and time-allocation plan |
 | **Live product** | product-web-chi.vercel.app · ops-console-azure.vercel.app · platform-api-smoky.vercel.app | The actual platform. Signup works end to end |
 
@@ -131,23 +141,27 @@ Everything else you can state as fact, because it is verifiable:
 | `docs/eaii/pitch-deck.html` | the deck. Print to PDF in Chrome to regenerate; then rebuild the PPTX with `python scripts/build_pitch_deck_pptx.py` |
 | `docs/eaii/pitch-video-script.md` | the video script and timings |
 | `docs/eaii/weekly-availability.md` | the availability statement |
-| `docs/eaii/pitch-page/index.html` | the submission page. Replace `__VIDEO_URL__` to embed the video |
-| `docs/eaii/submission-checklist.md` | the detailed Play-Drive/YouTube walkthrough with screenshots-level steps |
+| `docs/eaii/pitch-page/index.html` | the submission hub page |
+| `docs/eaii/pitch-page/deck/index.html` | the hosted deck page that the **deck link** points at |
+| `docs/eaii/pitch-page/watch/index.html` | the hosted video page that the **video link** points at |
+| `docs/eaii/pitch-page/vercel.json` | headers (content types, range support, noindex) |
+| `docs/eaii/submission-checklist.md` | the detailed Drive/YouTube walkthrough with screenshots-level steps |
 
-After editing the page, redeploy it:
+After editing any page, redeploy:
 
 ```powershell
-cd docs/eaii/pitch-page
-npx vercel deploy --yes --prod
+npx vercel deploy --yes --prod --cwd docs/eaii/pitch-page
 ```
 
 ---
 
 ## 7. Summary — the shortest version
 
-1. **Deck link:** `https://freightpilot-eaii.vercel.app` → into the form
-2. **Video:** record → YouTube Unlisted → test signed out → link into the form
+1. **Deck link:** `https://freightpilot-eaii.vercel.app/deck/` → into the form
+2. **Video link:** `https://freightpilot-eaii.vercel.app/watch/` → into the form
 3. **Availability:** paste the paragraph in §2, or upload the signed PDF
 4. Submit before **September 20, 2026**
 
-That is the whole submission. Everything except the recording is already live and verified.
+Both required links are live and were verified anonymously: 13/13 routes return `200`, the deck
+renders all 7 slides, and the video serves `video/mp4` with working byte-range seeking.
+Optional polish only: re-upload the MP4 to YouTube Unlisted if you want a familiar video host.

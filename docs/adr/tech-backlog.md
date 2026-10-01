@@ -363,3 +363,45 @@ diagnose. A temporary response-body diagnostic was used to find the truncation a
 
 **Follow-up opened:** NB-76 (restore drill) is now unblocked and has not been run; NB-75 still needs a
 code-signing certificate; NB-79 remains a human verification gate.
+
+---
+
+## EAII submission links hosted (2026-09-20) — TECH-102
+
+The EAII form takes two URL fields — **Pitch Deck URL** and **Pitch Video URL** — and states that
+links requiring an access request "will not be reviewed." Both are now public static pages on the
+existing `freightpilot-eaii` Vercel project, chosen specifically because a static page has **no
+permission model to misconfigure**: there is no "Restricted" default that can be left on, which is
+the single most common way a Drive/YouTube link fails this requirement.
+
+| Route | Serves | Link role |
+|---|---|---|
+| `/deck/` | 7 slide images, the 10 EAII sections mapped to slides, inline PDF + PPTX download | **Pitch Deck URL** |
+| `/watch/` | HTML5 player, poster, 11 chapter timestamps | **Pitch Video URL** |
+| `/deck/deck.pdf`, `/deck/deck.pptx` | file-extension fallbacks if a form validates on extension | fallback |
+| `/watch/pitch-video.mp4` | the 273.6 s file itself, `video/mp4`, range-enabled | direct |
+
+**Verification (anonymous client, no cookies):** 13/13 routes `200`; range request on the video
+returned `206 bytes 0-1023/19010967`; the player reported `0:00 / 4:33`; the deck page contained all
+7 slide references and all 10 required section names. Screenshots in `.artifacts/url-proof/`.
+
+**Two things worth recording:**
+
+1. **The MP4 is duplicated on purpose.** `/watch/pitch-video.mp4` and `/pitch-video.mp4` are the same
+   18.1 MB file. The form may be filled with either link, so each page must work when opened *alone*
+   — a shared parent-relative path would break if only one route were ever visited. 36 MB of static
+   asset on Vercel's CDN is cheaper than a link that renders a broken player.
+2. **The MP4 is gitignored, and the ignore had to become recursive.** The original pattern
+   `docs/eaii/pitch-page/*.mp4` did not match the new `watch/` subdirectory, so an 18 MB binary
+   silently entered the staging area on the first `git add -A`. Changed to `**/*.mp4` and the file
+   was unstaged before committing; staged payload went from 24.4 MB to 3.62 MB.
+
+### TECH-103 — Slide rasters are a manual export step
+
+`docs/eaii/pitch-page/deck-slides/*.png` (7 files, 1920×1080) were rendered from
+`FreightPilot-EAII-Pitch-Deck.pdf` with PyMuPDF and committed as binaries. There is **no script** that
+regenerates them, so editing the deck and rebuilding the PDF leaves the hosted slides showing the old
+content with no failure signal — the page still renders, just stale. The deck already changed once
+during this work ("Core Team and Advisors" → "Core Team and Advisor"), which is exactly the kind of
+edit that would desynchronise them. **Debit:** add a `scripts/build_deck_slides.py` and chain it after
+PDF generation, or have `/deck/` render the PDF directly and delete the rasters.

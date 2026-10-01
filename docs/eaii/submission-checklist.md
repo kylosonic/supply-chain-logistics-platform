@@ -9,6 +9,20 @@ will not be reviewed.
 > Do every check below in a **private/incognito window while signed out of all accounts**. If you
 > can open the link without signing in, so can the reviewers — that is the only test that counts.
 
+## The two links, ready to paste
+
+| Form field | Paste this | Why it cannot fail the access check |
+|---|---|---|
+| **Pitch Deck URL** | `https://freightpilot-eaii.vercel.app/deck/` | Public static page on Vercel. No Google/Drive permission model exists, so there is no share setting that can be left on "Restricted". |
+| **Pitch Video URL** | `https://freightpilot-eaii.vercel.app/watch/` | Same. Serves `video/mp4` with byte-range seeking; verified anonymously. |
+
+Verified 2026-09-20 with an **anonymous HTTP client** (no cookies, no session): 13/13 routes returned
+`200`. The deck page renders all 7 slides; the video responds `206 Partial Content` to a range
+request; `/watch/` reports runtime `0:00 / 4:33` in the player.
+
+Optional upgrade for the video field — a YouTube **Unlisted** upload (see §B2). Not required, and
+only worth doing if you want a `youtu.be` link in the form.
+
 ---
 
 ## Part A — Pitch Deck
@@ -41,82 +55,96 @@ if you edit anything:
 
 Slide count: **7** (the limit is "no more than 7 slides"). ✅
 
-### A3. Upload to Google Drive (recommended — most reliable "anyone with the link" link)
+### A3. The deck link — already hosted, nothing to upload
 
-1. Go to <https://drive.google.com> and sign in with the account you want associated with the
-   submission.
-2. Create a folder, e.g. `EAII Submission — FreightPilot`.
-3. Upload `FreightPilot-EAII-Pitch-Deck.pdf`.
-4. Right-click the file → **Share** → **Share** again (the dialog).
-5. Under **General access**, change *Restricted* to **Anyone with the link**.
-6. Confirm the role dropdown next to it says **Viewer** — not Editor, not Commenter.
-7. Click **Copy link** → **Done**.
-8. Open the link in a **private window signed out of Google**. You should see the 7-page deck
-   rendered. If you see a sign-in page or "You need access", step 5 did not apply — repeat it.
-
-**Link to record here:**
+The deck is live at a public static URL. There is no permission dialog to get wrong, which is why
+this is the safest possible answer to *"anyone with the link can view."*
 
 ```
-Pitch deck link: ________________________________________________
-Tested signed-out:  [ ] yes   Date tested: ____________
+https://freightpilot-eaii.vercel.app/deck/
 ```
+
+Paste that into the form's **Pitch Deck URL** field. Verified signed-out: `200`, all 7 slides
+render, and the page offers the deck inline as PDF plus an editable PPTX download.
+
+**Record it here:**
+
+```
+Pitch deck link: https://freightpilot-eaii.vercel.app/deck/
+Tested signed-out:  [x] yes   Date tested: 2026-09-20 (anonymous fetch, no cookies)
+```
+
+> **Fallback, only if the form rejects a folder-style URL:** a file-extension variant is also live
+> and verified — `https://freightpilot-eaii.vercel.app/deck/deck.pdf`.
+>
+> **Optional, if you prefer Drive anyway:** steps A4–A6 below still work. Upload
+> `FreightPilot-EAII-Pitch-Deck.pdf` to Drive, set **Anyone with the link → Viewer**, and paste that
+> link instead. Nothing breaks if you do; it is simply more steps and one more thing to misconfigure.
 
 ---
 
 ## Part B — Pitch Video
 
-### B1. Record from `pitch-video-script.md`
+### B1. The video is already produced and hosted
 
-The script is written for **4:10** (requirement is 3–5 minutes) with a fast 3:45 cut and a full 4:45
-cut. Do the pre-flight checklist in that file before you hit record.
+The pitch video exists: **4 m 34 s** (273.6 s — inside the 3–5 minute requirement), 1920×1080,
+30 fps, H.264/AAC, narrated, 18.1 MB. It is live at a public static URL:
 
-**Visual reference:** https://freightpilot-eaii.vercel.app/product/ — eight captures of the running
-console in the same order as the demo beats, so you know what each screen should look like on
-camera. If you would rather not demo the product live, screen-record that tour page instead; the
-script still works.
+```
+https://freightpilot-eaii.vercel.app/watch/
+```
 
-**Export settings:** 1080p, H.264 MP4, under 500 MB.
+Paste that into the form's **Pitch Video URL** field. Verified signed-out: `200` with
+`Content-Type: video/mp4` and `Accept-Ranges: bytes` (a byte-range request returns `206`, so it
+seeks in the browser). The page shows the player, a poster frame, the duration badge, and the 11
+chapter timestamps.
 
-### B2. Option 1 — YouTube (Unlisted)
+**Record it here:**
 
-"Unlisted" is the correct choice: it is link-viewable but not searchable. **"Private" will fail the
-requirement** — a private video requires the viewer to be signed in and granted access.
+```
+Pitch video link: https://freightpilot-eaii.vercel.app/watch/
+Direct file:      https://freightpilot-eaii.vercel.app/watch/pitch-video.mp4
+Runtime: 4 m 34 s   Tested signed-out:  [x] yes   Date tested: 2026-09-20
+```
 
-1. Go to <https://studio.youtube.com> → **Create** → **Upload videos**.
-2. Select your MP4. Fill in a title and description (put the numbers list from the script into the
-   description — it helps reviewers).
-3. On the **Visibility** step, choose **Unlisted**. Do **not** choose Private.
-4. Also set: **Audience → "No, it's not made for kids"**. If you skip this, the video stays in a
-   draft state and the link will not work for anyone.
-5. Publish, then click the video → **Share** → **Copy link**. It looks like
-   `https://youtu.be/XXXXXXXXXXX`.
-6. Open that link in a **private window signed out of Google**. It must play immediately.
+Source of truth for the recording: `brag-output-2026-09-20-221936/brag.mp4`, with
+`docs/eaii/pitch-video-production-record.md` holding the full production evidence (scene plan,
+narration script, timing map, and the `hyperframes check` result: 0 errors, 38/38 WCAG AA contrast).
 
-### B3. Option 2 — Google Drive
+### B2. Optional — also publish to YouTube (Unlisted)
 
-1. Upload the MP4 to the same Drive folder as the deck.
+Not required, because the Vercel link already satisfies *"shareable link, anyone with the link can
+view."* But a `youtu.be` link is what reviewers expect for a video field, so if you want it:
+
+1. Download the MP4 from `https://freightpilot-eaii.vercel.app/watch/`.
+2. Go to <https://studio.youtube.com> → **Create** → **Upload videos**.
+3. On the **Visibility** step choose **Unlisted**. **"Private" will fail the requirement** — a
+   private video requires the viewer to be signed in and granted access.
+4. You **must** also set **Audience → "No, it's not made for kids"**. If you skip this, the video
+   stays in a draft state and the link will not work for anyone.
+5. Publish → **Share** → **Copy link** (`https://youtu.be/XXXXXXXXXXX`).
+6. Open it in a **private window signed out of Google**. It must play immediately.
+
+Paste the YouTube URL into the form instead, and keep the `/watch/` link as the backup.
+
+### B3. Optional — Google Drive instead
+
+1. Upload the MP4 to Drive.
 2. Right-click → **Share** → **General access** → **Anyone with the link** → role **Viewer**.
-3. Copy the link and test it signed out, exactly as in A3 step 8. Make sure it plays (Drive streams
-   MP4 natively) rather than showing a download-only page.
+3. Test it signed out. Make sure it plays (Drive streams MP4 natively) rather than showing a
+   download-only page.
 
 ### B4. Final video checks
 
 | Check | Done |
 |---|---|
-| Runtime is between 3:00 and 5:00 | [ ] |
-| First 5 seconds play (not black/frozen) | [ ] |
-| Last 5 seconds play | [ ] |
-| Audio is audible and not clipping | [ ] |
-| Link opens in a **signed-out private window** and plays | [ ] |
-| Visibility is **Unlisted** (YouTube) or **Anyone with the link** (Drive) | [ ] |
-| Not set to Private / Restricted | [ ] |
-
-**Link to record here:**
-
-```
-Pitch video link: _______________________________________________
-Runtime: ______   Tested signed-out:  [ ] yes   Date tested: ____________
-```
+| Runtime is between 3:00 and 5:00 | [x] 4 m 34 s |
+| First 5 seconds play (not black/frozen) | [x] verified in the rendered file |
+| Last 5 seconds play | [x] verified in the rendered file |
+| Audio is audible and not clipping | [x] mean −23.6 dB, ~7 dB headroom |
+| Link opens in a **signed-out private window** and plays | [x] anonymous fetch returns 200 / `video/mp4` |
+| Visibility is public-link (Vercel) · **Unlisted** (YouTube) · **Anyone with the link** (Drive) | [x] public static URL |
+| Not set to Private / Restricted | [x] no permission model exists on a static URL |
 
 ---
 
