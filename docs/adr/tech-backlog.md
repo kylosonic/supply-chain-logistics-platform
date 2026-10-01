@@ -483,3 +483,79 @@ Two failure modes worth naming, because both are easy to repeat:
 **Debit:** `derive_timing.py` and `scene-timing.json` are retained only as the record of the defect and
 must not be reused; the production record marks them superseded.
 
+---
+
+## Drivers and cash-on-delivery reconciliation (2026-08-12) — NB-86 / TECH-106
+
+**Origin:** evaluating the product from the buyer's side — what an Ethiopian freight operator needs on
+day one — then testing each assumption against the code rather than against the pitch.
+
+### What the evaluation found
+
+Three daily operational needs were absent, each confirmed by searching `app/` rather than assumed:
+
+| Need | Evidence |
+|---|---|
+| Know **who** is carrying a load | zero occurrences of `driver` in the API |
+| Know how much **cash** is coming back | `cod_amount`, `cash_collected`, `remittance` — no matches |
+| Retry a write safely on a bad connection | no `idempotency`, no `client_id` anywhere |
+
+The third is sharper here than in most markets: confirmation traffic arrives over mobile data that
+drops mid-request, so a retried create previously produced two shipments and two financial records
+with no way to tell which was real.
+
+The cash gap was the expensive one. The platform already reconciled **bank transfers** against
+invoices — it understood that money arrives and must be matched. But the driver also collects cash at
+the door, and nothing recorded how much was expected, how much was handed in, or what was missing.
+That is the largest unmonitored cash risk an operator carries, and it was invisible to the software.
+
+### What was added
+
+- `drivers` — tenant-scoped roster, phone unique per organisation.
+- `shipments.driver_id` (`SET NULL`), `shipments.cod_amount_etb`, `shipments.client_ref`.
+- `cash_collections` — one row per COD shipment; `outstanding → collected → settled` (+`voided`).
+- `POST /shipments/{id}/driver`, and `cash_collected_etb` accepted by the existing delivery
+  confirmation so a field confirmation and its cash figure travel in one request.
+- `/drivers` and `/cash-collections` routers (12 endpoints); API surface 81 → 90 paths.
+
+Three decisions worth defending:
+
+- **The cash record opens at delivery, not in a second call.** A driver who never makes the second
+  call still produces a complete record.
+- **A shortfall is stored, not derived**, so correcting `expected_etb` later cannot silently rewrite a
+  figure that was already acted on.
+- **Settling does not erase the shortfall** — a written-off shortfall is exactly what an operator needs
+  at month end. Settlement is admin-only, matching receipt reversal, because it writes money off.
+
+### Verification
+
+`tests/test_driver_and_cash_reconciliation.py` — **24 tests**, backend suite **399 → 423 passing**.
+Cross-tenant isolation is pinned on every new surface: drivers, cash records and client references are
+invisible across organisations, and cross-tenant access answers **404, never 403**. The migration
+chain-integrity guard was updated to assert head `20260812_0020`, and its regex was widened to accept
+the annotated `revision: str = ...` form so a future Alembic template change cannot silently disable it.
+
+Two test-authoring faults were found and fixed during the run, both recorded because both were real: a
+`DriverShipmentRead` constructed without `created_at` (500 on the driver's shipment list), and a role
+test that asserted `collected` where the correct state was `outstanding` — the record had been opened
+by a delivery with no cash declared, which is the intended behaviour, so the test was wrong, not the
+code.
+
+### Open: the migration is NOT yet applied to production
+
+`20260812_0020` is the new Alembic head. The Vercel project has **no migration step** — `vercel.json`
+only builds `api/index.py` — so a merged migration never reaches the database by itself. The new
+columns are read on every shipment response, so **deploying the code before applying the migration
+would 500 the shipment list.**
+
+**Order is mandatory: apply migrations first, then push.**
+`scripts/apply_production_migrations.ps1` performs the first half in one command (reads the pooled URL
+from Neon, reports the current revision, runs `alembic upgrade head`, prints the result, deploys
+nothing). It could not be run here because no Neon API key was available in this session, and
+`vercel env pull` returns Vercel's sensitive variables **empty**, so the production credential cannot
+be read back from the project either. Production is untouched and still serving the pre-NB-86 build.
+
+**Debit:** add a release step that applies migrations as part of deploy, so this ordering is enforced by
+tooling rather than by a note in a document.
+
+

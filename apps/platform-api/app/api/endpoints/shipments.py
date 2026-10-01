@@ -17,6 +17,7 @@ from app.api.security import (
 )
 from app.db.session import get_db
 from app.models.alert import Alert
+from app.models.driver import Driver
 from app.models.item import Item
 from app.models.membership import OrganizationMembership
 from app.models.route import RouteSchedule
@@ -25,7 +26,14 @@ from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.schemas.alert import AlertSeverity, AlertStatus, AlertType
 from app.schemas.auth import UserRole
-from app.schemas.shipment import ShipmentCreate, ShipmentRead, ShipmentStatus, ShipmentStatusUpdate
+from app.schemas.shipment import (
+    ShipmentAssignDriver,
+    ShipmentCreate,
+    ShipmentRead,
+    ShipmentStatus,
+    ShipmentStatusUpdate,
+)
+from app.services import cash_ledger
 from app.services.audit import record_audit_event, resolve_actor_organization_id
 
 router = APIRouter()
@@ -35,6 +43,7 @@ def _shipment_to_read(db: Session, shipment: Shipment) -> ShipmentRead:
     origin = db.get(Warehouse, shipment.origin_warehouse_id)
     destination = db.get(Warehouse, shipment.destination_warehouse_id)
     item = db.get(Item, shipment.item_id)
+    driver = db.get(Driver, shipment.driver_id) if shipment.driver_id else None
     return ShipmentRead(
         id=shipment.id,
         created_at=shipment.created_at,
@@ -52,6 +61,10 @@ def _shipment_to_read(db: Session, shipment: Shipment) -> ShipmentRead:
         delay_reason=shipment.delay_reason,
         proof_of_delivery_ref=shipment.proof_of_delivery_ref,
         scope_3_emissions_kg=shipment.scope_3_emissions_kg,
+        driver_id=shipment.driver_id,
+        driver_name=driver.full_name if driver else None,
+        cod_amount_etb=shipment.cod_amount_etb or 0,
+        client_ref=shipment.client_ref,
     )
 
 
@@ -77,6 +90,19 @@ def create_shipment(
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
     organization_id = resolve_scoped_organization(actor, writable)
+
+    # NB-86 idempotency: a create replayed over a dropped mobile connection must
+    # return the shipment it already made, not a second one (which would also open
+    # a second cash record). The client supplies a stable reference; the partial
+    # unique index on (organization_id, client_ref) is the real guard, and this
+    # lookup is the fast path that avoids a 500 on the constraint violation.
+    if payload.client_ref:
+        replay_stmt = select(Shipment).where(Shipment.client_ref == payload.client_ref)
+        if organization_id is not None:
+            replay_stmt = replay_stmt.where(Shipment.organization_id == organization_id)
+        replayed = db.execute(replay_stmt).scalars().first()
+        if replayed is not None:
+            return _shipment_to_read(db, replayed)
 
     # Duplicate-number pre-check is equality-only per org (mirrors TECH-58):
     # a legacy unattributed row with the same number must not false-409 a
@@ -137,6 +163,20 @@ def create_shipment(
         if not route:
             raise HTTPException(status_code=404, detail='Route schedule not found')
 
+    # NB-86: an assigned driver must belong to the caller's tenant. Without this
+    # check a caller could assign another company's driver by id, leaking the
+    # existence of that row and misattributing the cash that follows it.
+    if payload.driver_id:
+        driver = organization_scoped_get(
+            db,
+            Driver,
+            payload.driver_id,
+            organization_id,
+            not_found_detail='Driver not found',
+        )
+        if driver.status != 'active':
+            raise HTTPException(status_code=409, detail='That driver is not active')
+
     shipment = Shipment(
         organization_id=organization_id,
         shipment_no=payload.shipment_no,
@@ -148,6 +188,10 @@ def create_shipment(
         planned_departure=payload.planned_departure,
         expected_delivery=payload.expected_delivery,
         status=ShipmentStatus.PLANNED,
+        driver_id=payload.driver_id,
+        cod_amount_etb=payload.cod_amount_etb,
+        client_ref=payload.client_ref,
+        scope_3_emissions_kg=payload.scope_3_emissions_kg,
     )
     db.add(shipment)
 
@@ -206,6 +250,12 @@ def update_shipment_status(
     if payload.status == ShipmentStatus.DELAYED and not payload.delay_reason:
         raise HTTPException(status_code=400, detail='delay_reason is required when marking a shipment delayed')
 
+    if payload.cash_collected_etb is not None and payload.status != ShipmentStatus.DELIVERED:
+        raise HTTPException(
+            status_code=400,
+            detail='cash_collected_etb is only accepted when marking a shipment delivered',
+        )
+
     previous_status = shipment.status
     shipment.status = payload.status
     if payload.last_known_location is not None:
@@ -218,6 +268,19 @@ def update_shipment_status(
         shipment.actual_delivery = payload.actual_delivery
     elif payload.status == ShipmentStatus.DELIVERED:
         shipment.actual_delivery = datetime.now(UTC)
+
+    # NB-86: a delivery is where cash actually changes hands, so the cash record is
+    # opened here rather than in a second call the driver might never complete.
+    # Opening is idempotent (one row per shipment), which is what makes a replayed
+    # confirmation safe over an unreliable connection.
+    cash_record = None
+    if payload.status == ShipmentStatus.DELIVERED and (shipment.cod_amount_etb or 0) > 0:
+        cash_record = cash_ledger.open_for_shipment(
+            db,
+            shipment,
+            collected=payload.cash_collected_etb,
+            note=payload.cash_note,
+        )
 
     if payload.status == ShipmentStatus.DELAYED:
         existing_alert = db.execute(
@@ -252,7 +315,85 @@ def update_shipment_status(
         actor=actor,
         organization_id=resolve_actor_organization_id(db, actor),
         description=f'Updated shipment {shipment.shipment_no} to {payload.status}',
-        payload={'from_status': previous_status, 'to_status': payload.status, 'delay_reason': payload.delay_reason},
+        payload={
+            'from_status': previous_status,
+            'to_status': payload.status,
+            'delay_reason': payload.delay_reason,
+            'cash_collected_etb': str(payload.cash_collected_etb) if payload.cash_collected_etb is not None else None,
+            'cash_shortfall_etb': str(cash_record.shortfall_etb) if cash_record else None,
+        },
+    )
+    db.commit()
+    db.refresh(shipment)
+    return _shipment_to_read(db, shipment)
+
+
+@router.post('/{shipment_id}/driver', response_model=ShipmentRead)
+def assign_shipment_driver(
+    shipment_id: str,
+    payload: ShipmentAssignDriver,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+):
+    """Assign or clear the driver on a shipment.
+
+    Kept separate from the status endpoint because assignment happens during
+    dispatch, before any movement, and is the single most frequent edit an
+    operator makes in a morning.
+    """
+    organization_id = resolve_scoped_organization(actor, writable)
+    shipment = organization_scoped_get(
+        db,
+        Shipment,
+        shipment_id,
+        organization_id,
+        not_found_detail='Shipment not found',
+    )
+
+    previous_driver_id = shipment.driver_id
+    driver_name = None
+    if payload.driver_id is None:
+        shipment.driver_id = None
+    else:
+        driver = organization_scoped_get(
+            db,
+            Driver,
+            payload.driver_id,
+            organization_id,
+            not_found_detail='Driver not found',
+        )
+        if driver.status != 'active':
+            raise HTTPException(status_code=409, detail='That driver is not active')
+        shipment.driver_id = driver.id
+        driver_name = driver.full_name
+
+    db.add(shipment)
+
+    # Keep the cash record's driver in step: if cash is already outstanding, the
+    # person accountable for it must follow the reassignment, otherwise the ledger
+    # points at whoever happened to be assigned when the row was opened.
+    cash_record = cash_ledger.get_by_shipment(db, shipment.id)
+    if cash_record is not None and cash_record.status not in ('settled', 'voided'):
+        cash_record.driver_id = shipment.driver_id
+        db.add(cash_record)
+
+    record_audit_event(
+        db,
+        event_type='shipment.driver_assigned',
+        entity_type='shipment',
+        entity_id=shipment.id,
+        actor=actor,
+        organization_id=resolve_actor_organization_id(db, actor),
+        description=(
+            f'Assigned {driver_name} to shipment {shipment.shipment_no}'
+            if driver_name
+            else f'Cleared driver on shipment {shipment.shipment_no}'
+        ),
+        payload={
+            'from_driver_id': str(previous_driver_id) if previous_driver_id else None,
+            'to_driver_id': str(shipment.driver_id) if shipment.driver_id else None,
+        },
     )
     db.commit()
     db.refresh(shipment)

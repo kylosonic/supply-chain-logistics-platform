@@ -33,3 +33,5 @@ from app.models.dispute_thread import DisputeThread
 from app.models.sender_fraud_flag import SenderFraudFlag
 from app.models.activation_state import OrganizationActivationState
 from app.models.threshold_crossing import ThresholdCrossing
+from app.models.driver import Driver
+from app.models.cash_collection import CashCollection

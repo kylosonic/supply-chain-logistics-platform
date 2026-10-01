@@ -5,6 +5,8 @@ from app.api.endpoints import (
     alerts,
     auth,
     billing,
+    cash_collections,
+    drivers,
     feedback,
     forecast,
     ingestion,
@@ -38,6 +40,10 @@ api_router.include_router(routes.router, prefix='/routes', tags=['routes'])
 api_router.include_router(live.router, prefix='/live', tags=['live'])
 api_router.include_router(ops.router, prefix='/ops', tags=['ops'])
 api_router.include_router(shipments.router, prefix='/shipments', tags=['shipments'])
+# NB-86: the oper*ational* half of the product — who is carrying it, and the cash
+# they are carrying back.
+api_router.include_router(drivers.router, prefix='/drivers', tags=['drivers'])
+api_router.include_router(cash_collections.router, prefix='/cash-collections', tags=['cash-collections'])
 api_router.include_router(alerts.router, prefix='/alerts', tags=['alerts'])
 api_router.include_router(planning.router, prefix='/planning', tags=['planning'])
 api_router.include_router(subscriptions.router, prefix='/subscriptions', tags=['subscriptions'])

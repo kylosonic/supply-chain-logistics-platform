@@ -1,10 +1,11 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, func, text
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, Numeric, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.models.common import UUIDTimestampMixin
+from decimal import Decimal
 from uuid import UUID
 from app.db.custom_types import UUIDType
 
@@ -34,6 +35,19 @@ class Shipment(UUIDTimestampMixin, Base):
             postgresql_where=text('organization_id IS NULL'),
         ),
         Index('ix_shipments_shipment_no_lookup', 'shipment_no'),
+        # NB-86: a caller-supplied idempotency key. A confirmation replayed over a
+        # flaky mobile connection must resolve to the shipment it already created
+        # rather than creating a second one (and a second cash record with it).
+        # Partial unique index for the same reason as shipment_no: NULLs are
+        # distinct, so shipments without a key stay unconstrained.
+        Index(
+            'uq_shipments_org_client_ref',
+            'organization_id',
+            'client_ref',
+            unique=True,
+            sqlite_where=text('client_ref IS NOT NULL'),
+            postgresql_where=text('client_ref IS NOT NULL'),
+        ),
     )
 
     # NB-64 (audit H-1): tenant scoping. Nullable for legacy rows created
@@ -56,5 +70,14 @@ class Shipment(UUIDTimestampMixin, Base):
     last_known_location: Mapped[str | None] = mapped_column(String(128), nullable=True)
     delay_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     proof_of_delivery_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # NB-86: who is carrying it, and how much cash they are expected to bring back.
+    # SET NULL so removing a driver from the roster never deletes delivery history.
+    driver_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey('drivers.id', ondelete='SET NULL'), nullable=True, index=True
+    )
+    cod_amount_etb: Mapped[Decimal] = mapped_column(
+        Numeric(14, 2), default=Decimal('0'), nullable=False
+    )
+    client_ref: Mapped[str | None] = mapped_column(String(80), nullable=True)
     scope_3_emissions_kg: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
