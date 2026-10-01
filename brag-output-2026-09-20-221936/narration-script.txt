@@ -1,0 +1,37 @@
+FreightPilot is a logistics operations platform for Ethiopian freight and distribution teams.
+
+Here is the problem. An operator plans today's routes in a spreadsheet. They find out a truck is delayed when the driver calls. They discover a stock-out when a customer complains. And someone reconciles bank transfers against invoices by hand, at the end of the month.
+
+Four failures, every week. Routes planned by habit. Exceptions arriving too late. Cash reconciled manually. Operational data scattered across files nobody fully trusts.
+
+So we built one surface for the whole day.
+
+A company signs up with a business email. No sales call. No procurement. No install. The workspace arrives already populated with sample operational data, so an operator can see what the product does before they trust it with their own numbers.
+
+Then the first route optimization. Two deliveries, weighted across distance, time, cost and vehicle capacity. Twenty one kilometres. Thirty one birr sixty one. That plan is persisted, and it lands in the run history.
+
+Planning is only half of it. The command surface shows what is in stock, what is late, and what is waiting on a decision. A delayed shipment raises an exception, and it lands in a queue where an operator acknowledges, resolves, or escalates it. Every one of those actions is written to an audit trail.
+
+Now the part that is specific to this market. Ethiopian operators settle by bank transfer. Receipts arrive as screenshots and PDFs, and someone matches them to invoices by hand. FreightPilot ingests the receipt, matches it against the invoice, credits the wallet, and records the decision. If a decision is wrong, it can be reversed, and the reversal is itself an audited event. Because in cashflow operations, who changed this and when is the question that ends arguments.
+
+Two things any serious buyer should check.
+
+First, isolation. Roughly half of this platform's surfaces once returned every customer's data to any signed in user. That is fixed, and it is pinned by a two organization regression suite. A second company cannot list, read, or change the first company's rows. And a cross tenant read answers not found, rather than forbidden, so it does not even reveal that the record exists.
+
+Second, we had the code audited. It found one critical and six high findings, including a committed placeholder signing key. All of them are remediated. Dependencies are locked with hash verification. And continuous integration runs the tests, the linter, the type checks, the production builds and dependency audits on every push.
+
+The market is countable. Ethiopian freight forwarders, distributors and third party logistics operators running five to fifty vehicles. Low thousands of serviceable firms. And the buyer is one person, the owner who feels route cost, stock outs and reconciliation every week.
+
+The model is business to business software as a service, priced per company workspace rather than per seat, because the value is operational. There is a free entry tier that onboards a real workspace. Usage is metered server side, with threshold events at eighty percent, one hundred percent, and overage. That is the upgrade moment, and it is backed by the customer's own operational record.
+
+On traction, I will be straight with you. We are pre revenue and post product. What exists and is verified is the platform. Six hundred and ten automated tests. A signup to first route plan funnel verified end to end, twenty two steps, in production. And zero known vulnerabilities in anything we deploy.
+
+I am the founder, and I built this. Four deployable surfaces, roughly twenty thousand lines, and the engineering discipline to keep it standing. What I do not have is an advisor who has run logistics operations in this market, and someone who has taken business software into owner operated firms. That is a real gap, and it is one of the main reasons I am applying rather than only building.
+
+So the ask has four parts. Domain mentorship in Ethiopian logistics operations. Go to market help, converting founder led onboarding into a repeatable motion. Support closing one remaining human verification, confirming the CBE and Dashen transfer fee schedules, which blocks paid launch rather than the product. And preparation for a seed round.
+
+In return, you get a founder available five days a week, above your three day requirement. And a platform you can audit line by line.
+
+Every number in this video is reproducible from the repository and the running software.
+
+Thank you. I am the founder of FreightPilot.

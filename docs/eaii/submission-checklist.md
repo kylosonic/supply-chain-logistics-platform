@@ -88,7 +88,7 @@ Tested signed-out:  [x] yes   Date tested: 2026-09-20 (anonymous fetch, no cooki
 ### B1. The video is already produced and hosted
 
 The pitch video exists: **4 m 34 s** (273.6 s — inside the 3–5 minute requirement), 1920×1080,
-30 fps, H.264/AAC, narrated, 18.1 MB. It is live at a public static URL:
+30 fps, H.264/AAC, narrated, 18.3 MB. It is live at a public static URL:
 
 ```
 https://freightpilot-eaii.vercel.app/watch/
@@ -143,6 +143,7 @@ Paste the YouTube URL into the form instead, and keep the `/watch/` link as the 
 | Last 5 seconds play | [x] verified in the rendered file |
 | Audio is audible and not clipping | [x] mean −23.6 dB, ~7 dB headroom |
 | Link opens in a **signed-out private window** and plays | [x] anonymous fetch returns 200 / `video/mp4` |
+| Audio and picture are in sync | [x] all 10 scene cuts within 0.29s of the narration; audio offset +0.0 ms |
 | Visibility is public-link (Vercel) · **Unlisted** (YouTube) · **Anyone with the link** (Drive) | [x] public static URL |
 | Not set to Private / Restricted | [x] no permission model exists on a static URL |
 

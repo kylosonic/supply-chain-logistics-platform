@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>FreightPilot — EAII pitch</title>
+<style>
+  @font-face { font-family: 'Space Grotesk'; src: local('Space Grotesk'); }
+  @font-face { font-family: 'Inter'; src: local('Inter'); }
+
+  :root {
+    --bg: #0a0f16;
+    --surface: #0d141d;
+    --elevated: #111a26;
+    --border: #1f2a37;
+    --accent: #38bdf8;
+    --good: #34d399;
+    --warn: #fbbf24;
+    --text: #e8eef9;
+    --muted: #9fb0cc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1920px; height: 1080px;
+    background: #0a0f16; overflow: hidden;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #e8eef9;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .scene {
+    position: absolute; inset: 0;
+    background-color: #0a0f16;   /* explicit — required by the transition contract */
+    opacity: 0;
+    pointer-events: none;
+  }
+  .scene.on { opacity: 1; }
+
+  .content {
+    display: flex; flex-direction: column; justify-content: center;
+    width: 100%; height: 100%;
+    padding: 96px 140px;
+    gap: 26px;
+  }
+
+  .kicker {
+    font-size: 21px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: #38bdf8; font-weight: 700;
+  }
+  h1 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: 104px; line-height: 1.02; letter-spacing: -0.025em; font-weight: 700;
+  }
+  h2 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: 68px; line-height: 1.06; letter-spacing: -0.02em; font-weight: 700;
+  }
+  .lede { font-size: 32px; line-height: 1.42; color: #9fb0cc; max-width: 1500px; }
+  .small { font-size: 25px; line-height: 1.42; color: #9fb0cc; }
+
+  .row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .chip {
+    background: #111a26; border: 1px solid #1f2a37; border-radius: 14px;
+    padding: 20px 30px; font-size: 28px; color: #e8eef9; font-weight: 600;
+  }
+  .chip.accent { border-color: #38bdf8; color: #38bdf8; }
+
+  .tile {
+    background: #0d141d; border: 1px solid #1f2a37; border-radius: 16px;
+    padding: 26px 30px; min-width: 300px;
+  }
+  .tile .k { font-size: 20px; color: #9fb0cc; letter-spacing: 0.06em; text-transform: uppercase; }
+  .tile .v {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: 58px; font-weight: 700; margin-top: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile .v.good { color: #34d399; }
+  .tile .v.acc { color: #38bdf8; }
+  .tile .m { font-size: 22px; color: #9fb0cc; margin-top: 8px; }
+
+  .fail { display: flex; align-items: center; gap: 22px; font-size: 38px; color: #e8eef9; }
+  .fail .dot { width: 13px; height: 13px; border-radius: 50%; background: #fb7185; flex: 0 0 auto; }
+
+  .shot {
+    border: 1px solid #1f2a37; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 30px 90px rgba(0,0,0,0.55);
+  }
+  .shot img { display: block; width: 100%; height: auto; }
+
+  .split { display: grid; grid-template-columns: 1.02fr 0.98fr; gap: 64px; align-items: center; }
+
+  .stamp {
+    display: inline-flex; align-items: baseline; gap: 18px;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+  .stamp .n { font-size: 132px; font-weight: 700; color: #34d399; letter-spacing: -0.03em; }
+  .stamp .t { font-size: 30px; color: #9fb0cc; }
+
+  .receipt {
+    background: #0d141d; border: 1px solid #1f2a37; border-radius: 14px; padding: 22px 26px;
+    display: flex; justify-content: space-between; align-items: center; font-size: 26px;
+  }
+  .receipt .amt { font-family: 'Space Grotesk', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #e8eef9; font-weight: 700; }
+  .receipt .st { font-size: 20px; color: #34d399; }
+
+  .closing-mark {
+    font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 44px; font-weight: 700; letter-spacing: -0.01em;
+  }
+</style>
+</head>
+<body>
+
+<div data-composition-id="fp-pitch" data-width="1920" data-height="1080">
+
+  <!-- ============ S1 — The driver calls (0 → 21.6) ============ -->
+  <div class="scene clip" id="s1" data-start="0.0" data-duration="31.4" data-track-index="10">
+    <div class="content">
+      <div class="kicker" id="s1-k">FreightPilot · Ethiopian logistics operations</div>
+      <h1 id="s1-h">The driver calls.</h1>
+      <div class="lede" id="s1-l">That phone call is how a logistics team learns a truck is late.</div>
+      <div style="display:flex;flex-direction:column;gap:20px;margin-top:14px">
+        <div class="fail" id="s1-f1"><span class="dot"></span>Routes planned by habit</div>
+        <div class="fail" id="s1-f2"><span class="dot"></span>Exceptions arriving too late</div>
+        <div class="fail" id="s1-f3"><span class="dot"></span>Cash reconciled by hand</div>
+      </div>
+      <div class="small" id="s1-c" style="margin-top:16px;color:#38bdf8;font-weight:600">Four failures. Every week.</div>
+    </div>
+  </div>
+
+  <!-- ============ S2 — One surface (21.6 → 33.3) ============ -->
+  <div class="scene clip" id="s2" data-start="31.4" data-duration="17.28" data-track-index="10">
+    <div class="content">
+      <h2 id="s2-h">One surface for the whole day.</h2>
+      <div class="row" style="margin-top:22px">
+        <div class="chip" id="s2-c1">Onboard</div>
+        <div class="chip" id="s2-c2">Import</div>
+        <div class="chip accent" id="s2-c3">Optimize</div>
+        <div class="chip" id="s2-c4">Monitor</div>
+        <div class="chip" id="s2-c5">Reconcile</div>
+      </div>
+      <div class="shot" id="s2-shot" style="margin-top:34px;width:1180px">
+        <img src="assets/00-login.png" alt="FreightPilot control tower login" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S3 — The first route plan (33.3 → 45.7) ============ -->
+  <div class="scene clip" id="s3" data-start="48.68" data-duration="13.9" data-track-index="10">
+    <div class="content">
+      <div class="split">
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <div class="kicker" id="s3-k">Route studio</div>
+          <h2 id="s3-h">Weighted across distance, time, cost and capacity.</h2>
+          <div class="row" style="margin-top:12px">
+            <div class="tile" id="s3-t1">
+              <div class="k">Distance</div><div class="v acc"><span id="s3-km">21.07</span> km</div>
+            </div>
+            <div class="tile" id="s3-t2">
+              <div class="k">Cost</div><div class="v acc"><span id="s3-etb">31.61</span> ETB</div>
+            </div>
+          </div>
+          <div class="small" id="s3-c">The plan persists into run history.</div>
+        </div>
+        <div class="shot" id="s3-shot"><img src="assets/02-route-studio.png" alt="Route studio with live map" /></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S4 — After the plan (45.7 → 65.8) ============ -->
+  <div class="scene clip" id="s4" data-start="62.58" data-duration="16.78" data-track-index="10">
+    <div class="content">
+      <div class="split">
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <div class="kicker" id="s4-k">Execution</div>
+          <h2 id="s4-h">What is in stock. What is late. What is waiting on a decision.</h2>
+          <div class="small" id="s4-a">A delayed shipment raises an exception.</div>
+          <div class="small" id="s4-b">An operator acknowledges, resolves, or escalates it.</div>
+          <div class="small" id="s4-c" style="color:#38bdf8;font-weight:600">Every action is written to an audit trail.</div>
+        </div>
+        <div class="shot" id="s4-shot"><img src="assets/05-alerts.png" alt="Exception queue" /></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S5 — The cashflow wedge (65.8 → 94.0) ============ -->
+  <div class="scene clip" id="s5" data-start="79.36" data-duration="31.96" data-track-index="10">
+    <div class="content">
+      <div class="kicker" id="s5-k">The part specific to this market</div>
+      <h2 id="s5-h">Bank transfers, reconciled without a human in the loop.</h2>
+      <div style="display:flex;flex-direction:column;gap:16px;margin-top:26px;width:1420px">
+        <div class="receipt" id="s5-r1"><span>Receipt ingested · CBE transfer</span><span class="amt">12,400.00 ETB</span></div>
+        <div class="receipt" id="s5-r2"><span>Matched to invoice · INV-2026-0148</span><span class="st">matched</span></div>
+        <div class="receipt" id="s5-r3"><span>Wallet credited</span><span class="amt">12,400.00 ETB</span></div>
+        <div class="receipt" id="s5-r4" style="border-color:#fbbf24"><span>Decision reversed — and the reversal is audited</span><span class="st" style="color:#fbbf24">reversible</span></div>
+      </div>
+      <div class="small" id="s5-c" style="margin-top:22px;color:#e8eef9">
+        “Who changed this, and when” — the question that ends arguments.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S6 — Isolation (94.0 → 120.0) ============ -->
+  <div class="scene clip" id="s6" data-start="111.32" data-duration="22.82" data-track-index="10">
+    <div class="content">
+      <div class="kicker" id="s6-k">First — two things a serious buyer should check</div>
+      <h2 id="s6-h">Isolation.</h2>
+      <div class="small" id="s6-a" style="max-width:1460px">
+        Roughly half of this platform's surfaces once returned every customer's data to any signed-in user.
+      </div>
+      <div class="stamp" id="s6-stamp"><span class="n">404</span><span class="t">— not 403</span></div>
+      <div class="small" id="s6-b" style="color:#38bdf8;font-weight:600">
+        So it does not even reveal that the record exists.
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="chip" id="s6-c1">Pinned by a two-organisation regression suite</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S7 — The audit (120.0 → 153.7) ============ -->
+  <div class="scene clip" id="s7" data-start="134.14" data-duration="36.58" data-track-index="10">
+    <div class="content">
+      <div class="kicker" id="s7-k">Second — we had the code audited</div>
+      <h2 id="s7-h">One critical. Six high. All remediated.</h2>
+      <div class="small" id="s7-a">Including a committed placeholder signing key.</div>
+      <div class="row" style="margin-top:24px">
+        <div class="chip" id="s7-c1">Hash-verified lockfiles</div>
+        <div class="chip" id="s7-c2">CI on every push</div>
+        <div class="chip" id="s7-c3">Dependency audits</div>
+      </div>
+      <div class="small" id="s7-b" style="margin-top:22px;max-width:1500px">
+        The market is countable. Ethiopian freight forwarders, distributors and 3PL operators running
+        five to fifty vehicles — low thousands of serviceable firms. The buyer is one person: the owner
+        who feels route cost, stock-outs and reconciliation every week.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S8 — Model and traction (153.7 → 192.5) ============ -->
+  <div class="scene clip" id="s8" data-start="170.72" data-duration="40.42" data-track-index="10">
+    <div class="content">
+      <div class="kicker" id="s8-k">Business model</div>
+      <h2 id="s8-h">Priced per company workspace. Not per seat.</h2>
+      <div class="row" style="margin-top:16px">
+        <div class="chip" id="s8-c1">Free entry tier</div>
+        <div class="chip" id="s8-c2">Usage metered server-side</div>
+        <div class="chip" id="s8-c3">80% · 100% · overage</div>
+      </div>
+      <div class="small" id="s8-a" style="margin-top:14px">The upgrade moment is backed by the customer's own operational record.</div>
+      <div style="border-top:1px solid #1f2a37;margin:26px 0 6px"></div>
+      <div class="kicker" id="s8-k2">Traction — stated plainly</div>
+      <div class="row" style="margin-top:14px">
+        <div class="tile" id="s8-t0"><div class="k">Stage</div><div class="v" style="font-size:40px">Pre-revenue</div><div class="m">Post-product</div></div>
+        <div class="tile" id="s8-t1"><div class="k">Automated tests</div><div class="v good">610</div><div class="m">Passing</div></div>
+        <div class="tile" id="s8-t2"><div class="k">Launch funnel</div><div class="v good">22/22</div><div class="m">Verified in production</div></div>
+        <div class="tile" id="s8-t3"><div class="k">Deployed advisories</div><div class="v good">0</div><div class="m">Known vulnerabilities</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S9 — Team and the honest gap (192.5 → 218.1) ============ -->
+  <div class="scene clip" id="s9" data-start="211.14" data-duration="23.34" data-track-index="10">
+    <div class="content">
+      <div class="kicker" id="s9-k">Core team</div>
+      <h2 id="s9-h">I built this. Four deployable surfaces.</h2>
+      <div class="row" style="margin-top:18px">
+        <div class="chip" id="s9-c1">Platform API</div>
+        <div class="chip" id="s9-c2">Operations console</div>
+        <div class="chip" id="s9-c3">Product site</div>
+        <div class="chip" id="s9-c4">Desktop shell</div>
+      </div>
+      <div class="small" id="s9-a" style="margin-top:20px">Roughly twenty thousand lines — and the discipline to keep it standing.</div>
+      <div class="small" id="s9-b" style="margin-top:16px;color:#fbbf24;max-width:1500px">
+        What I do not have is an advisor who has run logistics operations in this market.
+        That is a real gap.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S10 — The ask (218.1 → 246.2) ============ -->
+  <div class="scene clip" id="s10" data-start="234.48" data-duration="31.22" data-track-index="10">
+    <div class="content">
+      <div class="kicker" id="s10-k">The ask</div>
+      <h2 id="s10-h">Four parts.</h2>
+      <div style="display:flex;flex-direction:column;gap:16px;margin-top:20px">
+        <div class="fail" id="s10-a1"><span class="dot" style="background:#38bdf8"></span>Domain mentorship in Ethiopian logistics operations</div>
+        <div class="fail" id="s10-a2"><span class="dot" style="background:#38bdf8"></span>Go-to-market — founder-led onboarding into a repeatable motion</div>
+        <div class="fail" id="s10-a3"><span class="dot" style="background:#38bdf8"></span>Closing the CBE and Dashen fee-schedule verification</div>
+        <div class="fail" id="s10-a4"><span class="dot" style="background:#38bdf8"></span>Preparation for a seed round</div>
+      </div>
+      <div class="small" id="s10-b" style="margin-top:24px;color:#e8eef9">
+        The verification blocks <em>paid</em> launch — not the product.
+      </div>
+      <div class="tile" id="s10-t" style="margin-top:26px;border-color:#34d399;width:640px">
+        <div class="k">In return</div><div class="v good">5 days / week</div><div class="m">Above your three-day requirement</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ S11 — Close (246.2 → 273.6) ============ -->
+  <div class="scene clip" id="s11" data-start="265.7" data-duration="7.9" data-track-index="10">
+    <div class="content" style="align-items:flex-start">
+      <div class="kicker" id="s11-k">FreightPilot</div>
+      <h2 id="s11-h">Every number in this video is reproducible from the repository.</h2>
+      <div class="small" id="s11-a">And from the running software.</div>
+      <div class="closing-mark" id="s11-b" style="margin-top:40px;color:#38bdf8">FreightPilot</div>
+      <div class="small" id="s11-c">Thank you.</div>
+    </div>
+  </div>
+
+  <!-- ============ Audio ============ -->
+  <audio class="clip" id="narration" data-start="0" data-duration="273.6" data-track-index="20"
+         src="narration.wav" data-volume="1"></audio>
+  <!-- One continuous music bed, pre-built at exactly the composition length from
+       the 163.96s bundled track (looped, with the seam dip and fades baked in).
+       A single clip avoids the duplicate_audio_track overlap error entirely. -->
+  <audio class="clip" id="music" data-start="0" data-duration="273.6" data-track-index="21"
+         src="assets/music-bed.mp3" data-volume="0.07"></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    window.__timelines = window.__timelines || {};
+    const tl = gsap.timeline({ paused: true });
+
+    // ---------------------------------------------------------------
+    // Transition contract (HyperFrames): every scene gets entrance
+    // animations via gsap.from(); NO exit animations except the final
+    // scene. The blur crossfade below IS the exit: the outgoing scene
+    // stays fully visible until the transition takes it.
+    // ---------------------------------------------------------------
+    const SCENES = [
+      { id: 's1',  start: 0.0,   dur: 31.4, in: 0.7 },
+      { id: 's2',  start: 31.4,   dur: 17.28, in: 0.7 },
+      { id: 's3',  start: 48.68,   dur: 13.9, in: 0.7 },
+      { id: 's4',  start: 62.58,   dur: 16.78, in: 0.7 },
+      { id: 's5',  start: 79.36,   dur: 31.96, in: 0.7 },
+      { id: 's6',  start: 111.32,   dur: 22.82, in: 0.7 },
+      { id: 's7',  start: 134.14,   dur: 36.58, in: 0.7 },
+      { id: 's8',  start: 170.72,   dur: 40.42, in: 0.7 },
+      { id: 's9',  start: 211.14,   dur: 23.34, in: 0.7 },
+      { id: 's10', start: 234.48,  dur: 31.22, in: 0.7 },
+      { id: 's11', start: 265.7,  dur: 7.9, in: 0.9 }
+    ];
+
+    const XF = 0.6;   // crossfade length
+
+    SCENES.forEach((s, i) => {
+      const el = document.getElementById(s.id);
+      const prev = i > 0 ? document.getElementById(SCENES[i - 1].id) : null;
+
+      // Incoming scene: blur + fade crossfade (the primary, per the calm/polished
+      // energy table). Starts XF before the scene's own start so the two overlap.
+      tl.fromTo(el,
+        { opacity: 0, filter: 'blur(24px)' },
+        { opacity: 1, filter: 'blur(0px)', duration: s.in, ease: 'sine.inOut' },
+        Math.max(0, s.start - (i === 0 ? 0 : XF))
+      );
+
+      // Outgoing scene leaves only as the transition consumes it.
+      if (prev) {
+        tl.to(prev, { opacity: 0, filter: 'blur(18px)', duration: XF, ease: 'sine.inOut' }, s.start - XF);
+      }
+
+      const at = s.start + 0.25;   // offset first animation 0.25s, never t=0
+      const ids = Array.from(el.querySelectorAll('[id]')).map(n => n.id).filter(id => id !== s.id);
+
+      // Stagger entrances; vary eases so no two beats feel identical.
+      const eases = ['power3.out', 'expo.out', 'power2.out', 'circ.out'];
+      ids.forEach((id, k) => {
+        tl.from('#' + id, {
+          y: k % 3 === 0 ? 44 : (k % 3 === 1 ? 26 : 34),
+          opacity: 0,
+          duration: 0.62,
+          ease: eases[k % eases.length]
+        }, at + k * 0.55);
+      });
+    });
+
+    // Final scene only: permitted exit. Fade the piece to black.
+    tl.to('#s11', { opacity: 0, duration: 1.1, ease: 'power2.inOut' }, 272.4);
+
+    window.__timelines['fp-pitch'] = tl;
+  </script>
+</div>
+</body>
+</html>

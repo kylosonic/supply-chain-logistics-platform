@@ -1,0 +1,154 @@
+[
+  {
+    "index": 1,
+    "words": 12,
+    "start": 0.0,
+    "duration": 5.06,
+    "end": 5.06,
+    "head": "FreightPilot is a logistics operations platform for Ethiopian freight and"
+  },
+  {
+    "index": 2,
+    "words": 48,
+    "start": 5.48,
+    "duration": 14.4,
+    "end": 19.88,
+    "head": "Here is the problem. An operator plans today's routes in"
+  },
+  {
+    "index": 3,
+    "words": 23,
+    "start": 20.28,
+    "duration": 11.12,
+    "end": 31.4,
+    "head": "Four failures, every week. Routes planned by habit. Exceptions arriving"
+  },
+  {
+    "index": 4,
+    "words": 9,
+    "start": 31.4,
+    "duration": 2.44,
+    "end": 33.84,
+    "head": "So we built one surface for the whole day."
+  },
+  {
+    "index": 5,
+    "words": 41,
+    "start": 33.84,
+    "duration": 14.84,
+    "end": 48.68,
+    "head": "A company signs up with a business email. No sales"
+  },
+  {
+    "index": 6,
+    "words": 34,
+    "start": 48.68,
+    "duration": 13.12,
+    "end": 61.8,
+    "head": "Then the first route optimization. Two deliveries, weighted across distance,"
+  },
+  {
+    "index": 7,
+    "words": 55,
+    "start": 62.58,
+    "duration": 16.52,
+    "end": 79.1,
+    "head": "Planning is only half of it. The command surface shows"
+  },
+  {
+    "index": 8,
+    "words": 77,
+    "start": 79.36,
+    "duration": 28.4,
+    "end": 107.76,
+    "head": "Now the part that is specific to this market. Ethiopian"
+  },
+  {
+    "index": 9,
+    "words": 7,
+    "start": 107.76,
+    "duration": 2.84,
+    "end": 110.6,
+    "head": "Two things any serious buyer should check."
+  },
+  {
+    "index": 10,
+    "words": 67,
+    "start": 111.32,
+    "duration": 22.18,
+    "end": 133.5,
+    "head": "First, isolation. Roughly half of this platform's surfaces once returned"
+  },
+  {
+    "index": 11,
+    "words": 51,
+    "start": 134.14,
+    "duration": 18.8,
+    "end": 152.94,
+    "head": "Second, we had the code audited. It found one critical"
+  },
+  {
+    "index": 12,
+    "words": 41,
+    "start": 153.44,
+    "duration": 16.76,
+    "end": 170.2,
+    "head": "The market is countable. Ethiopian freight forwarders, distributors and third"
+  },
+  {
+    "index": 13,
+    "words": 66,
+    "start": 170.72,
+    "duration": 21.74,
+    "end": 192.46,
+    "head": "The model is business to business software as a service,"
+  },
+  {
+    "index": 14,
+    "words": 53,
+    "start": 192.92,
+    "duration": 17.64,
+    "end": 210.56,
+    "head": "On traction, I will be straight with you. We are"
+  },
+  {
+    "index": 15,
+    "words": 70,
+    "start": 211.14,
+    "duration": 22.96,
+    "end": 234.1,
+    "head": "I am the founder, and I built this. Four deployable"
+  },
+  {
+    "index": 16,
+    "words": 52,
+    "start": 234.48,
+    "duration": 22.2,
+    "end": 256.68,
+    "head": "So the ask has four parts. Domain mentorship in Ethiopian"
+  },
+  {
+    "index": 17,
+    "words": 25,
+    "start": 257.22,
+    "duration": 7.92,
+    "end": 265.14,
+    "head": "In return, you get a founder available five days a"
+  },
+  {
+    "index": 18,
+    "words": 14,
+    "start": 265.7,
+    "duration": 4.5,
+    "end": 270.2,
+    "head": "Every number in this video is reproducible from the repository"
+  },
+  {
+    "index": 19,
+    "words": 8,
+    "start": 270.8,
+    "duration": 2.22,
+    "end": 273.02,
+    "head": "Thank you. I am the founder of FreightPilot."
+  }
+]

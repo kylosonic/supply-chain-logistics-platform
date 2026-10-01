@@ -77,6 +77,7 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | Docker compose validity | ✅ PASS | `docker compose config --quiet` exits 0 |
 | EAII submission package produced | ✅ PASS | `docs/eaii/` (deck PDF + PPTX, video script, availability, checklist, 8 product captures); live page https://freightpilot-eaii.vercel.app verified anonymously — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, `/product/` 200 with all 8 screenshots 200 |
 | EAII two required links hosted and verified | ✅ PASS | The form needs a **Pitch Deck URL** and a **Pitch Video URL**, both "anyone with the link". Added `/deck/` and `/watch/` to the same Vercel project so neither depends on a Google share setting. Anonymous verification 2026-09-20 (fresh HTTP client, no cookies): **13/13 routes 200**; `/watch/pitch-video.mp4` → `video/mp4`, `Accept-Ranges: bytes`, range request → **206 `bytes 0-1023/19010967`**; `/deck/` renders all 7 slides (screenshot byte-identical before/after the slide-path dedupe); all 10 EAII sections present in the deck page markup. Evidence: `.artifacts/url-proof/live-deck-full.png`, `live-watch-full.png`, `live-submission.png` |
+| Pitch video A/V sync corrected (TECH-104) | ✅ PASS | Reported defect: *"the audio is ahead."* Cause: scene cues derived from a hardcoded **856**-word divisor against a **748**-word script, scaling every cue to 87.4% and pulling it up to **19.5s early**. Replaced with ASR word alignment against the known script (`faster-whisper` small.en, 94.8% tokens matched), cross-checked against silence gaps in the raw envelope (all onsets within ±0.50s). Scene grouping re-derived; all three in-file copies of the timings (clip attributes, `gsap` SCENES array, closing fade) now generated from one source; the stale `/watch/` chapter list corrected. **Re-verified:** all 10 cuts within **0.29s** of the narration onsets, global audio offset **+0.0 ms**. Live file is sha256-identical to the verified render. |
 | Product screenshots captured from the running console | ✅ PASS | 8 captures at 1600×1000 in `docs/eaii/product-shots/` and on the product tour page. Taken through the real login form against the live API, showing a persisted route plan, shipment, replenishment plan and exception queue — not mock-ups |
 
 ## 5. Failed Gates
@@ -119,7 +120,12 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 - `apps/platform-api/requirements.lock` — hash-pinned Python lockfile (NB-70)
 - `.github/workflows/ci.yml` — release gates (NB-77)
 - `.artifacts/nb72-funnel-verification.log`, `backend-lockcheck-final.log` — verification evidence
-- `.artifacts/url-proof/` — screenshots of the two live form links (`live-deck-full.png`, `live-watch-full.png`, `live-submission.png`)
+- `.artifacts/url-proof/` — screenshots of the two live form links (`live-deck-full.png`, `live-watch-full.png`, `live-submission.png`, `live-watch-fixed.png`)
+- `.artifacts/sync-verify/` — old-vs-new frame comparisons proving the pitch video's scene cuts moved to the measured narration onsets
+- `brag-output-2026-09-20-221936/measure_timing.py` — ASR alignment; the timing source of truth (TECH-104)
+- `brag-output-2026-09-20-221936/apply_measured_timing.py` — rewrites all three in-composition timing locations from the measured file
+- `brag-output-2026-09-20-221936/verify_sync2.py` — cut-placement + global audio-offset verification
+- `brag-output-2026-09-20-221936/scene-map.json` — measured scene boundaries (superseded `scene-timing.json` is retained only as the record of the defect)
 - `docs/eaii/` — EAII second-round submission package
 - `docs/eaii/pitch-page/deck/index.html` — hosted deck page (**deck link** target)
 - `docs/eaii/pitch-page/watch/index.html` — hosted video page (**video link** target)

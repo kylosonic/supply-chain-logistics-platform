@@ -405,3 +405,81 @@ content with no failure signal — the page still renders, just stale. The deck 
 during this work ("Core Team and Advisors" → "Core Team and Advisor"), which is exactly the kind of
 edit that would desynchronise them. **Debit:** add a `scripts/build_deck_slides.py` and chain it after
 PDF generation, or have `/deck/` render the PDF directly and delete the rasters.
+
+---
+
+## Pitch video audio was ahead of the picture (2026-09-20) — TECH-104
+
+**Reported by the user after the first delivery:** "the audio and video arent synced the audio is
+ahead." Confirmed, and worse than a tuning issue — the visual scene cues were up to **19.5s early**.
+
+### Root cause: an estimate presented as a measurement
+
+`derive_timing.py` computed each paragraph's duration as
+`words(paragraph) / words(total) * 273.6` and documented itself as *"arithmetic on two measured
+quantities, not an estimate of pace."* Both halves of that claim were wrong:
+
+| Claim | Reality |
+|---|---|
+| `words(total)` is measured | it was a hardcoded `856`, from a draft with more text. The script has **748** words |
+| proportional word counts are not a pace estimate | they *are* one — they assume a perfectly constant speaking rate |
+
+The stale divisor scaled every cue by 748/856 = **87.4%**, so each cue fired earlier than the voice,
+compounding along the timeline: scene 2 only 9.8s early, the close **19.5s** early. A constant rate
+would still have left 1–3s of residual drift, because Kokoro does not hold one pace across paragraph
+breaks.
+
+### Why it survived the original QA
+
+The verification at the time checked the *properties of the timeline*, not its correspondence to the
+audio: 11 scene midpoints were inspected as frames, the durations summed to 273.6s, and the audio
+levels were clean. Every one of those passes whether or not the cues line up with the voice. The
+self-consistent number (`scene-map.json` summed to exactly 273.6s) was taken as evidence of
+correctness when it was only evidence of internal consistency — a timeline can be perfectly
+self-consistent and still wrong, because the error was in the input constant.
+
+### Fix
+
+1. **Measure, don't estimate.** `measure_timing.py` transcribes `narration.wav` with
+   `faster-whisper` (small.en, int8) and aligns the recognised words to the *known* script with
+   `difflib` (94.8% of tokens matched, 0.955 similarity). Because alignment is against known text,
+   ASR mis-spellings cannot corrupt the result — only each word's timestamp is used.
+2. **Cross-check independently.** All 19 derived onsets coincide with a silence-gap midpoint in the
+   raw audio envelope within **±0.50s**. Two unrelated methods agreeing is what makes the numbers
+   trustworthy; the original method had no second source at all.
+3. **One generator for three copies.** The timings lived in the clip `data-start`/`data-duration`
+   attributes, the `gsap` `SCENES` array, and the closing fade. `apply_measured_timing.py` now
+   rewrites all three from the single measured file, so they cannot drift apart.
+4. **Re-derive the scene grouping.** The paragraph→scene mapping had been fitted to the wrong
+   timeline, so scenes displayed the wrong visuals for their audio (the bank-transfer visual covered
+   the route-optimisation narration). Regrouped onto the chapter boundaries already published on the
+   video page, which the measured onsets confirm.
+5. **Fix the copies of the numbers.** The same bad figures had been pasted into `/watch/`'s chapter
+   list and into the composition's HTML comments.
+
+### Verification (two independent tests, both required)
+
+| Test | Result |
+|---|---|
+| Cut placement — frame-to-frame luma change across all 8208 frames, strongest peak within ±2.5s of each intended boundary | all 10 boundaries found, worst error **0.29s** |
+| Global audio offset — onset-envelope cross-correlation of the MP4's audio vs `narration.wav` | **+0.0 ms** |
+
+Confirmed live: the deployed `/watch/pitch-video.mp4` is byte-identical (sha256) to the verified local
+render.
+
+### Lesson recorded
+
+Two failure modes worth naming, because both are easy to repeat:
+
+- **A constant baked into a script is invisible.** Nothing in the output looked wrong; the timings
+  were plausible, monotonic, and summed correctly. Any number that describes a property of an input
+  artifact (word counts, durations, file sizes) should be read from that artifact at runtime.
+- **The first verifier written for this fix was itself wrong** and reported FAIL on a correct video:
+  it classified frames by nearest scene signature, which breaks during crossfades where every frame
+  is near-black, and its global strongest-peak-first rule let one high-contrast cut mask weaker ones.
+  A verification that fails should first be suspected of being a bad test. The replacement measures
+  the property directly (where does the picture change?) rather than inferring it.
+
+**Debit:** `derive_timing.py` and `scene-timing.json` are retained only as the record of the defect and
+must not be reused; the production record marks them superseded.
+

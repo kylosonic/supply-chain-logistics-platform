@@ -1,0 +1,116 @@
+{
+  "total_duration": 273.6,
+  "narration": "narration.wav",
+  "source": "narration.wav measured by ASR word alignment (measure_timing.py); scene boundaries are measured paragraph onsets, not proportional word counts.",
+  "music_volume": 0.07,
+  "note_music": "Ducked hard under narration. This is a pitch, not a promo; speech must always be dominant.",
+  "scenes": [
+    {
+      "id": "s1",
+      "start": 0.0,
+      "duration": 31.4,
+      "name": "The driver calls",
+      "paras": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "s2",
+      "start": 31.4,
+      "duration": 17.28,
+      "name": "One surface",
+      "paras": [
+        4,
+        5
+      ]
+    },
+    {
+      "id": "s3",
+      "start": 48.68,
+      "duration": 13.9,
+      "name": "The first route plan",
+      "paras": [
+        6
+      ]
+    },
+    {
+      "id": "s4",
+      "start": 62.58,
+      "duration": 16.78,
+      "name": "After the plan",
+      "paras": [
+        7
+      ]
+    },
+    {
+      "id": "s5",
+      "start": 79.36,
+      "duration": 31.96,
+      "name": "The cashflow wedge",
+      "paras": [
+        8,
+        9
+      ]
+    },
+    {
+      "id": "s6",
+      "start": 111.32,
+      "duration": 22.82,
+      "name": "Isolation",
+      "paras": [
+        10
+      ]
+    },
+    {
+      "id": "s7",
+      "start": 134.14,
+      "duration": 36.58,
+      "name": "The audit",
+      "paras": [
+        11,
+        12
+      ]
+    },
+    {
+      "id": "s8",
+      "start": 170.72,
+      "duration": 40.42,
+      "name": "Model and traction",
+      "paras": [
+        13,
+        14
+      ]
+    },
+    {
+      "id": "s9",
+      "start": 211.14,
+      "duration": 23.34,
+      "name": "Team and the honest gap",
+      "paras": [
+        15
+      ]
+    },
+    {
+      "id": "s10",
+      "start": 234.48,
+      "duration": 31.22,
+      "name": "The ask",
+      "paras": [
+        16,
+        17
+      ]
+    },
+    {
+      "id": "s11",
+      "start": 265.7,
+      "duration": 7.9,
+      "name": "Close",
+      "paras": [
+        18,
+        19
+      ]
+    }
+  ]
+}
