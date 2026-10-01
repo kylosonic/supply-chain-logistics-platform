@@ -31,6 +31,10 @@
 param(
     [string]$NeonApiKey = $env:NEON_API_KEY,
     [string]$ProjectName = 'freightpilot-prod',
+    # neonctl prompts interactively when an account has more than one
+    # organization, which hangs a non-interactive run. Passing the org explicitly
+    # avoids the prompt; empty means "single-org account, no flag needed".
+    [string]$OrgId = '',
     [string]$PythonExe = '',
     [switch]$DryRun
 )
@@ -44,6 +48,24 @@ function Step([string]$t) { Write-Host "`n=== $t ===" -ForegroundColor Cyan }
 function Ok([string]$t) { Write-Host "  [ok] $t" -ForegroundColor Green }
 function Warn2([string]$t) { Write-Host "  [!!] $t" -ForegroundColor Yellow }
 function Die([string]$t) { Write-Host "  [xx] $t" -ForegroundColor Red; exit 1 }
+
+# neonctl writes spinners and ANSI colour codes around its output, so the raw
+# stream is not valid JSON even with --output json. Strip the escapes and the
+# leading banner, then hand the remainder to PowerShell's own parser -- which
+# handles both a bare array and an object envelope correctly.
+function ConvertFrom-NeonJson([object]$raw) {
+    $text = ($raw | Out-String)
+    $text = $text -replace "\x1B\[[0-9;?]*[ -/]*[@-~]", ''
+    $text = $text -replace "\x1B[@-Z\\-_]", ''
+    $start = -1
+    foreach ($ch in @('[', '{')) {
+        $i = $text.IndexOf($ch)
+        if ($i -ge 0 -and ($start -lt 0 -or $i -lt $start)) { $start = $i }
+    }
+    if ($start -lt 0) { return $null }
+    $json = $text.Substring($start).Trim()
+    try { return ($json | ConvertFrom-Json) } catch { return $null }
+}
 
 Step 'Preflight'
 
@@ -92,17 +114,64 @@ Ok 'neonctl ready'
 # 2. Locate the project and read its pooled connection string
 # ---------------------------------------------------------------------------
 Step "Neon project '$ProjectName'"
-$projectsRaw = & $neon projects list --api-key $NeonApiKey --output json 2>&1
+$orgArgs = @()
+if ($OrgId) { $orgArgs = @('--org-id', $OrgId) }
+$projectsRaw = & $neon projects list --api-key $NeonApiKey @orgArgs --output json 2>&1
 if ($LASTEXITCODE -ne 0) { Die "projects list failed:`n$($projectsRaw | Select-Object -First 8)" }
-$projects = ($projectsRaw -join "`n") | ConvertFrom-Json
-$project = @($projects) | Where-Object { $_.name -eq $ProjectName } | Select-Object -First 1
+$projects = ConvertFrom-NeonJson $projectsRaw
+if (-not $projects) {
+    # Most likely cause: neonctl asked which organization to use and got no
+    # answer, so the account has several. Report that rather than a parse error.
+    $peek = ($projectsRaw | Out-String)
+    if ($peek -match 'organization would you like') {
+        Die @'
+neonctl prompted for an organization, which means this account has more than
+one. Re-run with -OrgId, e.g.:
+
+  Get the id from:  neonctl orgs list --api-key <key>
+  ./scripts/apply_production_migrations.ps1 -OrgId org-xxxxx
+'@
+    }
+    Die "could not parse the project list as JSON:`n$($peek.Substring(0, [Math]::Min(300, $peek.Length)))"
+}
+# neonctl has returned both a bare array and a {projects:[...]} envelope. The
+# envelope test must be structural: on a bare array, `$projects.projects` uses
+# PowerShell member enumeration and returns an array of nulls -- which is TRUTHY,
+# so a naive `if ($projects.projects)` replaces good data with nulls.
+if ($projects -isnot [System.Array] -and $projects.PSObject.Properties['projects']) {
+    $projects = $projects.projects
+}
+
+if ($env:FP_MIGRATE_DEBUG) {
+    Write-Host "  [dbg] parsed type : $($projects.GetType().FullName)"
+    Write-Host "  [dbg] parsed count: $(@($projects).Count)"
+    for ($i = 0; $i -lt @($projects).Count; $i++) {
+        $item = @($projects)[$i]
+        if ($null -eq $item) { Write-Host "  [dbg] item[$i] is NULL"; continue }
+        Write-Host "  [dbg] item[$i] name: '$($item.name)' id: '$($item.id)'"
+    }
+}
+
+# Match by explicit comparison rather than Where-Object on a property, which
+# silently yields nothing here (returning an empty roster and a confusing
+# "not found" message instead of a parse failure).
+$project = $null
+$seen = @()
+foreach ($candidate in @($projects)) {
+    if ($null -eq $candidate) { continue }
+    $candidateName = [string]$candidate.name
+    if (-not $candidateName -and $candidate.PSObject.Properties['name']) {
+        $candidateName = [string]$candidate.PSObject.Properties['name'].Value
+    }
+    $seen += $candidateName
+    if ($candidateName -eq $ProjectName) { $project = $candidate; break }
+}
 if (-not $project) {
-    $names = (@($projects) | ForEach-Object { $_.name }) -join ', '
-    Die "project '$ProjectName' not found. Visible projects: $names"
+    Die "project '$ProjectName' not found. Visible projects: $($seen -join ', ')"
 }
 Ok "project $($project.id) in $($project.region_id)"
 
-$raw = & $neon connection-string --project-id $project.id --pooled --api-key $NeonApiKey 2>&1
+$raw = & $neon connection-string --project-id $project.id --pooled --api-key $NeonApiKey @orgArgs 2>&1
 if ($LASTEXITCODE -ne 0) { Die "connection-string failed:`n$raw" }
 $pgUrl = ($raw | Where-Object { $_ -match '^postgres' } | Select-Object -First 1)
 if (-not $pgUrl) { $pgUrl = ("$raw" -split "`n" | Where-Object { $_ -match 'postgres' } | Select-Object -First 1) }
