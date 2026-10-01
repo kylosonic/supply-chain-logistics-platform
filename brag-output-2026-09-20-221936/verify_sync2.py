@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 
 OUT = Path(__file__).resolve().parent
-VIDEO = OUT / "brag-synced.mp4"
+VIDEO = OUT / "brag-mg.mp4"  # the delivered cut (motion-graphics pass)
 NARRATION = OUT / "narration.wav"
 FPS = 30
 XF = 0.6  # crossfade length used by the composition

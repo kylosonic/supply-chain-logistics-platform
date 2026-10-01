@@ -3,7 +3,7 @@
 **File:** `brag-output-2026-09-20-221936/brag.mp4`
 **Live URL:** https://freightpilot-eaii.vercel.app/pitch-video.mp4
 **Runtime:** 4 minutes 33.6 seconds (273.6s) — EAII window is 3–5 minutes ✅
-**Format:** MP4 · H.264 · 1920×1080 · 30 fps · AAC 48 kHz stereo · 18.3 MB
+**Format:** MP4 · H.264 · 1920×1080 · 30 fps · AAC 48 kHz stereo · 17.1 MB (cinematic pass, CRF 25, +faststart)
 
 ---
 
@@ -78,6 +78,87 @@ The deviation is documented in `brag-plan.md` and every other rule of the skill 
   Mixed at **volume 0.07** so speech always dominates.
 - **Screenshots** — 8 captures of the running operations console against a live workspace.
 
+### 2b. Cinematic treatment and motion graphics
+
+The first delivered cut was visually plain: flat panels on a flat background, text that faded in.
+Two revisions after that feedback moved it away from "slides with a voiceover":
+
+**Film treatment** — a lit stage (two slow-drifting colour washes over a perspective floor grid),
+an inline-SVG fractal-noise grain plate jittered whole-pixel per frame, a graded vignette, an
+anamorphic 46px letterbox, a lens bloom that breathes across the piece, and a light bar that
+sweeps the frame on the three hero beats. Shadows, inner highlights and accent glows on every
+surface.
+
+**Drawn motion graphics** — the elements that carry meaning rather than decorate:
+
+| Graphic | What it does | Why it earns its place |
+|---|---|---|
+| Route map overlay | A path draws itself inside the product capture's own "Route map" panel, six stops pop in sequence, then a vehicle marker traverses the optimised route | The capture reads *"No mapped stops yet"*. The animation shows the route being planned in the exact region of the UI that claims to have none — the narration's 21.07 km / 31.61 ETB claim made visible |
+| Dot matrix | 92 cells scatter and resolve out of noise into a green field, then pulse once | Turns "automated tests" from a phrase into a quantity you can see |
+| Reconciliation flow | A travelling dot carries 12,400.00 ETB along a drawn connector from the invoice node into the wallet node, which then acknowledges with an elastic settle | Visualises the bank-transfer match that the scene is describing |
+| Ambient dust | 14 seeded motes drift upward and fade across the piece | Depth; nothing on screen is ever perfectly still |
+
+Every graphic is driven from the **same single paused GSAP timeline** as the scenes, so seeking to
+any time reproduces that frame exactly. Randomness is seeded (`seed = 20260920` and a deterministic
+hash for cell scatter) — `Math.random()` would make successive renders differ frame for frame, which
+would break both the render contract and the sync verification.
+
+**Two things deliberately NOT shipped**, recorded so a later pass does not re-add them:
+
+- **Ripple rings over the product captures.** Written, rendered, inspected, then removed. A ring
+  expanding across a real UI screenshot reads as a rendering artifact rather than a graphic — the
+  capture is already the evidence, and the overlay made the frame look broken instead of designed.
+  The graphic was cut for being wrong, not for being expensive.
+- **A separate title card for the cold open.** The narration's first line ("FreightPilot is a
+  logistics operations platform…") plays over the "driver calls" card, because the video opens on the
+  problem rather than the company. Splitting it would mean re-cutting a scene boundary that the audio
+  measurement validates, to buy a 5-second beat. The brand mark and the footer carry identity instead.
+
+Two authoring faults were caught by `hyperframes lint` and fixed before rendering: three
+`tl.fromTo()` calls on the same element (`#fx-leak`) with no stable baseline, which breaks seek
+determinism because GSAP applies `fromTo` from-values at authoring time; and overlapping opacity
+tweens on that element. The light sweeps are now one `fromTo` for the resting state plus plain
+`to()` calls for each later beat.
+
+**A third fault reached a render before it was caught, and is worth recording.** The first
+motion-graphics render came back **5 m 30 s long instead of 4 m 33.6 s** — a duration that would
+have failed the 3–5 minute requirement. The cause was a single decorative tween:
+
+```js
+tl.fromTo('#fx-orb-b', { x: 0, y: 0 },
+  { x: -120, y: -80, duration: 130, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 0);
+```
+
+GSAP defines a timeline's duration as the **maximum total duration of its children**, and a
+repeated tween's total is `duration × (repeat + 1)`. The orb was authored as a `165s` drift with
+`repeat: 1` — written and reviewed as "165 seconds" — but its total was **330 s**, which silently
+stretched the entire composition by 56 seconds. Nothing errored; every visible element still
+ended on time, and `getChildren()` showed nothing past 273.6 s. The only symptom was a longer file.
+
+Diagnosis required reading the timeline in a real browser rather than reasoning about the source:
+the reported `duration()` (330), the furthest child end (273.6) and `endTime()` (330) disagreed,
+and only the per-child **total** duration exposed the culprit. A minimal reproduction (a 10 s
+timeline with and without a 273.6 s declared audio clip) first ruled out the HyperFrames runtime
+imposing the length, which is what made the authored tween the only remaining candidate.
+
+Every repeating tween is now budgeted explicitly against 273.6 s and the composition is asserted
+to be exactly that length:
+
+| Tween | duration | repeat | total |
+|---|---|---|---|
+| `#fx-grid` | 273.6 | 0 | **273.6 s** |
+| `#fx-grain` | 3.8 | 71 | 273.6 s |
+| `#fx-bloom` | 34 | 7 | 272 s |
+| `#fx-orb-a` / `#fx-orb-b` | 130 | 1 | 260 s |
+
+Note also that `repeat: n` runs the tween **n + 1** times — an earlier attempt used
+`duration: 4, repeat: 68` intending 272 s and produced 276 s.
+
+Separately, the grain plate drove the encoded bitrate to 1494 kbps (65.6 MB for 4.5 minutes)
+because per-frame noise is exactly what an inter-frame codec cannot compress. Grain opacity was
+reduced to 0.038 and its jitter displacement from ±70 px to ±13 px, ambient motes from 26 to 14,
+and the encode uses CRF 21 — the film texture is still present but no longer dominates the budget.
+
 ## 3. Verification performed
 
 | Check | Result |
@@ -92,7 +173,7 @@ The deviation is documented in `brag-plan.md` and every other rule of the skill 
 | A/V sync — cut placement | all 10 boundaries within **0.29s** of the measured narration onsets (`verify_sync2.py`) |
 | A/V sync — audio offset | **+0.0 ms** lag vs `narration.wav` (onset-envelope cross-correlation) |
 
-Delivered file: 19,212,553 bytes (18.32 MiB), sha256 `61E53A8995C057DC224AEC481563573E9E2B2D4DD87A20D900CCF994A4461F8F`.
+Delivered file: 17,889,116 bytes (17.06 MiB), sha256 `6B012D90E910C115B1119A092FD4263B73A9C466DE54689050DB23C8C370227E`.
 Verified byte-identical to what the live `/watch/pitch-video.mp4` serves.
 
 ### Three defects found and fixed during production
@@ -136,7 +217,7 @@ Full steps: `docs/eaii/submission-checklist.md` Part B, then `docs/eaii/SUBMISSI
 
 | File | What it is |
 |---|---|
-| `brag.mp4` | **The pitch video.** 4:33.6, 18.3 MB, sha256 `61E53A89…461F8F` |
+| `brag.mp4` | **The pitch video.** 4:33.6, 17.1 MB, sha256 `6B012D90…C370227E` |
 | `brag.jpg` | Poster frame — the route-plan proof moment (21.07 km / 31.61 ETB) |
 | `brag-thumb.jpg` | 300×300 thumbnail for video listings |
 | `brag-plan.md` | The `/brag` plan: angle, hook, storyboard, audio direction, readability ledger |
