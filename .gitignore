@@ -47,8 +47,13 @@ brag-output-*/
 
 *.wav
 
-docs/eaii/pitch-page/*.mp4
+# Pitch-page media: ~38 MB of MP4 plus raster posters/slides. These are uploaded to
+# Vercel as static assets and served from the live deployment; keeping them out of git
+# avoids bloating history for binaries that are reproducible from the deck/video sources.
+docs/eaii/pitch-page/**/*.mp4
 
+docs/eaii/pitch-page/**/*.wav
+
+# Poster/thumbnail images are kept (they are small and referenced by the live pages),
+# but the full-resolution slide raster set is regenerated from the deck PDF.
 docs/eaii/pitch-page/*.jpg
-
-docs/eaii/pitch-page/*.wav
