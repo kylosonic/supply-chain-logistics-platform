@@ -1,6 +1,6 @@
 # Driver roster and cash-on-delivery reconciliation (NB-86)
 
-**Status:** implemented, tested, awaiting human UAT
+**Status:** deployed to production 2026-10-01 and smoke-tested live; awaiting human UAT
 **Origin:** product evaluation from the buyer's side — what an Ethiopian freight
 operator would need on day one, tested against what the API actually did.
 
@@ -137,6 +137,26 @@ Pinned by `test_drivers_are_invisible_across_organisations`,
 `test_client_ref_is_scoped_per_organisation`, and
 `test_driver_rows_carry_the_creating_organisation` (guards the scoping column
 itself, since a NULL there would make the roster global).
+
+## 3b. Production verification (2026-10-01)
+
+Migration `20260812_0020` applied to production Neon, then platform-api deployed.
+The full lifecycle was exercised against the live API, not just the test suite:
+
+| # | Check | Live result |
+|---|---|---|
+| 1 | Driver created | `Yohannes Bekele / +251911000777 / active` |
+| 2 | Duplicate phone in the same workspace | **409**, not 500 |
+| 3 | COD shipment created and auto-assigned | `SHP-SMOKE-… cod=2500.00 driver=Yohannes Bekele` |
+| 4 | Create replayed with the same `client_ref` | returned the **same shipment id** |
+| 5 | Ledger before delivery | `outstanding=0 shortfall=0.00` |
+| 6 | Delivery with a partial declaration | `collected=2000.00 shortfall=500.00`, `actual_delivery` set |
+| 7 | Confirmation replayed after delivery | **one** cash record, shortfall still `500.00` — no double-count |
+| 8 | Settle | `status=settled`, shortfall **kept** at `500.00`, `settled_at` set |
+| 9 | Second organisation | `drivers=0 shortfall=0.00`; cross-tenant cash read → **404** |
+
+Every one of the eight numbered assertions above came back as required on the
+deployed build.
 
 ## 4. Not in this batch, and why
 

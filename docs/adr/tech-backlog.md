@@ -541,14 +541,14 @@ test that asserted `collected` where the correct state was `outstanding` — the
 by a delivery with no cash declared, which is the intended behaviour, so the test was wrong, not the
 code.
 
-### Open: the migration is NOT yet applied to production
+### Applied to production 2026-10-01
 
 `20260812_0020` is the new Alembic head. The Vercel project has **no migration step** — `vercel.json`
 only builds `api/index.py` — so a merged migration never reaches the database by itself. The new
 columns are read on every shipment response, so **deploying the code before applying the migration
 would 500 the shipment list.**
 
-**Order is mandatory: apply migrations first, then push.**
+**Order was: apply migrations first, then push.**
 `scripts/apply_production_migrations.ps1` performs the first half in one command (reads the pooled URL
 from Neon, reports the current revision, runs `alembic upgrade head`, prints the result, deploys
 nothing). It could not be run here because no Neon API key was available in this session, and
@@ -558,4 +558,36 @@ be read back from the project either. Production is untouched and still serving 
 **Debit:** add a release step that applies migrations as part of deploy, so this ordering is enforced by
 tooling rather than by a note in a document.
 
+**Outcome:** the migration was applied to production with
+`scripts/apply_production_migrations.ps1 -OrgId org-holy-moon-30252311`, verified against the live
+database, and platform-api deployed. The cash lifecycle was then exercised live: a delivered COD
+shipment of 2500.00 with 2000.00 declared showed a **500.00 shortfall**; a replayed confirmation left
+exactly one cash record; settlement closed it while **keeping** the shortfall; and a second
+organisation saw zero drivers, zero shortfall, and a **404** on a cross-tenant cash read.
 
+**The deploy itself failed for two hours for an unrelated reason, and the cause is worth recording.**
+All five commits were authored as `architect <architect@freightpilot.local>`, and Vercel **refuses to
+build a deployment whose commit author it cannot map to a Git account**:
+
+```
+readyState       : BLOCKED
+readyStateReason : The deployment was blocked because Vercel couldn't find a
+                   Git account for the commit author.
+```
+
+The symptom is badly misleading. The deployments sat at `UNKNOWN` with a **0 ms** build and **no
+events at all** — which reads as "queued behind something" rather than "refused". Neither CLI surface
+reveals the reason: `vercel ls` shows only the status, `vercel inspect` shows only `[0ms]`. It took a
+direct call to `GET /v1/deployments/{url}` to surface `readyStateReason`. Two deploys were burned
+(one git-triggered, one CLI) before that. The fix was to set the repository identity to the
+GitHub-linked account and rewrite authorship via
+`git rebase --force-rebase <base> --exec 'git commit --amend --no-edit --reset-author'`.
+
+The force-push then failed with `send-pack: unexpected disconnect` until the rewrite was pushed in
+**single-commit batches** — the rewritten history made git re-send blobs the server already had
+(38 MB of deck PNGs), and one large pack exceeded the HTTP limit.
+
+**Debit (two items):** (1) add a release step that applies migrations as part of deploy, so the
+ordering is enforced by tooling rather than a document; (2) make Vercel author attribution automatic
+— a commit-time hook or a CI check that rejects an identity Vercel cannot resolve, because the
+failure mode is silent and costs hours.
