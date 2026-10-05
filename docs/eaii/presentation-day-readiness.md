@@ -10,8 +10,8 @@ it says so. Nothing here is inferred from documentation alone.
 ## 1. The short version
 
 **The platform is live and the core loop works.** An automated sweep of the real
-production API passed **44 of 46 checks** (the two failures are one bug, fixed in
-this batch but not yet deployed — §5).
+production API now passes **46 of 46 checks** — after this batch's two backend
+fixes were deployed and re-verified against production (§9).
 
 So tomorrow's risk is **not** "will it fall over". It is three specific things:
 
@@ -130,8 +130,9 @@ a place where the product's own documentation or code contradicts a tempting cla
 
 ## 5. What changed in this batch
 
-All changes are on the working tree, verified locally (typecheck, lint, **167 console
-tests**, production build), and awaiting push.
+Committed, pushed to `master`, **deployed to production, and re-verified live**
+(commits `f4f6b2c`, `3e4c257`, `ff6a67e`). Locally: typecheck, lint, **167 console
+tests** and the production build are clean.
 
 ### 5.1 `GET /api/v1/inventory` returned HTTP 500 for every tenant — **fixed**
 
@@ -142,9 +143,10 @@ fixed for `RouteScheduleSummary` in NB-64** — the comment in `schemas/route.py
 describes it exactly; `schemas/inventory.py` was missed.
 
 It went unnoticed because the console reads `/inventory/overview` (a projection with
-no ids, unaffected) and the endpoint had no test. **Verified live: HTTP 500 with 9
-rows present.** Fixed with a field-level UUID→str coercion so the response shape is
-unchanged, plus regression tests.
+no ids, unaffected) and the endpoint had no test. **Verified live before the fix:
+HTTP 500 with 9 rows present.** Fixed with a field-level UUID→str coercion so the
+response shape is unchanged, plus regression tests. **Verified live after deploy:
+`200`, 9 rows, ids as UUID strings.**
 
 ### 5.2 `GET /api/v1/invoices` leaked other tenants' freight invoices — **fixed**
 
@@ -166,6 +168,9 @@ default exists so a *single-tenant* deployment keeps seeing rows written before 
 scoping — but in a genuinely multi-tenant database it does the opposite of its
 intent, and it is precisely why those two rows were world-readable. **Reverting one
 keyword restores the old behaviour if the team disagrees.**
+
+**Verified live after deploy:** the same fresh-workspace read returns **0 rows**
+(was 2).
 
 ### 5.3 The Ethiopian-market feature now has a screen — **built**
 
@@ -189,6 +194,12 @@ delivery with the cash figure in one call** — the shortfall is computed and sh
 the dialog before you confirm.
 
 24 new tests (14 API-contract, 10 render). All 143 pre-existing tests still pass.
+
+**Verified live after deploy:** the console serves a new entry bundle
+(`index-DtmxP_mN.js`) containing both the `/drivers` route and the "Fleet & Cash"
+nav label, and the `DriversPage-svPNSIDN.js` chunk returns `200`.
+**The page is on the live console now**, at
+https://ops-console-azure.vercel.app/drivers
 
 ---
 
@@ -345,12 +356,16 @@ tile unless you're ready for the question.
 | Console lint (`eslint --max-warnings=0`) | clean |
 | Console tests | **167 passed / 21 files** (143 pre-existing + 24 new) |
 | Console production build | succeeds; `DriversPage` = 14.32 kB (4.05 kB gzip) lazy chunk |
-| Production funnel sweep | **44/46** — `scripts/verify_production_funnel.py` |
-| Failing checks | `GET /api/v1/inventory` → 500 (fixed in this batch, **not yet deployed**) |
-| Backend tests | **NOT RUN LOCALLY** — see §10 |
 | Backend syntax check (`py_compile`) | clean on all three changed/added files |
+| Production funnel sweep, **before** the fixes | 44/46 — the two failures were one bug |
+| Production funnel sweep, **after** the deploy | **46 passed, 0 failed (of 46)** — `scripts/verify_production_funnel.py` |
+| `GET /api/v1/inventory` — before / after | `500` → **`200`**, 9 rows, ids as UUID strings |
+| `GET /api/v1/invoices` on a fresh workspace — before / after | **2 foreign rows** → **0 rows** |
+| Console deploy | new entry bundle `index-DtmxP_mN.js`; contains `/drivers` and `Fleet & Cash`; `DriversPage-svPNSIDN.js` → `200` |
+| Backend `pytest` suite | **NOT RUN LOCALLY** — §10. Behaviour is verified live instead. |
+| GitHub Actions CI status | **not checked** — private repo, no authenticated CLI here. Worth a look. |
 
-## 10. One thing I could not verify
+## 10. One thing I could not verify, and what replaced it
 
 **I could not run the backend test suite on this machine.** `pypi.org` is unreachable
 from here — DNS resolves it to IPv6-only addresses and HTTPS requests hang
@@ -358,12 +373,17 @@ indefinitely, while npm, GitHub and the Vercel endpoints all work fine. I create
 Python 3.11 venv, but `pip install` could not fetch a single package in ~50 minutes, so
 I killed it rather than let it spin.
 
-What that means: my two backend fixes are verified by **reading the code, matching the
-pattern already used and tested elsewhere in the repo (`drivers.py`, `tenant_scope.py`),
-a `py_compile` pass, and live reproduction of the original defects against production**
-— but **not** by a local `pytest` run. They are covered by
-`tests/test_inventory_and_invoice_tenant_scope.py`, which will run in GitHub Actions on
-push. **Check that CI run before relying on them tomorrow.**
+What replaced it: the two API fixes are **verified against production**. Before the
+deploy, `GET /api/v1/inventory` answered `500` and a brand-new workspace saw two
+foreign freight invoices; after the deploy, the same two checks answer `200` with 9
+rows and `0` rows respectively, and the full sweep is 46/46. That is stronger evidence
+than a local pytest run, because it exercises the real deployed code path against the
+real database.
 
-I did not fake this result. If you have a machine with PyPI access, running
-`cd apps/platform-api && pytest -q` is the one piece of evidence still missing.
+The remaining gap is narrower than it looks, but it is real: the **test file itself**
+has never executed. `tests/test_inventory_and_invoice_tenant_scope.py` is written and
+will run in GitHub Actions on push — but if it contains a mistake, nothing has told
+us yet, and a red CI run would not have blocked the deploy. **Check the Actions run.**
+
+I did not fake any result. If you have a machine with PyPI access, `cd apps/platform-api
+&& pytest -q` is the one piece of evidence still missing.
