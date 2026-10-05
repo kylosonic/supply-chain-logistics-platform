@@ -15,6 +15,7 @@ const navGroups = [
       { to: '/', label: 'Control Tower', code: 'CT' },
       { to: '/routes', label: 'Route Studio', code: 'RT' },
       { to: '/shipments', label: 'Shipments', code: 'SH' },
+      { to: '/drivers', label: 'Fleet & Cash', code: 'FC' },
       { to: '/alerts', label: 'Exceptions', code: 'EX' },
       { to: '/planning', label: 'Planning', code: 'PL' },
     ],
