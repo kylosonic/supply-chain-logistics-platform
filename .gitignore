@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.so
 .pytest_cache/
+apps/platform-api/.pytest-*-temp/
 .mypy_cache/
 .coverage
 htmlcov/
