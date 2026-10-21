@@ -9,19 +9,40 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy import asc, func, select
 from sqlalchemy.orm import Session
 
-from app.api.security import actor_organization_id, get_current_user_from_token, scoped_to_organization
+from app.api.security import get_current_user_from_token, scoped_to_organization
 from app.core.observability import app_metrics
 from app.db.session import get_db
 from app.models.inventory import Inventory
 from app.models.item import Item
 from app.models.order import HistoricalOrder
+from app.models.organization import Organization
 from app.models.route import RouteSchedule
 from app.models.warehouse import Warehouse
+from app.repositories import MembershipRepository
 from app.services.forecasting import forecast_weekly_demand
 from app.services.live_feed import build_live_snapshot
+from app.services.security import decode_access_token
 from app.services.weather import simulated_weather_features
 
 router = APIRouter()
+
+
+def _live_principal(token: str, db: Session):
+    payload = decode_access_token(token)
+    organization_claim = payload.get('org_id')
+    if not organization_claim:
+        raise ValueError('Organization-scoped token required')
+    user = get_current_user_from_token(token, db)
+    membership = MembershipRepository(db).get_active_membership(
+        user.id,
+        org_id=organization_claim,
+    )
+    if membership is None:
+        raise ValueError('No active organization membership')
+    organization = db.get(Organization, membership.organization_id)
+    if organization is None or not organization.is_active:
+        raise ValueError('Workspace is inactive')
+    return user, membership, organization
 
 
 def _gather_snapshot(db: Session, organization_id: UUID | None = None) -> dict:
@@ -83,8 +104,16 @@ def _gather_snapshot(db: Session, organization_id: UUID | None = None) -> dict:
             Warehouse.longitude,
             Item.sku.label('sku'),
         )
-        .join(Warehouse, Warehouse.id == HistoricalOrder.warehouse_id)
-        .join(Item, Item.id == HistoricalOrder.item_id)
+        .join(
+            Warehouse,
+            (Warehouse.id == HistoricalOrder.warehouse_id)
+            & (Warehouse.organization_id == organization_id),
+        )
+        .join(
+            Item,
+            (Item.id == HistoricalOrder.item_id)
+            & (Item.organization_id == organization_id),
+        )
     )
     order_stmt = scoped_to_organization(order_stmt, HistoricalOrder, organization_id)
     rows = db.execute(order_stmt).all()
@@ -94,7 +123,11 @@ def _gather_snapshot(db: Session, organization_id: UUID | None = None) -> dict:
         orders: list[dict] = []
         weather_lookup: dict[str, dict[str, float]] = {}
         for row in rows:
-            if row.weather_avg_temp_c is None or row.weather_precip_mm is None or row.weather_disruption_index is None:
+            if (
+                row.weather_avg_temp_c is None
+                or row.weather_precip_mm is None
+                or row.weather_disruption_index is None
+            ):
                 w = simulated_weather_features(date.today(), row.latitude, row.longitude)
                 temp = w['weather_avg_temp_c']
                 precip = w['weather_precip_mm']
@@ -128,6 +161,8 @@ def _gather_snapshot(db: Session, organization_id: UUID | None = None) -> dict:
                 'warehouse_code': p['warehouse_code'],
                 'sku': p['sku'],
                 'predicted_demand': p['predicted_demand'],
+                'planning_low': p['planning_low'],
+                'planning_high': p['planning_high'],
             }
             for p in fc.predictions[:20]
         ]
@@ -158,19 +193,25 @@ async def websocket_updates(
         return
 
     try:
-        user = get_current_user_from_token(token, db)
+        _user, membership, _organization = _live_principal(token, db)
     except Exception:
-        await websocket.close(code=1008, reason='Invalid or expired token')
+        await websocket.close(code=1008, reason='Invalid, expired, or unauthorized token')
         return
-
-    # NB-64: resolve the subscriber's organization once, then stream only that
-    # tenant's slice on every tick.
-    organization_id = actor_organization_id(user, db)
+    organization_id = membership.organization_id
 
     app_metrics.record_ws_open()
 
     try:
         while True:
+            # A socket is not a permanent capability. Revalidate the user,
+            # membership, organization, and token expiry before every snapshot
+            # so a revoked member cannot keep receiving tenant data.
+            db.expire_all()
+            try:
+                _live_principal(token, db)
+            except Exception:
+                await websocket.close(code=1008, reason='Session is no longer authorized')
+                return
             payload = _gather_snapshot(db, organization_id)
             await websocket.send_json(payload)
             await asyncio.sleep(5)

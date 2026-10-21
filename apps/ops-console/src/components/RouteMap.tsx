@@ -82,6 +82,13 @@ export function RouteMap({ stops, riskZones = [] }: Props) {
               <Popup>
                 <div className="font-semibold">Weather Risk Zone</div>
                 <div className="text-sm">Severity: {zone.severity_score}/10</div>
+                <div className="text-xs text-slate-500">
+                  {zone.source === 'simulated'
+                    ? 'Simulated — not live weather'
+                    : zone.source === 'live'
+                      ? 'Live provider data'
+                      : 'Weather source not declared'}
+                </div>
               </Popup>
             </Polygon>
           ))}

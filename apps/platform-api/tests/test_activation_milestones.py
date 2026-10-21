@@ -34,8 +34,11 @@ _OPTIMIZE = {
 }
 
 
-def _activation(client, token) -> dict:
-    resp = client.get('/api/v1/activation', headers={'Authorization': f'Bearer {token}'})
+def _activation(client, token, org_id: str | None = None) -> dict:
+    headers = {'Authorization': f'Bearer {token}'}
+    if org_id:
+        headers['X-Organization-Id'] = org_id
+    resp = client.get('/api/v1/activation', headers=headers)
     assert resp.status_code == 200, resp.text
     return resp.json()
 
@@ -233,8 +236,8 @@ def test_state_per_organization_not_per_user(
     assert resp.status_code == 200
     operator_token = resp.json()['access_token']
 
-    owner_state = _activation(client, owner_token)
-    operator_state = _activation(client, operator_token)
+    owner_state = _activation(client, owner_token, org_id)
+    operator_state = _activation(client, operator_token, org_id)
     assert owner_state['n_of_5'] == operator_state['n_of_5'] == 1
     assert owner_state['next_step'] == operator_state['next_step']
 
@@ -267,7 +270,7 @@ def test_second_user_inherits_state(
     assert resp.status_code == 200
     viewer_token = resp.json()['access_token']
 
-    state = _activation(client, viewer_token)
+    state = _activation(client, viewer_token, org_id)
     assert state['n_of_5'] == 2
     assert state['next_step']['category'] == 'fleet_assets'
     warehouses = next(m for m in state['milestones'] if m['category'] == 'warehouses')

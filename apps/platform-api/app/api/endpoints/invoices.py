@@ -1,14 +1,20 @@
 import io
+
 import pandas as pd
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.security import require_roles, require_writable_workspace
+from app.api.security import (
+    get_current_membership,
+    require_roles,
+    require_writable_workspace,
+)
+from app.core.config import settings
 from app.db.session import get_db
+from app.models.freight_invoice import FreightInvoice
 from app.models.membership import OrganizationMembership
 from app.models.order import HistoricalOrder
-from app.models.freight_invoice import FreightInvoice
 from app.models.user import User
 from app.schemas.auth import UserRole
 from app.schemas.invoice import FreightInvoiceRead
@@ -18,9 +24,14 @@ router = APIRouter()
 @router.get('', response_model=list[FreightInvoiceRead])
 def get_invoices(
     db: Session = Depends(get_db),
+    membership: OrganizationMembership = Depends(get_current_membership),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    rows = db.execute(select(FreightInvoice)).scalars().all()
+    rows = db.execute(
+        select(FreightInvoice).where(
+            FreightInvoice.organization_id == membership.organization_id
+        )
+    ).scalars().all()
     return rows
 
 @router.post('/upload', response_model=list[FreightInvoiceRead])
@@ -28,12 +39,14 @@ def upload_invoices(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
 
     if not file.filename or not file.filename.lower().endswith('.csv'):
         raise HTTPException(status_code=400, detail='Only CSV files are accepted')
-    content = file.file.read()
+    content = file.file.read(settings.csv_max_size_bytes + 1)
+    if len(content) > settings.csv_max_size_bytes:
+        raise HTTPException(status_code=413, detail='Invoice CSV is too large')
     try:
         df = pd.read_csv(io.BytesIO(content))
     except Exception as exc:
@@ -50,7 +63,12 @@ def upload_invoices(
         carrier_id = str(row['carrier_id'])
         actual_rate = float(row['actual_rate'])
         
-        order = db.execute(select(HistoricalOrder).where(HistoricalOrder.id == order_id)).scalar_one_or_none()
+        order = db.execute(
+            select(HistoricalOrder).where(
+                HistoricalOrder.id == order_id,
+                HistoricalOrder.organization_id == writable.organization_id,
+            )
+        ).scalar_one_or_none()
         if not order:
             continue
             
@@ -59,6 +77,7 @@ def upload_invoices(
         status = 'mismatch_flagged' if variance != 0 else 'matched'
         
         invoice = FreightInvoice(
+            organization_id=writable.organization_id,
             order_id=order_id,
             carrier_id=carrier_id,
             quoted_rate=quoted_rate,

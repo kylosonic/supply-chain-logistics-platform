@@ -7,9 +7,9 @@ from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 from sqlalchemy import text
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -36,20 +36,28 @@ async def lifespan(_app: FastAPI):
     # misconfigured non-dev environment aborts startup with an error naming
     # the offending variable, instead of failing lazily on first use.
     # Dev/test guards skip, so the pytest suite is unaffected.
-    settings.effective_database_url
-    settings.effective_jwt_secret_key
-    settings.effective_provider_key_encryption_secret
-    settings.effective_receipt_extraction_mode
-    settings.effective_cbe_account_holder
-    settings.effective_cbe_account_number
-    settings.effective_dashen_account_holder
-    settings.effective_dashen_account_number
+    _ = (
+        settings.effective_database_url,
+        settings.effective_jwt_secret_key,
+        settings.effective_provider_key_encryption_secret,
+        settings.effective_receipt_extraction_mode,
+        settings.effective_cbe_account_holder,
+        settings.effective_cbe_account_number,
+        settings.effective_dashen_account_holder,
+        settings.effective_dashen_account_number,
+    )
     yield
 
 
 app = FastAPI(title='Supply Chain Logistics API', version='1.0.0', lifespan=lifespan)
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, lambda _request, _exc: JSONResponse(status_code=429, content={'detail': 'Too many requests'}))
+app.add_exception_handler(
+    RateLimitExceeded,
+    lambda _request, _exc: JSONResponse(
+        status_code=429,
+        content={'detail': 'Too many requests'},
+    ),
+)
 app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
@@ -76,6 +84,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+        if request.url.path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-store'
 
         app_metrics.record_http(response.status_code)
         logger.info(

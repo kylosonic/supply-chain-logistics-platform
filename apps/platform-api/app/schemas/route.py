@@ -6,7 +6,7 @@ from app.schemas.common import ORMBase
 
 
 class DeliveryDemand(BaseModel):
-    warehouse_code: str
+    warehouse_code: str = Field(min_length=1, max_length=32)
     demand_units: int = Field(gt=0)
 
 
@@ -17,12 +17,12 @@ class RouteWeights(BaseModel):
 
 
 class RouteOptimizeRequest(BaseModel):
-    route_name: str = 'Auto-Optimized Route'
+    route_name: str = Field(default='Auto-Optimized Route', min_length=1, max_length=128)
     schedule_date: date
-    start_warehouse_code: str
-    deliveries: list[DeliveryDemand]
+    start_warehouse_code: str = Field(min_length=1, max_length=32)
+    deliveries: list[DeliveryDemand] = Field(min_length=1, max_length=200)
     vehicle_capacity_units: int = Field(gt=0)
-    max_stops: int = Field(default=20, ge=1)
+    max_stops: int = Field(default=20, ge=1, le=100)
     speed_kmh: float = Field(default=45.0, gt=0)
     cost_per_km: float = Field(default=1.5, gt=0)
     weights: RouteWeights = RouteWeights()
@@ -41,6 +41,46 @@ class RouteStopOut(BaseModel):
     estimated_arrival: datetime | None = None
 
 
+class RouteFactorShare(BaseModel):
+    distance: float
+    time: float
+    cost: float
+
+
+class RouteDecisionPoint(BaseModel):
+    sequence: int
+    chosen_warehouse_code: str
+    chosen_weighted_cost: float
+    runner_up_warehouse_code: str | None = None
+    runner_up_weighted_cost: float | None = None
+    margin: float | None = None
+    dominant_factor: str
+    capacity_excluded_count: int = 0
+    reason: str
+
+
+class RouteAlternativeSummary(BaseModel):
+    first_stop_warehouse_code: str
+    total_distance_km: float
+    estimated_duration_min: int
+    total_cost: float
+    distance_delta_km: float
+    duration_delta_min: int
+    cost_delta: float
+    summary: str
+
+
+class RouteDecisionExplanation(BaseModel):
+    method: str
+    summary: str
+    dominant_factor: str
+    factor_share_pct: RouteFactorShare
+    constraints: list[str] = []
+    decision_points: list[RouteDecisionPoint] = []
+    runner_up: RouteAlternativeSummary | None = None
+    limitations: list[str] = []
+
+
 class RouteOptimizeResponse(BaseModel):
     route_name: str
     schedule_date: date
@@ -54,6 +94,7 @@ class RouteOptimizeResponse(BaseModel):
     co2_saved_kg: float | None = None
     post_aha_toast: bool = False
     data_origin: str | None = None
+    decision_explanation: RouteDecisionExplanation | None = None
 
 
 class RouteScheduleSummary(ORMBase):
@@ -105,3 +146,4 @@ class RouteOptimizationRunDetail(RouteOptimizationRunSummary):
     deliveries: list[DeliveryDemand]
     stops: list[RouteStopOut]
     unassigned_deliveries: list[DeliveryDemand]
+    decision_explanation: RouteDecisionExplanation | None = None

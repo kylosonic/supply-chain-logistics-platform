@@ -1,31 +1,45 @@
 # Swarm State — Authoritative Workflow Record
 
-> Maintained by @scribe per `AGENTS.md` §3. Updated at every gate transition by @architect (stale state is a defect, NB-80).
-> Last updated: 2026-09-16. All facts below verified against repository files, test runs, and git refs at write time.
+> Historical governance record. The product owner removed `AGENTS.md` and `.opencode/` on
+> 2026-10-21; older sections below still reference that retired process. This file is retained as
+> evidence and release context, not as a reinstated agent topology.
+> Last updated: 2026-10-21. Verify current claims against the commands and artifacts named below.
 
 ## 1. Current Phase
 
-**Phase: `DEPLOYED`** — implementation, verification, and production deployment complete (2026-09-16)
+**Phase: `VERIFYING`** — AI decision intelligence, the P1 cash-aware dispatch wedge, and the
+tenant/trust remediation are implemented locally (2026-10-21).
 
-- Batches NB-63..NB-71 (security hardening) and NB-72..NB-79 (launch readiness) are **implemented and deployed**.
-- NB-80..NB-85 (swarm health + v1.1 growth) are **deferred** by explicit product decision (2026-09-14):
-  release-blocking and launch tickets take priority over v1.1 growth features.
-- **Production is live and verified.** The hosted database was unrecoverable (both original Supabase
-  projects deleted — see §7), so production was re-provisioned on Neon (project
-  `summer-wind-82665524`, region `aws-eu-west-2`) with all 19 migrations applied and the JWT +
-  provider-encryption secrets rotated. `GET /health` → `{"status":"ok","db":"ok"}` and the launch
-  funnel passes **22/22 against production**.
-- Remaining open items are **not code-blocked**: NB-75 (needs a code-signing certificate), NB-76
-  (restore drill — now unblocked, not yet run), NB-79 (human fee-schedule verification), and GitHub
-  branch protection (requires a paid plan for a private repository).
+- Active batch: route/forecast evidence, grounded Decision Brief / Cash Risk Radar / exception
+  triage, legacy NULL-org quarantine, public trust pages, customer-stop dispatch, driver
+  PWA/POD/cash close, team invitations, and Amharic driver UX. The work is on one feature branch
+  and is **not merged or deployed**.
+- Production remains on the previously deployed `master` state (`fcb9373`). This branch does not
+  change production until independent QA/security, human UAT, and the pending migrations are
+  approved and applied.
+- Earlier batches NB-63..NB-86 remain deployed and verified as recorded in the sections below; their
+  history is retained rather than overwritten by this batch.
+- Open release gates: final independent QA, human UAT, security residual disposition,
+  Graphify post-update (tool unavailable), application of migrations
+  `20260813_0021` through `20260823_0024`, merge, and deployment.
+- The Phase 0 trust reset now requires active workspace membership on business surfaces, denies
+  unaffiliated readers, attaches new users to the actor's workspace, scopes the users list, and
+  serves a real `/docs` route. The simulated rerouting payload and mock weather fallback were
+  removed; weather remains explicitly labelled simulated.
+- The independent security review found real pre-existing blockers: global freight-invoice reads,
+  a selected-workspace write escalation, a membership-only role bypass, audit misattribution, and
+  a quarantine-slug takeover path. All are remediated with regression tests, and independent
+  retest reproduced no remaining critical/high path. Enterprise tenant-safety is still not claimed
+  while composite tenant keys, POD quotas, and human UAT remain open.
 
 ## 2. Active Feature Branch & Batch Definition
 
 | Item | Value |
 |---|---|
-| Active branch | `feat/security-hardening-v1` |
-| Batch | Security hardening **and** launch readiness (NB-63..NB-79) |
-| `master` | Untouched at `4f57019871af2f3debb575eee6420f98720a38af` (`4f57019`) |
+| Active branch | `codex/ai-decision-intelligence` |
+| Batch | AI decision intelligence + P1 cash-aware dispatch + tenant/trust remediation |
+| `master` | Untouched at `fcb93735bc2fc40c1a5a52f0770adba1fa5c8c9f` (`fcb9373`) |
+| Branch point | `fcb93735bc2fc40c1a5a52f0770adba1fa5c8c9f` |
 | Second branch | None. Single-branch policy (`AGENTS.md` §4) honoured. |
 
 ## 3. Ticket Status
@@ -35,11 +49,11 @@
 | NB | Status | Evidence |
 |---|---|---|
 | NB-63 — no environment boots with a known placeholder secret | **IMPLEMENTED** | `KNOWN_PLACEHOLDER_SECRETS` exact-match rejection in `app/core/config.py`; `.env.example` ships empty values + generation instructions; `docker-compose.yml` requires `POSTGRES_PASSWORD`/`JWT_SECRET_KEY`/`PROVIDER_KEY_ENCRYPTION_SECRET` and binds Postgres to `127.0.0.1`; boot-time guard in `app/main.py` lifespan. Pinned by 8 tests in `tests/test_config_guards.py`. |
-| NB-64 — every operator sees only their own company's data | **IMPLEMENTED** | `app/core/tenant_scope.py` (shared scoping helpers); `organization_id` added to `shipments`, `alerts`, `replenishment_plans`, `route_schedules`, `dock_appointments`, `freight_invoices` (model + migration `20260811_0019`); 11 endpoint modules converted; `tests/test_tenant_isolation_operations.py` (12 tests) proves two-org isolation and 404-not-403 on every flagged surface. |
+| NB-64 — every operator sees only their own company's data | **IMPLEMENTED / HARDENED 2026-10-21** | Membership is now mandatory for role-protected business endpoints; write guards reject org-less actors; websocket subscriptions reject org-less users; org-less reads are limited to explicit legacy NULL rows; new users are attached to the actor workspace. Covered by `tests/test_tenant_isolation_operations.py`, `test_route_tenant_scope.py`, `test_auth_api.py`, and the repository-wide suite. |
 | NB-65 — feedback surface cannot be abused | **IMPLEMENTED** | `POST /api/v1/feedback` now requires an authenticated user and stamps the caller's identity. `tests/test_feedback_auth.py`. |
 | NB-66 — no known-vulnerable dependency versions | **IMPLEMENTED** | `next` 14.2.35 → 15.5.21; `axios` → 1.20.0; `electron` 31 → 43; `react-router-dom` 6 → 7.18.3 (production advisory). Each upgrade verified by that surface's tests + build. |
 | NB-67 — Supabase auth can never be wired up unsafe | **IMPLEMENTED** | Path retired, not hardened: `supabase/RETIRED.md` records the six preconditions to re-arm; `@supabase/supabase-js` removed from `apps/product-web`; ADR-0001 records the decision. |
-| NB-68 — first visitor can never become platform admin | **IMPLEMENTED** | `POST /auth/register` requires an authenticated ADMIN once any user exists (`app/api/endpoints/auth.py`). |
+| NB-68 — first visitor can never become platform admin | **IMPLEMENTED / HARDENED 2026-10-21** | Production bootstrap must use company signup; `/auth/register` requires an owner/admin workspace membership once users exist and attaches the created user to that workspace. The old org-less global-admin path is closed. |
 | NB-69 — no account enumeration | **IMPLEMENTED** | Generic conflict messages on register/login. |
 | NB-70 — console and upload hardening | **IMPLEMENTED** | CSP on ops-console (`nginx.conf` + `vercel.json`, tuned to CARTO tiles and the `wss` live socket); `csv_max_size_bytes` cap with a 413 and a plain-language message; `requirements.lock` generated with `--generate-hashes` and installed `--require-hashes` in Docker and CI; Postgres loopback-only. |
 | NB-71 — low-severity tidy | **IMPLEMENTED** | `testserver` dropped from allowed hosts outside dev/test (`effective_allowed_hosts`); `env` removed from `/health`; `Content-Disposition: attachment` on receipt files; dead `PASSWORD_SALT` removed; npm audit non-breaking fixes applied; token-revocation tradeoff documented in this file (§7 risk row). |
@@ -57,11 +71,45 @@
 | NB-78 — docs and legacy artifacts match the product | **IMPLEMENTED** | `supabase/RETIRED.md`; ADR-0001; dead `@supabase/supabase-js` dependency removed; `README.md` production section rewritten against the shipped topology. |
 | NB-79 — human verification gate closed or recorded | **RECORDED OPEN** | CBE/Dashen fee schedule (5,000–50,000 ETB, ±1,000 ETB tolerance) still requires human verification. Recorded as blocking **paid launch only**, not product development, in `docs/production-readiness-plan.md` and the EAII submission page. |
 
-### 3.3 Deferred by product decision — NB-80..NB-85
+### 3.3 Deferred or partially delivered — NB-80..NB-85
 
-`feat/swarm-health-growth-v1` was **not** opened. NB-80 (this file) is partially satisfied by this
-document. NB-81 (merge protocol), NB-82 (topology ADR — satisfied independently by ADR-0001), and
-NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) remain unimplemented.
+NB-80 (this file) is partially satisfied by this document. NB-82 is satisfied independently by
+ADR-0001. NB-83 (teammate invites) and NB-84 (phone-on-file) are implemented locally. **NB-85
+(route explanations) is implemented and awaiting independent QA/UAT**, not deployed.
+
+### 3.4 AI decision intelligence batch — local status
+
+| Item | Status | Evidence |
+|---|---|---|
+| Forecast held-out quality + planning range | **IMPLEMENTED / LOCAL PASS** | `app/services/forecasting.py`; `tests/test_forecasting.py`; API response includes `quality`, `planning_low`, `planning_high` |
+| NB-85 route decision explanations | **IMPLEMENTED / LOCAL PASS, QA PENDING** | Deterministic factor evidence and real runner-up rerun in `app/services/route_explanations.py`; persisted by migration `20260813_0021`; console `RouteDecisionBrief` |
+| Legacy and tenant behavior | **LOCAL PASS** | Old runs with `NULL` explanation render honestly; cross-tenant detail requests return 404; pinned in `tests/test_route_explanations.py` |
+| Membership-required business surfaces | **IMPLEMENTED / LOCAL PASS** | `app/api/security.py`, `app/core/tenant_scope.py`, `app/api/endpoints/auth.py`, `live.py`; regression tests in `test_tenant_isolation_operations.py` and `test_route_tenant_scope.py` |
+| Saved-route rerouting / no invented plan | **IMPLEMENTED / LOCAL PASS** | `app/services/rerouting.py`; `app/api/endpoints/alerts.py`; `tests/test_rerouting.py` |
+| Simulated weather disclosure | **IMPLEMENTED / LOCAL PASS** | `source: simulated` on API zones, no mock storm fallback, console label; `app/api/endpoints/weather.py`, `RouteMap.tsx`, `DashboardPage.tsx` |
+| Public docs route | **IMPLEMENTED / BUILD PASS** | `apps/product-web/src/app/docs/page.tsx`; Next build includes `/docs`; footer and navigation no longer point at the old 404 |
+
+### 3.5 P1 cash-aware dispatch and trust surfaces — local status
+
+| Item | Status | Evidence |
+|---|---|---|
+| Customer + delivery order model | **IMPLEMENTED / LOCAL PASS** | `app/models/dispatch.py`; migration `20260823_0024`; `tests/test_dispatch_api.py` |
+| Time-window/capacity planner | **IMPLEMENTED / LOCAL PASS** | Deterministic greedy planner in `app/services/dispatch.py`; windows, service time, priority, capacity, and max stops are explicit |
+| Driver manifest + signed link | **IMPLEMENTED / LOCAL PASS** | `POST /api/v1/dispatch/runs/{id}/driver-link`; capability in URL fragment; 12-hour expiry; active-driver check on every request |
+| Driver PWA / offline flow | **IMPLEMENTED / LOCAL PASS** | `/driver`; installable manifest; service worker scoped to `/driver`; queued status/cash actions; per-token 24-hour manifest cache |
+| POD capture + retrieval | **IMPLEMENTED / LOCAL PASS** | JPEG/PNG/WebP magic-byte validation, 4 MB cap, five-proof per-order cap, tenant-scoped download; object storage remains future work |
+| End-of-day cash close | **IMPLEMENTED / LOCAL PASS** | Admin-only close; delivered stops only create expected cash; shortfall note required on declaration; over-declaration rejected |
+| Team invitations | **IMPLEMENTED / LOCAL PASS** | Invite/accept/revoke/role/remove; last-owner protection; fragment-based token delivery; `tests/test_team_invitations.py` |
+| Receipt tenant isolation | **IMPLEMENTED / LOCAL PASS** | Queue, file, audit-events, verdict, dispute, undo, reverse, and trusted-payer operations are scoped to the selected workspace; `tests/test_receipt_tenant_boundary.py` plus 190 receipt/billing/reversal tests |
+| Live-feed workspace binding | **IMPLEMENTED / LOCAL PASS** | WebSocket requires an org-scoped `/auth/token`; unscoped login tokens are rejected; console clears the cached socket token and payload on account changes; `tests/test_websocket_live.py` |
+| Amharic driver UX | **IMPLEMENTED / LOCAL PASS** | Amharic default labels plus English toggle in `DriverPage.tsx`; full console localization remains future work |
+| Grounded Decision Brief | **IMPLEMENTED / LOCAL PASS** | `app/services/decision_intelligence.py`; `app/api/endpoints/insights.py`; dashboard panel; evidence-only actions |
+| Cash Risk Radar + exception triage | **IMPLEMENTED / LOCAL PASS** | Factor-scored cash exposure and severity/age-ranked exception queue; tenant-scoped tests |
+| Privacy/terms/security/status pages | **IMPLEMENTED / BUILD PASS** | `/privacy`, `/terms`, `/security`, `/status`; sitemap/footer/bundle gate include all five trust routes |
+| Legacy NULL-org cleanup | **IMPLEMENTED / LOCAL PASS** | `20260821_0022` quarantines existing NULL rows into an inactive memberless workspace; identity/slug collision fails closed |
+| Independent QA | **OPEN** | Fresh review of the final remediated diff is still required |
+| Independent security re-review | **PASS ON PRIOR CRITICAL/HIGH** | Independent retest reproduced no remaining critical/high path; residual medium items are listed in §7 |
+| Human UAT | **OPEN** | Checklist: `docs/plans/release-uat-2026-10-21.md` |
 
 ## 4. Completed Gates
 
@@ -70,8 +118,14 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | Security audit produced | ✅ PASS | `docs/security-audit-2026-08-10.md` |
 | NB-63..NB-71 implemented | ✅ PASS | See §3.1; behaviour contract `docs/behaviors/production-security-hardening.md` |
 | Backend test suite (locked dependency set) | ✅ PASS | **399 passed** — `.artifacts/backend-lockcheck-final.log`; run inside a venv built from `requirements.lock` with `--require-hashes` |
-| Ops console gates | ✅ PASS | **143 tests**, `tsc --noEmit` clean, `eslint --max-warnings=0` clean, production build OK, `npm audit` production-clean |
-| Product web gates | ✅ PASS | **62 tests**, Next 15 production build OK |
+| Ops console gates | ✅ PASS | **26 files / 150 tests**, `tsc --noEmit` clean, `eslint --max-warnings=0` clean, real-config Vite production build OK |
+| Product web gates | ✅ PASS (mocked fonts) | **12 files / 72 tests**, Next 16 production build OK, 11-route bundle gate under 1.2 MB |
+| AI targeted backend tests | ✅ PASS | **33 passed** in the membership/tenant/auth/route batch; **14 passed** in explanations + rerouting |
+| AI backend full suite | ✅ PASS | **474 passed, 7 warnings** on the final tree (complete `tests/` discovery; 2026-10-21) |
+| AI console gates | ✅ PASS (real config) | **26 files / 150 tests**, typecheck, lint, and the real Vite production build (including manual chunks) pass outside the sandbox restriction. |
+| Product web docs/build | ✅ PASS (mocked fonts) | Next build includes all trust routes; bundle gate covers eleven routes. Outbound Google Fonts fetch is blocked, so the build used the local mock response path. |
+| AI backend static analysis | ✅ PASS | Ruff on every changed backend file; project-pinned mypy on the three AI services; scoped mypy on 10 Phase 0 files |
+| Route dependency audit | ✅ PASS | Every non-auth route has an authentication dependency; the only unprotected route is `GET /health`. No non-auth route uses `get_current_user` without membership/role enforcement. Evidence: `.artifacts/ai-decision-intelligence/route-auth-audit-phase0.summary.txt`. |
 | Launch funnel (local, real HTTP) | ✅ PASS | **22/22** — `.artifacts/nb72-funnel-verification.log` |
 | NB-64 two-org isolation | ✅ PASS | 12 tests in `tests/test_tenant_isolation_operations.py`; cross-tenant reads 404 |
 | Docker compose validity | ✅ PASS | `docker compose config --quiet` exits 0 |
@@ -85,15 +139,23 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 
 | Gate | Status | Detail |
 |---|---|---|
+| Independent AI/P1 QA sign-off | ⏳ OPEN | Fresh acceptance review must verify AI-1..AI-17 and the P1/UAT checklist. |
+| Independent security sign-off | ✅ PRIOR BLOCKERS CLEARED / ⚠️ RESIDUALS | Initial review found cross-tenant receipt/invoice/item/warehouse paths, a role-floor bypass, audit misattribution, cache leakage, live-socket revocation, and a quarantine-slug takeover. Independent retest could not reproduce any remaining critical/high exploit. Composite tenant keys and storage quotas remain medium follow-ups. |
+| Human UAT | ⏳ OPEN | Checklist prepared at `docs/plans/release-uat-2026-10-21.md`; no sign-off recorded. |
+| Production migrations `0021`–`0024` | ⏳ NOT APPLIED | Deliberate: do not deploy schema-dependent code until QA/security/UAT approve. |
+| Graphify post-update | ⏳ UNAVAILABLE | `graphify` is not installed; no success is claimed. |
 | ~~Production signup funnel~~ | ✅ PASS (2026-09-16) | Re-verified against production after the Neon cutover: **22/22** steps in `.artifacts/verify_funnel.py`, including signup, seeded workspace (3 warehouses / 3 items), first route optimisation (21.07 km / 31.61 ETB), billing state and cross-tenant read → 404. |
-| GitHub branch protection enforcing CI | ❌ BLOCKED BY PLAN | Workflow runs and all four jobs pass, but GitHub requires a paid plan for branch protection on private repositories (`403`). Not configured and not configurable without upgrading or making the repo public. |
+| GitHub branch protection enforcing CI | ❌ BLOCKED BY PLAN | GitHub requires a paid plan for branch protection on private repositories (`403`). The local test/correctness gates pass; the workflow itself has not been rerun in GitHub for this final tree. |
 
 ## 6. Retry Count
 
 - NB-64 implementation correction loops: **2** (both self-caught before commit: a circular import via
   `app/repositories`, and a non-deterministic single-row lookup that let a legacy NULL-org row win a
   tie against the caller's own row). Both are now pinned by tests.
-- QA correction loops: **0**. Security correction loops: **0**.
+- AI batch implementation correction loops: **2** (self-caught console assertion separators and
+  forecast-range copy that overstated backtest widening); both are now pinned by tests.
+- AI QA correction loops: **0** (QA not yet run). AI security correction loops: **0** (security not
+  yet run).
 
 ## 7. Unresolved Risks
 
@@ -104,6 +166,16 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | ~~Production database unavailable~~ | **RESOLVED 2026-09-16.** Root cause was never a lost password: the Supabase pooler returned `FATAL: (ENOTFOUND) tenant/user ... not found` for both known project refs across 8 pooler regions, i.e. both projects were deleted or long-paused. Production was re-provisioned on **Neon** (project `summer-wind-82665524`, `aws-eu-west-2`, PG 18.6) via `scripts/setup_neon_production.ps1`: 19 migrations applied, DATABASE_URL + JWT + provider-encryption secrets rotated, dead PASSWORD_SALT removed, all three projects deployed. Verified: `/health` → `db: ok`, funnel 22/22 in production. | ~~Blocks the hosted launch funnel~~ **closed** |
 | ~~Placeholder secrets were live for ~39 days~~ | **RESOLVED 2026-09-16** — `JWT_SECRET_KEY` and `PROVIDER_KEY_ENCRYPTION_SECRET` were rotated during the Neon cutover (both now dated 2026-09-16 in Vercel). All previously issued console sessions were invalidated, which is the expected effect. The dead `PASSWORD_SALT` was removed in the same operation. | ~~Rotate~~ **closed** |
 | Neon API key was pasted into a chat session | The Neon API key used to provision production was shared in the working conversation, so it must be treated as disclosed. It grants control of the Neon organization (`org-holy-moon-30252311`), including the new production project. Blast radius is bounded: it cannot read the database password (the connection string is fetched per request, not stored), but it can delete or recreate projects. | **Rotate it at https://console.neon.tech/app/settings/api-keys when convenient.** Production keeps working afterwards — the key is not stored in Vercel and not referenced at runtime. |
+| ~~Alert rerouting invents a carrier/cost/recovery time~~ | **RESOLVED 2026-10-21.** The delay and invented fields are gone. Rerouting only attaches a saved active route candidate or records `no_saved_alternative`; auto-resolve validates the route and shipment inside the tenant. Pinned by `tests/test_rerouting.py`. | Closed; live-provider rerouting remains future work |
+| **Route factor weights are score-only under current inputs** | With one constant speed and cost per km, distance/time/cost are all proportional to leg distance. The nearest-stop ordering is therefore unchanged by the sliders; this is now stated in every explanation and the assessment plan. | Product expectation risk; not a correctness claim of multi-objective optimization. |
+| Pending migration batch | `20260813_0021` (nullable explanation), `20260821_0022` (NULL-org quarantine), `20260822_0023` (invitations), `20260823_0024` (dispatch/POD/cash). Local upgrade/downgrade smoke passed on a 0021-stamped SQLite schema; no production migration has been applied. | Blocks deploying this branch only. |
+| POD bytes in relational DB | Proof images are capped and tenant-scoped but stored as blobs; object storage and signature capture are future hardening. | Not a blocker for pilots; blocker for large-fleet scale. |
+| Offline proof upload | Status/cash actions queue offline; photo proof requires connectivity. | Product limitation; record in pilot expectations. |
+| Driver capability revocation | Deactivation blocks existing links on the next request; there is no explicit JTI denylist and links expire after 12 hours. | Low residual; revisit before enterprise sales. |
+| Offline driver cache after revocation | A manifest already downloaded can remain readable offline for up to 8 hours (and never past the token expiry); a server-side deactivation cannot be observed without connectivity. | Accepted pilot residual; shorten or require re-auth for high-security fleets. |
+| Composite tenant constraints | Dispatch validates item/customer/driver ownership in application code, but new tables use single-column FKs rather than composite `(organization_id, id)` constraints. | Defense-in-depth follow-up. |
+| Legacy Ruff style debt | The repository still has formatting/unused-import debt. CI now gates correctness rules (`E9,F63,F7,F82`) and the changed files pass full Ruff. | CI green; formatting cleanup tracked separately. |
+| Graphify unavailable | The mandated post-change graph update cannot run because the executable is absent. | Process limitation; record, do not fabricate. |
 | CBE/Dashen fee-schedule verification | Human verification of ±1,000 ETB tolerance, 5,000–50,000 ETB band. | Blocks paid launch only |
 | No signed desktop installer | Requires a code-signing certificate. | Blocks desktop distribution |
 
@@ -124,6 +196,26 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 - `apps/platform-api/alembic/versions/20260811_0019_org_scoping_operations.py` — org-scoping migration + TECH-49 fix
 - `apps/platform-api/requirements.lock` — hash-pinned Python lockfile (NB-70)
 - `.github/workflows/ci.yml` — release gates (NB-77)
+- `docs/plans/ai-decision-intelligence.md` — AI assessment, implemented contract, acceptance criteria, and open gaps
+- `docs/plans/product-gap-and-uvp-plan.md` — product gaps, unique value proposition, AI direction, and 12-week plan
+- `docs/competitor-research-ethiopia-2026-10.md` — local and global competitive research
+- `.artifacts/ai-decision-intelligence/backend-full-phase0.summary.txt` — full backend result after Phase 0
+- `.artifacts/ai-decision-intelligence/migration-smoke-phase0.log` — additive migration upgrade/downgrade smoke
+- `.artifacts/ai-decision-intelligence/frontend-phase0.summary.txt` — frontend gate results and the Vite/esbuild sandbox limitation
+- `.artifacts/ai-decision-intelligence/route-auth-audit-phase0.summary.txt` — route-level authentication/membership dependency audit
+- `apps/platform-api/app/services/route_explanations.py` — grounded route decision evidence
+- `apps/platform-api/alembic/versions/20260813_0021_route_decision_explanations.py` — nullable explanation persistence
+- `apps/ops-console/src/components/RouteDecisionBrief.tsx`, `ForecastChart.tsx`, `RouteHistoryCard.tsx` — decision evidence UI
+- `apps/platform-api/app/services/decision_intelligence.py` — grounded brief, cash radar, triage
+- `apps/platform-api/app/api/endpoints/insights.py` — tenant-scoped `/ops` insight endpoints
+- `apps/ops-console/src/components/DecisionBriefPanel.tsx` — evidence-only dashboard panel
+- `apps/platform-api/app/models/dispatch.py` — customers, runs, delivery orders, proofs
+- `apps/platform-api/alembic/versions/20260823_0024_dispatch_driver_flow.py` — dispatch migration
+- `apps/ops-console/src/pages/DispatchPage.tsx`, `DriverPage.tsx` — operator and driver workflows
+- `apps/platform-api/app/api/endpoints/team.py` — workspace invitations and member controls
+- `apps/product-web/src/app/privacy|terms|security|status/` — public trust routes
+- `docs/plans/release-uat-2026-10-21.md` — human acceptance checklist (unsigned)
+- `.artifacts/ai-decision-intelligence/` — backend, console, and build gate logs for this batch
 - `.artifacts/nb72-funnel-verification.log`, `backend-lockcheck-final.log` — verification evidence
 - `.artifacts/url-proof/` — screenshots of the two live form links (`live-deck-full.png`, `live-watch-full.png`, `live-submission.png`, `live-watch-fixed.png`)
 - `.artifacts/sync-verify/` — old-vs-new frame comparisons proving the pitch video's scene cuts moved to the measured narration onsets
@@ -144,6 +236,10 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 | Backend tests (working venv) | `399 passed, 18 warnings in 419.08s` — `.artifacts/backend-after-nb64.log` |
 | Ops console | `Test Files 19 passed (19) / Tests 143 passed (143)`; typecheck, lint (`--max-warnings=0`) and build clean |
 | Product web | `Test Files 10 passed (10) / Tests 62 passed (62)`; Next 15 build: 10 static routes |
+| AI targeted backend | `33 passed` security/auth/tenant/route regressions; `14 passed` explanation + rerouting |
+| AI backend full suite | `474 passed, 7 warnings` — final tree, 2026-10-21 |
+| AI console | `Test Files 26 passed (26) / Tests 150 passed (150)`; final typecheck, lint, and real-config Vite production build clean |
+| Product web | `Test Files 12 passed (12) / Tests 72 passed (72)`; Next 16 build and 11-route bundle gate clean |
 | Launch funnel | `22 passed, 0 failed (of 22)` — first route plan 21.07 km / 31.61 ETB; cross-tenant read 404 |
 | Live API surface | 81 endpoints (`/openapi.json`) |
 | EAII pitch page | https://freightpilot-eaii.vercel.app — `/` 200, `/deck.pdf` 7 pages 200, `/deck.pptx` 200, `/weekly-availability.pdf` 200, `/product/` 200, all 8 product screenshots 200, every fetch with no credentials |
@@ -156,23 +252,23 @@ NB-83..NB-85 (v1.1 growth: teammate invites, phone-on-file, route explanations) 
 |---|---|
 | §2 Agent topology | **Deviated.** All 11 agent definitions exist in `.opencode/agents/`, but this batch was implemented and verified by a single agent rather than dispatched through `@plan → @build → @qa → @security`. No commit carries a `QA approved` / `@security` trailer. **Independent `@qa` and `@security` passes remain open gates.** |
 | §3 State file | Satisfied — this file, updated at gate transitions (NB-80). |
-| §4 Single branch | Satisfied — `feat/security-hardening-v1` only; no second branch created. |
-| §5 No commit before gates pass | **Partially deviated.** Commits were made after tests + build + lint passed, but before independent QA/security sign-off. Self-verification, not gate verification. |
+| §4 Single branch | Satisfied — one active branch, `codex/ai-decision-intelligence`, for this batch; no second branch created. |
+| §5 No commit before gates pass | **Not yet applicable / not violated.** No commit has been made for the AI batch; independent QA/security/UAT are still open. |
 | §6 Evidence rule | Satisfied — every gate claim above names a command and a saved log; no "no errors observed" claims. |
-| §8 Bounded retries | Satisfied — 2 implementation-correction loops, both self-caught before commit, both now pinned by tests; 0 QA and 0 security loops. |
+| §8 Bounded retries | Satisfied — 2 AI implementation-correction loops, both self-caught before commit and pinned by tests; QA/security have not run. |
 | §9 Graphify pre/post sync | **NOT PERFORMED.** `graphify` is not installed in this environment. Recorded as a limitation rather than pretended, per the rule's own instruction. |
 | §10 Never-do list | No fabricated tool output; no gate bypassed to hit a deadline; no deploy without a rollback path (§10 below); **explicit human UAT approval has NOT been recorded**, so §10's "never merge without it" is why this branch is still unmerged. |
 | Ledger | Debited — TECH-80..TECH-96 added to `docs/adr/tech-backlog.md`, TECH-49 closed, behaviour-doc banners updated. |
 
 ## 10. Rollout / Rollback Note
 
-- The branch is a normal feature branch: `master` is untouched, so abandoning it changes nothing in
-  production.
-- Database migrations in this batch are **additive** (`organization_id` columns, nullable, with
-  backfill; index changes on `shipments`). Downgrade is implemented and reverses them.
-- Rollback for a bad deploy: promote the previous Vercel deployment for the affected project. No
-  migration reversal is required for a rollback, because the new columns are nullable and the old
-  code ignores them.
-- **Before deploying this batch**, reissue the production `DATABASE_URL` — deploying now would leave
-  the app still unable to reach its database, and the NB-63 boot guards mean a missing
-  `JWT_SECRET_KEY` in the target environment now aborts startup by design.
+- The branch is based on `master` `fcb9373`; it has not been merged or deployed, so abandoning it
+  changes nothing in production.
+- Migration `20260813_0021` adds one nullable JSON column. `20260821_0022` creates an inactive
+  memberless quarantine workspace and moves legacy NULL rows into it. `20260822_0023` adds
+  invitations. `20260823_0024` adds customers, dispatch runs, delivery orders, and proofs. All
+  four are locally reversible; apply them in order before deploying schema-dependent code.
+- Rollback for a bad deploy: promote the previous Vercel deployment. Keeping the nullable column is
+  safe because old code ignores it; dropping it discards explanations for new runs but does not
+  affect route history or schedules.
+- Do not deploy until final QA, security residual disposition, and human UAT approve this exact diff.

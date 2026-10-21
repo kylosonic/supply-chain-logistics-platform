@@ -49,10 +49,6 @@ describe('login text-color guard (TECH-78 / NB-61, NB-62 text-side seed)', () =>
     expect(readLoginPage()).toContain('text-slate-400');
   });
 
-  it('LoginPage.tsx preserves the bootstrap hover:text-slate-300 state', () => {
-    expect(readLoginPage()).toContain('hover:text-slate-300');
-  });
-
   it('LoginFeedbackPanels.tsx keeps rose-300 for error states', () => {
     expect(readLoginFeedbackPanels()).toContain('text-rose-300');
   });

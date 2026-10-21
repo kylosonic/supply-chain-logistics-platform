@@ -1,21 +1,27 @@
 from datetime import date
 from typing import Any
+from uuid import UUID
 
-from sqlalchemy import Boolean, Date, Float, ForeignKey, Integer, JSON, String
+from sqlalchemy import JSON, Boolean, Date, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-from app.models.common import UUIDTimestampMixin
-from uuid import UUID
 from app.db.custom_types import UUIDType
+from app.models.common import UUIDTimestampMixin
 
 
 class RouteOptimizationRun(UUIDTimestampMixin, Base):
     __tablename__ = 'route_optimization_runs'
 
-    actor_user_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
-    organization_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True)
-    persisted_schedule_id: Mapped[UUID | None] = mapped_column(UUIDType, ForeignKey('route_schedules.id', ondelete='SET NULL'), nullable=True, index=True)
+    actor_user_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True
+    )
+    organization_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True
+    )
+    persisted_schedule_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey('route_schedules.id', ondelete='SET NULL'), nullable=True, index=True
+    )
     route_name: Mapped[str] = mapped_column(String(128), nullable=False)
     schedule_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     start_warehouse_code: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -38,3 +44,4 @@ class RouteOptimizationRun(UUIDTimestampMixin, Base):
     unassigned_deliveries_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
     minimize_carbon_footprint: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     co2_saved_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    explanation_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)

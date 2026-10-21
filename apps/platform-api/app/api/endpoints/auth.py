@@ -9,16 +9,23 @@ from slowapi.util import get_remote_address
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.api.security import get_current_user, get_current_user_from_token, require_roles
+from app.api.security import (
+    get_current_membership,
+    get_current_user,
+    get_current_user_from_token,
+    require_roles,
+)
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization
 from app.models.user import User
+from app.repositories import MembershipRepository
 from app.schemas.auth import (
     CompanySignupRequest,
     CompanySignupResponse,
     OrganizationRead,
+    OrganizationRole,
     TokenResponse,
     UserCreate,
     UserLogin,
@@ -48,6 +55,7 @@ if settings.app_env in ('development', 'test'):
     _RATE_SIGNUP = '10000/minute'
 
 _COOKIE_NAME = 'supply_chain_token'
+_RESERVED_ORG_SLUGS = {'legacy-unassigned-data'}
 
 
 def _set_auth_cookie(response: Response, token: str) -> None:
@@ -88,7 +96,11 @@ def _generate_unique_slug(db: Session, company_name: str) -> str:
     base = _slugify(company_name)
     candidate = base
     counter = 1
-    while db.execute(select(Organization.id).where(Organization.slug == candidate)).first() is not None:
+    while (
+        candidate in _RESERVED_ORG_SLUGS
+        or db.execute(select(Organization.id).where(Organization.slug == candidate)).first()
+        is not None
+    ):
         counter += 1
         suffix = f'-{counter}'
         candidate = f'{base[: max(1, 64 - len(suffix))]}{suffix}'
@@ -114,14 +126,34 @@ def register_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer_scheme),
 ):
     users_exist = db.execute(select(User.id).limit(1)).first() is not None
+    actor_membership: OrganizationMembership | None = None
 
     if users_exist:
         if not credentials:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Admin authentication required')
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Admin authentication required',
+            )
 
         actor = get_current_user_from_token(credentials.credentials, db)
         if actor.role != UserRole.ADMIN:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Admin role required')
+        actor_membership = MembershipRepository(db).get_active_membership(actor.id)
+        if actor_membership is None or actor_membership.role not in {
+            OrganizationRole.OWNER,
+            OrganizationRole.ADMIN,
+        }:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Workspace owner or admin membership required',
+            )
+    elif settings.app_env not in ('development', 'test'):
+        # The public company-signup flow is the only production bootstrap.
+        # Never create an unaffiliated global admin on a fresh deployment.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Create the first workspace through company signup',
+        )
 
     exists = db.execute(select(User).where(User.username == payload.username)).scalar_one_or_none()
     if exists:
@@ -137,6 +169,40 @@ def register_user(
         is_active=True,
     )
     db.add(user)
+    db.flush()
+
+    if actor_membership is not None:
+        organization_id = actor_membership.organization_id
+        membership_role = {
+            UserRole.ADMIN: OrganizationRole.ADMIN,
+            UserRole.OPERATOR: OrganizationRole.OPERATOR,
+            UserRole.VIEWER: OrganizationRole.VIEWER,
+        }[assigned_role]
+    else:
+        # Development/test-only bootstrap. The new admin receives a real
+        # workspace membership so it cannot become an org-less global reader.
+        bootstrap_org = Organization(
+            name=f'{payload.username} Workspace',
+            slug=_generate_unique_slug(db, f'{payload.username} Workspace'),
+            primary_email_domain=None,
+            subscription_tier='free',
+            subscription_status='active',
+            billing_phase='free',
+            is_active=True,
+        )
+        db.add(bootstrap_org)
+        db.flush()
+        organization_id = bootstrap_org.id
+        membership_role = OrganizationRole.OWNER
+
+    db.add(
+        OrganizationMembership(
+            organization_id=organization_id,
+            user_id=user.id,
+            role=membership_role.value,
+            is_active=True,
+        )
+    )
     db.commit()
     db.refresh(user)
     return user
@@ -144,7 +210,12 @@ def register_user(
 
 @router.post('/company-signup', response_model=CompanySignupResponse, status_code=201)
 @limiter.limit(_RATE_SIGNUP)
-def company_signup(payload: CompanySignupRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+def company_signup(
+    payload: CompanySignupRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
     normalized_email = payload.company_email.strip().lower()
     domain = _extract_domain(normalized_email)
     _ensure_not_public_email(domain)
@@ -195,9 +266,9 @@ def company_signup(payload: CompanySignupRequest, request: Request, response: Re
         db,
         event_type='workspace.created',
         entity_type='organization',
-        entity_id=org.id,
+        entity_id=str(org.id),
         actor=user,
-        organization_id=org.id,
+        organization_id=str(org.id),
         description=f'Created workspace {org.name}',
         payload={
             'organization_name': org.name,
@@ -215,9 +286,9 @@ def company_signup(payload: CompanySignupRequest, request: Request, response: Re
     db.refresh(user)
 
     token = create_access_token_for_org(
-        subject=user.id,
+        subject=str(user.id),
         role=UserRole(user.role),
-        organization_id=org.id,
+        organization_id=str(org.id),
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
     )
 
@@ -247,7 +318,7 @@ def login_user(payload: UserLogin, request: Request, response: Response, db: Ses
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid credentials')
 
     token = create_access_token(
-        subject=user.id,
+        subject=str(user.id),
         role=UserRole(user.role),
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
     )
@@ -268,9 +339,17 @@ def me(current_user: User = Depends(get_current_user)):
 @router.get('/users', response_model=list[UserRead])
 def list_users(
     db: Session = Depends(get_db),
+    membership: OrganizationMembership = Depends(get_current_membership),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    return db.execute(select(User).order_by(User.username)).scalars().all()
+    rows = db.execute(
+        select(User)
+        .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
+        .where(OrganizationMembership.organization_id == membership.organization_id)
+        .where(OrganizationMembership.is_active.is_(True))
+        .order_by(User.username)
+    ).scalars().all()
+    return rows
 
 
 @router.post('/logout')
@@ -280,10 +359,14 @@ def logout(response: Response):
 
 
 @router.get('/token', response_model=TokenResponse)
-def get_token_for_ws(current_user: User = Depends(get_current_user)):
-    token = create_access_token(
-        subject=current_user.id,
+def get_token_for_ws(
+    current_user: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+):
+    token = create_access_token_for_org(
+        subject=str(current_user.id),
         role=UserRole(current_user.role),
+        organization_id=str(membership.organization_id),
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
     )
     return TokenResponse(

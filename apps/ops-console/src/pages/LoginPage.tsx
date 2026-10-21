@@ -3,8 +3,6 @@ import { Navigate } from 'react-router-dom';
 
 import { LoginFeedbackPanels } from '../components/login/LoginFeedbackPanels';
 import { useAuth } from '../context/AuthContext';
-import { register as registerApi } from '../services/authApi';
-import { bootstrapErrorMessage } from '../services/authErrors';
 
 function getErrorMessage(err: unknown, fallback: string): string {
   if (typeof err === 'object' && err !== null && 'response' in err) {
@@ -42,9 +40,7 @@ export function LoginPage() {
   );
   const [password, setPassword] = useState(() => (import.meta.env.PROD ? '' : 'admin12345'));
   const [signInError, setSignInError] = useState<string | null>(null);
-  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isBootstrapping, setIsBootstrapping] = useState(false);
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -60,19 +56,6 @@ export function LoginPage() {
       setSignInError(getErrorMessage(err, 'Login failed'));
     } finally {
       setIsSubmitting(false);
-    }
-  }
-
-  async function onBootstrapInitialAdmin() {
-    setBootstrapError(null);
-    setIsBootstrapping(true);
-    try {
-      await registerApi(identifier, password, 'admin');
-      await login(identifier, password);
-    } catch (err: unknown) {
-      setBootstrapError(bootstrapErrorMessage(err, 'Failed to create initial admin'));
-    } finally {
-      setIsBootstrapping(false);
     }
   }
 
@@ -160,7 +143,7 @@ export function LoginPage() {
                   </button>
                 </form>
 
-                <LoginFeedbackPanels signInError={signInError} bootstrapError={bootstrapError} />
+                <LoginFeedbackPanels signInError={signInError} />
               </div>
             </div>
 
@@ -177,16 +160,6 @@ export function LoginPage() {
                 </a>
               </div>
 
-              <div className="border-t border-slate-800/70 px-1 pt-1 text-center">
-                <button
-                  type="button"
-                  disabled={isBootstrapping}
-                  onClick={onBootstrapInitialAdmin}
-                  className="text-xs font-medium text-slate-400 underline-offset-4 transition-colors hover:text-slate-300 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isBootstrapping ? 'Creating admin...' : 'Create initial admin (first-time setup)'}
-                </button>
-              </div>
             </div>
           </div>
         </section>

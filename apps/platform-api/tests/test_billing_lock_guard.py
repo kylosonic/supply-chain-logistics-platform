@@ -9,7 +9,6 @@ from app.models.collection_account import CollectionAccount
 from app.models.organization import Organization
 from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.trial_record import TrialRecord
-from app.models.warehouse import Warehouse
 
 
 def _signup(client: TestClient, suffix: str) -> tuple[str, UUID]:
@@ -36,22 +35,6 @@ def _upgrade(client: TestClient, token: str, tier: str = 'starter') -> dict:
     resp = client.post('/api/v1/subscriptions/select-tier', headers=_auth(token), json={'tier': tier})
     assert resp.status_code == 200
     return resp.json()
-
-
-def _seed_warehouses(db_session: Session) -> None:
-    db_session.add_all(
-        [
-            Warehouse(
-                code='WH-L1', name='Lock WH 1', address='Addr', city='City', state='State',
-                country='ET', latitude=8.98, longitude=38.76, capacity_units=1000,
-            ),
-            Warehouse(
-                code='WH-L2', name='Lock WH 2', address='Addr', city='City', state='State',
-                country='ET', latitude=8.99, longitude=38.77, capacity_units=1200,
-            ),
-        ]
-    )
-    db_session.commit()
 
 
 def _optimize_payload() -> dict:
@@ -202,7 +185,7 @@ def test_usage_record_guarded(client: TestClient, db_session: Session):
     assert resp.json()['detail']['state'] == 'hard_locked'
 
 
-def test_no_membership_passthrough(client: TestClient, db_session: Session, operator_token: str):
+def test_no_membership_cannot_write(client: TestClient, db_session: Session, orgless_token: str):
     payload = {
         'code': 'WH-PT',
         'name': 'Passthrough WH',
@@ -214,13 +197,11 @@ def test_no_membership_passthrough(client: TestClient, db_session: Session, oper
         'longitude': 38.75,
         'capacity_units': 1000,
     }
-    resp = client.post('/api/v1/warehouses', json=payload, headers=_auth(operator_token))
-    assert resp.status_code == 201
+    resp = client.post('/api/v1/warehouses', json=payload, headers=_auth(orgless_token))
+    assert resp.status_code == 403
 
 
 def test_trial_and_free_phases_unaffected(client: TestClient, db_session: Session):
-    _seed_warehouses(db_session)
-
     # Free phase: writable.
     free_token, _ = _signup(client, 'freewrite')
     warehouse_resp = client.post(
@@ -243,5 +224,13 @@ def test_trial_and_free_phases_unaffected(client: TestClient, db_session: Sessio
     # Trial phase: full write access (routes/optimize 200).
     trial_token, _ = _signup(client, 'trialwrite')
     _upgrade(client, trial_token)
-    resp = client.post('/api/v1/routes/optimize', headers=_auth(trial_token), json=_optimize_payload())
+    resp = client.post(
+        '/api/v1/routes/optimize',
+        headers=_auth(trial_token),
+        json={
+            **_optimize_payload(),
+            'start_warehouse_code': 'WH-001',
+            'deliveries': [{'warehouse_code': 'WH-002', 'demand_units': 25}],
+        },
+    )
     assert resp.status_code == 200

@@ -46,20 +46,35 @@ from app.services.billing.receipts.intake import (
 )
 
 
-def has_open_dispute(db: Session, receipt_id: str) -> bool:
+def has_open_dispute(db: Session, receipt_id: str, organization_id) -> bool:
     """True when the receipt carries an open dispute thread (NB-17)."""
     row = db.execute(
-        select(DisputeThread.id).where(
+        select(DisputeThread.id)
+        .join(PaymentReceipt, PaymentReceipt.id == DisputeThread.receipt_id)
+        .where(
             DisputeThread.receipt_id == receipt_id,
             DisputeThread.status == 'open',
-        ).limit(1)
+            PaymentReceipt.organization_id == organization_id,
+        )
+        .limit(1)
     ).first()
     return row is not None
 
 
-def render_verdict(db: Session, admin_user: User, receipt_id: str, request: VerdictRequest) -> PaymentReceipt:
+def render_verdict(
+    db: Session,
+    admin_user: User,
+    receipt_id: str,
+    request: VerdictRequest,
+    organization_id,
+) -> PaymentReceipt:
     """Render one of the five verdicts (NB-15) on a pending/escalated receipt."""
-    receipt = db.get(PaymentReceipt, receipt_id)
+    receipt = db.execute(
+        select(PaymentReceipt).where(
+            PaymentReceipt.id == receipt_id,
+            PaymentReceipt.organization_id == organization_id,
+        )
+    ).scalar_one_or_none()
     if receipt is None:
         raise ReceiptVerdictError(404, 'Receipt not found')
     if receipt.status not in ('pending', 'escalated'):
@@ -85,7 +100,10 @@ def _escalate(
     """
     note = (request.note or '').strip()
     if not note:
-        raise ReceiptVerdictError(422, 'Escalation requires a note — it is the question shown to the customer')
+        raise ReceiptVerdictError(
+            422,
+            'Escalation requires a note — it is the question shown to the customer',
+        )
     receipt.status = 'escalated'
     receipt.verdict = 'escalate'
     receipt.admin_note = note
@@ -116,7 +134,12 @@ def _escalate(
 
 
 def _apply_rejection(
-    db: Session, org: Organization, receipt: PaymentReceipt, verdict: str, request: VerdictRequest, admin_user: User
+    db: Session,
+    org: Organization,
+    receipt: PaymentReceipt,
+    verdict: str,
+    request: VerdictRequest,
+    admin_user: User,
 ) -> PaymentReceipt:
     """All three rejection verdicts (NB-13/14/15). No SMS, ever (NB-15.4)."""
     if verdict == 'reject_wrong_bank':
@@ -125,7 +148,9 @@ def _apply_rejection(
             # Server guard (decision #11): only out-of-portfolio banks are
             # rejectable as wrong-bank — the verdict is a safety valve.
             raise ReceiptVerdictError(
-                422, 'This receipt landed within the FreightPilot bank portfolio — use verify or a different verdict.'
+                422,
+                'This receipt landed within the FreightPilot bank portfolio — '
+                'use verify or a different verdict.',
             )
         reason = WRONG_BANK_REASON
     elif verdict == 'reject_duplicate':
@@ -154,7 +179,11 @@ def _apply_rejection(
     receipt.decision_made_by_user_id = admin_user.id if admin_user else None
     receipt.decided_at = datetime.now(UTC)
     db.add(receipt)
-    banner = DUPLICATE_BANNER.format(ref=receipt.reference_number) if verdict == 'reject_duplicate' else reason
+    banner = (
+        DUPLICATE_BANNER.format(ref=receipt.reference_number)
+        if verdict == 'reject_duplicate'
+        else reason
+    )
     _rejected_notification(db, org, receipt, banner)
     record_audit_event(
         db,
@@ -194,11 +223,19 @@ def _apply_verify(
         raise ReceiptVerdictError(422, 'Receipt has no routed invoice to credit')
     if receipt.is_large_surplus and request.large_surplus_decision is None:
         raise ReceiptVerdictError(
-            422, 'Large surplus requires a 3-way admin decision: credit_forward, credit_backward, or partial_ignore'
+            422,
+            'Large surplus requires a 3-way admin decision: credit_forward, '
+            'credit_backward, or partial_ignore',
         )
-    if request.large_surplus_decision is not None and request.large_surplus_decision.value == 'partial_ignore':
-        if request.partial_credit_amount_etb is None:
-            raise ReceiptVerdictError(422, 'partial_ignore requires partial_credit_amount_etb')
+    if (
+        request.large_surplus_decision is not None
+        and request.large_surplus_decision.value == 'partial_ignore'
+        and request.partial_credit_amount_etb is None
+    ):
+        raise ReceiptVerdictError(
+            422,
+            'partial_ignore requires partial_credit_amount_etb',
+        )
 
     try:
         outcome = credits.apply_credit(
@@ -218,7 +255,9 @@ def _apply_verify(
     except IntegrityError as exc:
         db.rollback()
         raise ReceiptVerdictError(
-            409, 'This reference number has already been credited. Only one verified receipt per reference — reject the duplicate.'
+            409,
+            'This reference number has already been credited. Only one verified '
+            'receipt per reference — reject the duplicate.',
         ) from exc
     except CreditError as exc:
         raise ReceiptVerdictError(422, str(exc)) from exc
@@ -233,5 +272,6 @@ def _apply_verify(
         receipt.admin_note = request.admin_note
     db.add(receipt)
     _verified_notification(db, org, receipt, outcome)
-    credits.unlock_evaluation(db, org)  # pessimistic unlock: refresh commits credits + wallet + audit together
+    # Pessimistic unlock: the refresh commits credits + wallet + audit together.
+    credits.unlock_evaluation(db, org)
     return receipt

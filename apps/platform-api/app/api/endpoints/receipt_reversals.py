@@ -94,7 +94,7 @@ def _reversal_read(db: Session, receipt: PaymentReceipt) -> ReversalRead:
 @router.get('/audit', response_model=list[VerifiedReceiptAuditRead])
 def receipt_audit_list(
     db: Session = Depends(get_db),
-    _membership: OrganizationMembership = Depends(
+    membership: OrganizationMembership = Depends(
         require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)
     ),
 ):
@@ -102,7 +102,7 @@ def receipt_audit_list(
     reversal availability (decision #7). Write-guard EXEMPT."""
     now = datetime.now(UTC)
     rows = []
-    for receipt in queue_service.list_verified(db):
+    for receipt in queue_service.list_verified(db, membership.organization_id):
         org = db.get(Organization, receipt.organization_id)
         rows.append(
             VerifiedReceiptAuditRead(
@@ -125,7 +125,7 @@ def receipt_audit_list(
 def receipt_audit_events(
     receipt_id: str,
     db: Session = Depends(get_db),
-    _membership: OrganizationMembership = Depends(
+    membership: OrganizationMembership = Depends(
         require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)
     ),
 ):
@@ -133,7 +133,12 @@ def receipt_audit_events(
     Reverse affordance is anchored ON the ``receipts.verified`` event
     (NB-19.1/NB-20.1): ``available_actions`` is computed server-side for
     that event only, while ``reversal_status IS NULL``."""
-    receipt = db.get(PaymentReceipt, receipt_id)
+    receipt = db.execute(
+        select(PaymentReceipt).where(
+            PaymentReceipt.id == receipt_id,
+            PaymentReceipt.organization_id == membership.organization_id,
+        )
+    ).scalar_one_or_none()
     if receipt is None:
         raise HTTPException(status_code=404, detail='Receipt not found')
     events = db.execute(
@@ -169,14 +174,20 @@ def undo_receipt_endpoint(
     payload: UndoRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
-    _membership: OrganizationMembership = Depends(
+    membership: OrganizationMembership = Depends(
         require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)
     ),
 ):
     """Silent Undo (NB-19) — all guards live in ``undo.undo_verification``;
     the server 409s past the 24h window (decision #7). Write-guard EXEMPT."""
     try:
-        receipt = undo_verification(db, user, receipt_id, note=payload.note)
+        receipt = undo_verification(
+            db,
+            user,
+            receipt_id,
+            note=payload.note,
+            organization_id=membership.organization_id,
+        )
     except ReversalError as exc:
         raise _as_http(exc) from None
     db.commit()  # when the refresh did not commit (phase unchanged)
@@ -189,14 +200,20 @@ def reverse_receipt_endpoint(
     payload: ReverseRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
-    _membership: OrganizationMembership = Depends(
+    membership: OrganizationMembership = Depends(
         require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)
     ),
 ):
     """Explicit Reverse (NB-20) — mandatory reason, exact NB-20.3 customer
     notification, NO refund. Write-guard EXEMPT."""
     try:
-        receipt = reverse_verification(db, user, receipt_id, payload.reason)
+        receipt = reverse_verification(
+            db,
+            user,
+            receipt_id,
+            payload.reason,
+            organization_id=membership.organization_id,
+        )
     except ReversalError as exc:
         raise _as_http(exc) from None
     db.commit()  # when the refresh did not commit (phase unchanged)
@@ -209,7 +226,7 @@ def remove_trusted_payer_endpoint(
     organization_id: str = Query(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
-    _membership: OrganizationMembership = Depends(
+    membership: OrganizationMembership = Depends(
         require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)
     ),
 ):
@@ -217,7 +234,9 @@ def remove_trusted_payer_endpoint(
     query param — the admin queue is system-wide and the admin's membership
     org must NOT be used (blueprint risk #7). Missing row -> 404. The fraud
     flag is NOT cleared (decision #6). Write-guard EXEMPT."""
-    org = db.get(Organization, organization_id)
+    if organization_id != str(membership.organization_id):
+        raise HTTPException(status_code=404, detail='Organization not found')
+    org = db.get(Organization, membership.organization_id)
     if org is None:
         raise HTTPException(status_code=404, detail='Organization not found')
     removed = remove_trusted_payer(db, org, sender_name, user)

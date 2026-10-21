@@ -36,32 +36,47 @@ def list_customer_receipts(db: Session, org: Organization) -> list[PaymentReceip
     )
 
 
-def list_verified(db: Session) -> list[PaymentReceipt]:
+def list_verified(db: Session, organization_id) -> list[PaymentReceipt]:
     """All verified receipts, newest decision first — the reversal audit
     surface (GET /receipts/audit)."""
     return list(
         db.execute(
             select(PaymentReceipt)
-            .where(PaymentReceipt.status == 'verified')
+            .where(
+                PaymentReceipt.status == 'verified',
+                PaymentReceipt.organization_id == organization_id,
+            )
             .order_by(PaymentReceipt.decided_at.desc())
         ).scalars()
     )
 
 
-def list_queue(db: Session) -> list[PaymentReceipt]:
+def list_queue(db: Session, organization_id) -> list[PaymentReceipt]:
     """Queue = pending + escalated, oldest first. Unrouteable uploads never
     appear here: the upload endpoint rolls them back before commit."""
     return list(
         db.execute(
             select(PaymentReceipt)
-            .where(PaymentReceipt.status.in_(['pending', 'escalated']))
+            .where(
+                PaymentReceipt.status.in_(['pending', 'escalated']),
+                PaymentReceipt.organization_id == organization_id,
+            )
             .order_by(PaymentReceipt.created_at.asc())
         ).scalars()
     )
 
 
-def get_queue_item(db: Session, receipt_id: str) -> PaymentReceipt | None:
-    return db.get(PaymentReceipt, receipt_id)
+def get_queue_item(
+    db: Session,
+    receipt_id: str,
+    organization_id,
+) -> PaymentReceipt | None:
+    return db.execute(
+        select(PaymentReceipt).where(
+            PaymentReceipt.id == receipt_id,
+            PaymentReceipt.organization_id == organization_id,
+        )
+    ).scalar_one_or_none()
 
 
 def queue_item_payload(db: Session, receipt: PaymentReceipt) -> dict:
@@ -84,7 +99,7 @@ def queue_item_payload(db: Session, receipt: PaymentReceipt) -> dict:
         confidence = {name: float(extraction.confidence.get(name, 0.0)) for name in EXTRACTION_FIELDS}
     else:
         fields = field_columns
-        confidence = {name: 0.0 for name in EXTRACTION_FIELDS}
+        confidence = dict.fromkeys(EXTRACTION_FIELDS, 0.0)
 
     org = db.get(Organization, receipt.organization_id)
     thread = db.execute(

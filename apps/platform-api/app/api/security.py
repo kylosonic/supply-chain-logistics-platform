@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.membership import OrganizationMembership
+from app.models.organization import Organization
 from app.models.user import User
 from app.repositories import MembershipRepository, UserRepository
 from app.schemas.auth import OrganizationRole, UserRole
@@ -58,9 +59,32 @@ def get_current_user(
 
 
 def require_roles(*allowed: UserRole):
-    def checker(user: User = Depends(get_current_user)) -> User:
+    def checker(
+        user: User = Depends(get_current_user),
+        membership: OrganizationMembership = Depends(get_current_membership),
+    ) -> User:
+        # Effective tenant authority is the lower of the global account role
+        # and the active membership role. A stale or malformed mismatch can
+        # never widen access.
+        rank = {'viewer': 1, 'operator': 2, 'admin': 3}
+        membership_to_account = {
+            'viewer': UserRole.VIEWER,
+            'operator': UserRole.OPERATOR,
+            'admin': UserRole.ADMIN,
+            'owner': UserRole.ADMIN,
+        }
+        membership_role = membership_to_account.get(str(membership.role))
+        if membership_role is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Invalid organization role',
+            )
+        effective_rank = min(rank[str(user.role)], rank[str(membership_role)])
+        effective_role = next(
+            role for role, role_rank in rank.items() if role_rank == effective_rank
+        )
         try:
-            ensure_role(UserRole(user.role), list(allowed))
+            ensure_role(UserRole(effective_role), list(allowed))
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
         return user
@@ -76,6 +100,9 @@ def get_current_membership(
     membership = MembershipRepository(db).get_active_membership(user.id, org_id=x_org_id)
     if not membership:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='No active organization membership')
+    organization = db.get(Organization, membership.organization_id)
+    if organization is None or not organization.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Workspace is inactive')
     return membership
 
 
@@ -84,27 +111,29 @@ def get_optional_membership(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> OrganizationMembership | None:
-    """Soft membership lookup: returns None (never raises) so org-less
-    write calls preserve the existing pass-through contract."""
+    """Soft membership lookup for non-tenant contexts only.
+
+    Business and write endpoints must use ``get_current_membership`` or
+    ``require_writable_workspace``. A ``None`` result must never grant access
+    to tenant data.
+    """
     return MembershipRepository(db).get_active_membership(user.id, org_id=x_org_id)
 
 
 def require_writable_workspace(
-    membership: OrganizationMembership | None = Depends(get_optional_membership),
+    membership: OrganizationMembership = Depends(get_current_membership),
     db: Session = Depends(get_db),
-) -> OrganizationMembership | None:
+) -> OrganizationMembership:
     """Write guard (blueprint §5 + Phase 4 decision #5).
 
-    - Membership None -> pass through (org-less write contract preserved).
-    - Else load the org, run ``locks.assert_workspace_writable`` (phase
-      check + Free-tier meter gate; refreshes workspace state incl. lazy
-      invoice issuance) and raise ``423 Locked`` when either lock holds.
+    - Active membership is mandatory; an unaffiliated account cannot write.
+    - Load the org, run ``locks.assert_workspace_writable`` (phase check +
+      Free-tier meter gate; refreshes workspace state incl. lazy invoice
+      issuance) and raise ``423 Locked`` when either lock holds.
     - Phase lock wins the banner priority; the 423 detail gains
       ``free_cap_locked`` + ``free_cap_message`` when the Free cap holds.
     - Phases free/trial/active + under-cap -> membership returned unchanged.
     """
-    if membership is None:
-        return membership
     try:
         locks.assert_workspace_writable(db, membership, datetime.now(UTC))
     except locks.WorkspaceLockedError as exc:
@@ -135,10 +164,32 @@ def require_writable_workspace(
 
 
 def require_org_roles(*allowed: OrganizationRole):
-    def checker(membership=Depends(get_current_membership)):
-        membership_role = OrganizationRole(membership.role)
-        if membership_role not in allowed:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Insufficient organization permissions')
+    def checker(
+        user: User = Depends(get_current_user),
+        membership: OrganizationMembership = Depends(get_current_membership),
+    ):
+        account_rank = {'viewer': 1, 'operator': 2, 'admin': 3}
+        membership_rank = {'viewer': 1, 'operator': 2, 'admin': 3, 'owner': 4}
+        allowed_ranks = [membership_rank[str(role)] for role in allowed]
+        if not allowed_ranks:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Insufficient organization permissions',
+            )
+        # The membership role cannot be weaker than the weakest allowed role,
+        # and the account role remains a hard upper bound. This closes the
+        # path where a workspace admin promoted a global viewer and then
+        # relied on membership-only checks for privileged surfaces.
+        required_rank = min(allowed_ranks)
+        effective_rank = min(
+            membership_rank.get(str(membership.role), 0),
+            account_rank.get(str(user.role), 0),
+        )
+        if membership_rank.get(str(membership.role), 0) < required_rank or effective_rank < required_rank:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Insufficient organization permissions',
+            )
         return membership
 
     return checker

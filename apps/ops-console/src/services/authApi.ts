@@ -17,6 +17,11 @@ export async function me(): Promise<UserRead> {
   return data;
 }
 
+export async function getLiveSessionToken(): Promise<string> {
+  const { data } = await api.get<{ access_token: string }>('/auth/token');
+  return data.access_token;
+}
+
 export async function logout(): Promise<void> {
   await api.post('/auth/logout');
 }

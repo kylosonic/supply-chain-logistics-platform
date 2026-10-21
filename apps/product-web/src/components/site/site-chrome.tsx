@@ -111,7 +111,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
           </nav>
 
           <div className="hidden items-center gap-3 lg:flex">
-            <MagneticLink href={externalLinks.docs} variant="ghost" external>
+            <MagneticLink href={externalLinks.docs} variant="ghost">
               Docs
             </MagneticLink>
             <MagneticLink href="/launch" variant="primary">
@@ -189,7 +189,7 @@ export function SiteChrome({ children }: PropsWithChildren) {
                 ))}
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <MagneticLink href={externalLinks.docs} variant="secondary" external>
+                <MagneticLink href={externalLinks.docs} variant="secondary">
                   Open docs
                 </MagneticLink>
                 <MagneticLink href={externalLinks.console} variant="secondary" external>

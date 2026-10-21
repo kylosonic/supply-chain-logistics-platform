@@ -1,10 +1,10 @@
 """TECH-58 — tenant isolation for warehouses/items CRUD (blueprint §7.2).
 
 All four endpoints per resource become org-scoped: list filters by actor
-org (+ legacy null-org rows via ``is_(None)``), create stamps
+org (+ explicitly legacy null-org rows via ``is_(None)``), create stamps
 ``organization_id`` and duplicate pre-checks equality-only, get/update
-guard cross-org reads with 404. Org-less actors keep the unfiltered
-pass-through contract.
+guard cross-org reads with 404. Business endpoints require an active
+membership, so an org-less actor is denied upstream.
 """
 
 from uuid import UUID

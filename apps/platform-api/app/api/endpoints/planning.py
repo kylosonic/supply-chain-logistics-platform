@@ -8,8 +8,7 @@ from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
 from app.api.security import (
-    actor_organization_id,
-    get_current_user,
+    get_current_membership,
     order_by_organization_first,
     organization_scoped_get,
     require_roles,
@@ -32,7 +31,7 @@ from app.schemas.planning import (
     ReplenishmentPlanStatus,
     ReplenishmentRejectRequest,
 )
-from app.services.audit import record_audit_event, resolve_actor_organization_id
+from app.services.audit import record_audit_event
 
 router = APIRouter()
 
@@ -59,7 +58,8 @@ def _to_read(plan: ReplenishmentPlan, warehouse_code: str, sku: str) -> Replenis
 @router.get('/replenishment', response_model=list[ReplenishmentPlanRead])
 def list_replenishment_plans(
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     # NB-64 (audit H-1): replenishment plans are tenant data.
     stmt = scoped_to_organization(
@@ -67,7 +67,7 @@ def list_replenishment_plans(
         .join(Warehouse, Warehouse.id == ReplenishmentPlan.warehouse_id)
         .join(Item, Item.id == ReplenishmentPlan.item_id),
         ReplenishmentPlan,
-        actor_organization_id(actor, db),
+        membership.organization_id,
     )
     rows = db.execute(stmt.order_by(asc(ReplenishmentPlan.created_at))).all()
     return [_to_read(row.ReplenishmentPlan, row.code, row.sku) for row in rows]
@@ -77,16 +77,12 @@ def list_replenishment_plans(
 def generate_replenishment_plans(
     payload: ReplenishmentGenerateRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    user: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
-
-    if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
-        raise HTTPException(status_code=403, detail='Insufficient role')
-
     # NB-64: generate only from the caller's own inventory and order history,
     # and stamp the plan with the caller's org.
-    organization_id = writable.organization_id if writable else None
+    organization_id = writable.organization_id
 
     inventory_stmt = scoped_to_organization(
         select(Inventory, Warehouse.code, Item.sku, Item.reorder_level).join(Warehouse).join(Item),
@@ -102,11 +98,23 @@ def generate_replenishment_plans(
         key = (order.warehouse_id, order.item_id)
         entry = demand_by_pair.get(key)
         if not entry:
-            demand_by_pair[key] = {'total_qty': order.quantity, 'min_date': order.order_date, 'max_date': order.order_date}
+            demand_by_pair[key] = {
+                'total_qty': order.quantity,
+                'min_date': order.order_date,
+                'max_date': order.order_date,
+            }
             continue
         entry['total_qty'] = int(entry['total_qty']) + order.quantity
-        entry['min_date'] = min(entry['min_date'], order.order_date) if entry['min_date'] else order.order_date
-        entry['max_date'] = max(entry['max_date'], order.order_date) if entry['max_date'] else order.order_date
+        entry['min_date'] = (
+            min(entry['min_date'], order.order_date)
+            if entry['min_date']
+            else order.order_date
+        )
+        entry['max_date'] = (
+            max(entry['max_date'], order.order_date)
+            if entry['max_date']
+            else order.order_date
+        )
 
     created: list[tuple[ReplenishmentPlan, str, str]] = []
     for row in inventories:
@@ -152,7 +160,10 @@ def generate_replenishment_plans(
             avg_weekly_demand=avg_weekly,
             suggested_quantity=suggested,
             status=ReplenishmentPlanStatus.PENDING_APPROVAL,
-            rationale=f'Projected demand {projected} + safety stock {row.Inventory.safety_stock} - on hand {row.Inventory.quantity_on_hand}',
+            rationale=(
+                f'Projected demand {projected} + safety stock '
+                f'{row.Inventory.safety_stock} - on hand {row.Inventory.quantity_on_hand}'
+            ),
             created_by_user_id=user.id,
         )
         db.add(plan)
@@ -163,7 +174,7 @@ def generate_replenishment_plans(
         event_type='planning.replenishment_generated',
         entity_type='replenishment_plan',
         actor=user,
-        organization_id=resolve_actor_organization_id(db, user),
+        organization_id=str(organization_id),
         description=f'Generated {len(created)} replenishment plans',
         payload={'generated_count': len(created), 'horizon_weeks': payload.horizon_weeks},
     )
@@ -181,18 +192,16 @@ def approve_replenishment_plan(
     plan_id: str,
     payload: ReplenishmentApproveRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    user: User = Depends(require_roles(UserRole.ADMIN)),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
-
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail='Admin role required')
     plan = organization_scoped_get(
         db,
         ReplenishmentPlan,
         plan_id,
-        writable.organization_id if writable else actor_organization_id(user, db),
+        writable.organization_id,
         not_found_detail='Plan not found',
+        include_legacy_null=False,
     )
     if plan.status != ReplenishmentPlanStatus.PENDING_APPROVAL:
         raise HTTPException(status_code=400, detail='Only pending plans can be approved')
@@ -212,7 +221,7 @@ def approve_replenishment_plan(
         entity_type='replenishment_plan',
         entity_id=plan.id,
         actor=user,
-        organization_id=resolve_actor_organization_id(db, user),
+        organization_id=str(writable.organization_id),
         description=f'Approved replenishment plan for {plan.id}',
         payload={'approved_quantity': plan.approved_quantity, 'note': payload.note},
     )
@@ -229,18 +238,16 @@ def reject_replenishment_plan(
     plan_id: str,
     payload: ReplenishmentRejectRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    user: User = Depends(require_roles(UserRole.ADMIN)),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
-
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail='Admin role required')
     plan = organization_scoped_get(
         db,
         ReplenishmentPlan,
         plan_id,
-        writable.organization_id if writable else actor_organization_id(user, db),
+        writable.organization_id,
         not_found_detail='Plan not found',
+        include_legacy_null=False,
     )
     if plan.status != ReplenishmentPlanStatus.PENDING_APPROVAL:
         raise HTTPException(status_code=400, detail='Only pending plans can be rejected')
@@ -257,7 +264,7 @@ def reject_replenishment_plan(
         entity_type='replenishment_plan',
         entity_id=plan.id,
         actor=user,
-        organization_id=resolve_actor_organization_id(db, user),
+        organization_id=str(writable.organization_id),
         description=f'Rejected replenishment plan for {plan.id}',
         payload={'reason': payload.reason},
     )

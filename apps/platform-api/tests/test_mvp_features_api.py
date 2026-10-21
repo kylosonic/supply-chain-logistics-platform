@@ -1,14 +1,19 @@
 from datetime import date
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.inventory import Inventory
 from app.models.item import Item
+from app.models.organization import Organization
 from app.models.warehouse import Warehouse
 
 
 def _seed_baseline_entities(db_session: Session):
+    org = db_session.execute(
+        select(Organization).where(Organization.slug == 'testco')
+    ).scalar_one()
     w1 = Warehouse(
         code='WH-A',
         name='Warehouse A',
@@ -19,6 +24,7 @@ def _seed_baseline_entities(db_session: Session):
         latitude=8.98,
         longitude=38.76,
         capacity_units=1000,
+        organization_id=org.id,
     )
     w2 = Warehouse(
         code='WH-B',
@@ -30,12 +36,26 @@ def _seed_baseline_entities(db_session: Session):
         latitude=8.99,
         longitude=38.77,
         capacity_units=1200,
+        organization_id=org.id,
     )
-    item = Item(sku='SKU-1', name='Test Item', category='General', unit_cost=10.0, reorder_level=30)
+    item = Item(
+        sku='SKU-1',
+        name='Test Item',
+        category='General',
+        unit_cost=10.0,
+        reorder_level=30,
+        organization_id=org.id,
+    )
     db_session.add_all([w1, w2, item])
     db_session.flush()
 
-    inventory = Inventory(warehouse_id=w1.id, item_id=item.id, quantity_on_hand=10, safety_stock=20)
+    inventory = Inventory(
+        warehouse_id=w1.id,
+        item_id=item.id,
+        quantity_on_hand=10,
+        safety_stock=20,
+        organization_id=org.id,
+    )
     db_session.add(inventory)
     db_session.commit()
 

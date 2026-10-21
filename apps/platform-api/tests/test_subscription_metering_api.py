@@ -72,10 +72,10 @@ def test_enterprise_usage_has_no_threshold_limit(client: TestClient):
     assert body['usage']['estimated_overage_cost_usd'] is None
 
 
-def test_usage_metering_requires_active_org_membership(client: TestClient, admin_token: str):
+def test_usage_metering_requires_active_org_membership(client: TestClient, orgless_token: str):
     resp = client.post(
         '/api/v1/subscriptions/usage/record',
-        headers={'Authorization': f'Bearer {admin_token}'},
+        headers={'Authorization': f'Bearer {orgless_token}'},
         json={'units': 25},
     )
     assert resp.status_code == 403

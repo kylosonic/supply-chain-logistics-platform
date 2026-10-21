@@ -14,6 +14,7 @@ import { UploadPage } from './UploadPage';
 import { ShipmentsPage } from './ShipmentsPage';
 import { AlertsPage } from './AlertsPage';
 import { PlanningPage } from './PlanningPage';
+import { DispatchPage } from './DispatchPage';
 import { ProvidersPage } from './ProvidersPage';
 import { UnauthorizedPage } from './UnauthorizedPage';
 import { WorkspaceResetDangerZone } from '../components/WorkspaceResetDangerZone';
@@ -160,7 +161,7 @@ describe('ops console surface smoke', () => {
 
     expect(html).toContain('Enter control tower');
     expect(html).toContain('Create company account');
-    expect(html).toContain('Create initial admin (first-time setup)');
+    expect(html).not.toContain('Create initial admin (first-time setup)');
     // NB-59.5: the signup CTA must carry the real product address — never a
     // placeholder, local address, or dead link.
     expect(html).toContain('https://product-web-chi.vercel.app/launch');
@@ -279,7 +280,7 @@ describe('ops console surface smoke', () => {
     expect(html).toContain('Open exceptions');
     expect(html).toContain('In-transit');
     expect(html).toContain('Forecast demand');
-    expect(html).toContain('Weather risk');
+    expect(html).toContain('Simulated weather risk');
     expect(html).toContain('Usage posture');
     // Seeded 0-of-5: forecast + weather render their locked milestone-5 variants.
     expect(html).toContain('>Locked<');
@@ -451,6 +452,22 @@ describe('ops console surface smoke', () => {
     expect(html).toContain('Run replenishment planning');
     expect(html).toContain('Horizon (weeks)');
     expect(html).toContain('Approval board');
+  });
+
+  it('renders the customer dispatch surface with the full operating loop', () => {
+    const html = renderToString(
+      <QueryClientProvider client={queryClient}>
+        <StaticRouter location="/dispatch">
+          <DispatchPage />
+        </StaticRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(html).toContain('Customer dispatch');
+    expect(html).toContain('Add customer');
+    expect(html).toContain('Add delivery order');
+    expect(html).toContain('Plan selected orders');
+    expect(html).toContain('Dispatch runs');
   });
 
   it('renders the provider governance surface with keys and the credential form for admins', () => {

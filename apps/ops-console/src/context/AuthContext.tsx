@@ -1,6 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
-import { login as loginApi, logout as logoutApi, me as meApi } from '../services/authApi';
+import {
+  getLiveSessionToken,
+  login as loginApi,
+  logout as logoutApi,
+  me as meApi,
+} from '../services/authApi';
 import { getCurrentSubscription } from '../services/billingApi';
 import {
   beginAuthSessionEstablishment,
@@ -12,6 +18,7 @@ import {
   setStoredOrgId,
 } from '../services/api';
 import type { UserRead } from '../types/auth';
+import { clearLiveSession } from '../hooks/useLiveUpdates';
 
 type AuthContextValue = {
   user: UserRead | null;
@@ -26,6 +33,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<UserRead | null>(null);
   const [orgId, setOrgId] = useState<string | null>(getStoredOrgId());
   const [isLoading, setIsLoading] = useState(true);
@@ -39,12 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return onAuthSessionExpired(() => {
       setUser(null);
       setOrgId(null);
+      queryClient.clear();
+      clearLiveSession();
     });
-  }, []);
+  }, [queryClient]);
 
   // Stored-token-only (NB-59.1): the token is written by login/signup in
   // authApi; there is no /auth/token refresh path to consult.
-  const getToken = useCallback(async (): Promise<string | null> => getStoredToken(), []);
+  const getToken = useCallback(async (): Promise<string | null> => {
+    if (!getStoredToken()) return null;
+    return getLiveSessionToken();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setStoredOrgId(sub.organization_id);
           }
         } catch {
-          // org_id from stored value is fine
+          // Never keep an old selected workspace when the new session cannot
+          // prove its membership. A stale X-Organization-Id can only cause
+          // 403s or point the console at the wrong workspace.
+          setOrgId(null);
+          setStoredOrgId(null);
         }
       } catch {
         // not authenticated — no cookie present
@@ -82,6 +99,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // through the existing login catch instead.
     beginAuthSessionEstablishment();
     try {
+      // Never let data from the previous account survive a workspace switch.
+      queryClient.clear();
+      clearLiveSession();
+      setStoredOrgId(null);
       await loginApi(identifier, password);
       const current = await meApi();
       setUser(current);
@@ -95,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       endAuthSessionEstablishment();
     }
-  }, []);
+  }, [queryClient]);
 
   const logout = useCallback(async () => {
     try {
@@ -106,7 +127,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearAuthStorage();
     setUser(null);
     setOrgId(null);
-  }, []);
+    queryClient.clear();
+    clearLiveSession();
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('freightpilot_driver_')) {
+        localStorage.removeItem(key);
+      }
+    }
+    if ('caches' in window) {
+      void caches.keys().then((keys) =>
+        Promise.all(keys.map((key) => caches.delete(key))),
+      );
+    }
+  }, [queryClient]);
 
   const value = useMemo(
     () => ({

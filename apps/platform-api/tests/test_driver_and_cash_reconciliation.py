@@ -272,18 +272,19 @@ def test_exact_cash_leaves_no_shortfall(
     assert record.status == 'collected'
 
 
-def test_over_collection_is_a_surplus_not_a_negative_shortfall(
+def test_over_collection_is_rejected(
     client: TestClient, signup_workspace, seed_csv_path, db_session: Session
 ):
-    """A driver who collects more is visible as a surplus; shortfall stays floored."""
+    """The declared amount cannot silently erase or invert the expected cash."""
     _, token = signup_workspace('Surplus Co')
     shipment = _make_shipment(client, token, 'SHP-COD-4', cod='1000.00')
 
-    _deliver(client, token, shipment['id'], cash_collected_etb='1100.00')
-
-    record = db_session.execute(select(CashCollection)).scalar_one()
-    assert record.shortfall_etb == Decimal('0.00')
-    assert record.collected_etb == Decimal('1100.00')
+    resp = client.post(
+        f"/api/v1/shipments/{shipment['id']}/status",
+        headers=_headers(token),
+        json={'status': 'delivered', 'cash_collected_etb': '1100.00'},
+    )
+    assert resp.status_code == 422
 
 
 def test_cash_declared_without_delivery_is_rejected(
@@ -329,7 +330,13 @@ def test_ledger_summarises_what_is_out_and_what_is_missing(
     short = _make_shipment(client, token, 'SHP-L-2', cod='2000.00')
 
     _deliver(client, token, outstanding['id'])
-    _deliver(client, token, short['id'], cash_collected_etb='1500.00')
+    _deliver(
+        client,
+        token,
+        short['id'],
+        cash_collected_etb='1500.00',
+        cash_note='Customer withheld 500',
+    )
 
     resp = client.get('/api/v1/cash-collections/ledger', headers=_headers(token))
     assert resp.status_code == 200, resp.text
@@ -397,7 +404,14 @@ def test_settled_record_cannot_be_reopened_by_a_replayed_delivery(
     )
 
     far_past = '2020-01-01T00:00:00+00:00'
-    _deliver(client, token, shipment['id'], cash_collected_etb='0.00', actual_delivery=far_past)
+    _deliver(
+        client,
+        token,
+        shipment['id'],
+        cash_collected_etb='0.00',
+        cash_note='Late retry after settlement',
+        actual_delivery=far_past,
+    )
 
     db_session.expire_all()
     record = db_session.execute(select(CashCollection)).scalar_one()

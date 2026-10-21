@@ -6,10 +6,12 @@ from app.api.endpoints import (
     auth,
     billing,
     cash_collections,
+    dispatch,
     drivers,
     feedback,
     forecast,
     ingestion,
+    insights,
     inventory,
     invoices,
     items,
@@ -24,6 +26,7 @@ from app.api.endpoints import (
     routes,
     shipments,
     subscriptions,
+    team,
     warehouses,
     weather,
 )
@@ -39,14 +42,17 @@ api_router.include_router(forecast.router, prefix='/forecast', tags=['forecast']
 api_router.include_router(routes.router, prefix='/routes', tags=['routes'])
 api_router.include_router(live.router, prefix='/live', tags=['live'])
 api_router.include_router(ops.router, prefix='/ops', tags=['ops'])
+api_router.include_router(insights.router, prefix='/ops', tags=['ops'])
 api_router.include_router(shipments.router, prefix='/shipments', tags=['shipments'])
 # NB-86: the oper*ational* half of the product — who is carrying it, and the cash
 # they are carrying back.
 api_router.include_router(drivers.router, prefix='/drivers', tags=['drivers'])
 api_router.include_router(cash_collections.router, prefix='/cash-collections', tags=['cash-collections'])
+api_router.include_router(dispatch.router, prefix='/dispatch', tags=['dispatch'])
 api_router.include_router(alerts.router, prefix='/alerts', tags=['alerts'])
 api_router.include_router(planning.router, prefix='/planning', tags=['planning'])
 api_router.include_router(subscriptions.router, prefix='/subscriptions', tags=['subscriptions'])
+api_router.include_router(team.router, prefix='/team', tags=['team'])
 api_router.include_router(providers.router, prefix='/providers', tags=['providers'])
 api_router.include_router(weather.router, prefix='/weather', tags=['weather'])
 api_router.include_router(invoices.router, prefix='/invoices', tags=['invoices'])

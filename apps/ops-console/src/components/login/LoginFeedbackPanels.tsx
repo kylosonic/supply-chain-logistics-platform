@@ -1,6 +1,5 @@
 type LoginFeedbackPanelsProps = {
   signInError: string | null;
-  bootstrapError: string | null;
 };
 
 function FeedbackPanel({
@@ -20,15 +19,14 @@ function FeedbackPanel({
   );
 }
 
-export function LoginFeedbackPanels({ signInError, bootstrapError }: LoginFeedbackPanelsProps) {
-  if (!signInError && !bootstrapError) {
+export function LoginFeedbackPanels({ signInError }: LoginFeedbackPanelsProps) {
+  if (!signInError) {
     return null;
   }
 
   return (
     <div className="space-y-3">
       {signInError ? <FeedbackPanel testId="login-signin-error" message={signInError} /> : null}
-      {bootstrapError ? <FeedbackPanel testId="login-bootstrap-error" message={bootstrapError} /> : null}
     </div>
   );
 }

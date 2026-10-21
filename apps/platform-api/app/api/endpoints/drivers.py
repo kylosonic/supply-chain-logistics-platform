@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.security import (
-    actor_organization_id,
+    get_current_membership,
     organization_scoped_get,
     require_roles,
     require_writable_workspace,
@@ -27,7 +27,7 @@ from app.schemas.shipment import (
     DriverUpdate,
     ShipmentStatus,
 )
-from app.services.audit import record_audit_event, resolve_actor_organization_id
+from app.services.audit import record_audit_event
 
 router = APIRouter()
 
@@ -49,11 +49,12 @@ def _driver_to_read(driver: Driver) -> DriverRead:
 def list_drivers(
     status: DriverStatus | None = Query(default=None),
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
 ):
     """The roster. This is the list an operator reads out when a truck is late."""
     stmt = scoped_to_organization(
-        select(Driver), Driver, actor_organization_id(actor, db)
+        select(Driver), Driver, membership.organization_id
     ).order_by(Driver.full_name.asc())
     if status is not None:
         stmt = stmt.where(Driver.status == status)
@@ -65,11 +66,9 @@ def create_driver(
     payload: DriverCreate,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
     organization_id = resolve_scoped_organization(actor, writable)
-    if organization_id is None:
-        raise HTTPException(status_code=400, detail='A workspace is required to add a driver')
 
     driver = Driver(
         organization_id=organization_id,
@@ -97,7 +96,7 @@ def create_driver(
         entity_type='driver',
         entity_id=driver.id,
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(organization_id),
         description=f'Added driver {driver.full_name}',
         payload={'phone': driver.phone, 'vehicle_plate': driver.vehicle_plate},
     )
@@ -110,10 +109,16 @@ def create_driver(
 def get_driver(
     driver_id: str,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
 ):
     driver = organization_scoped_get(
-        db, Driver, driver_id, actor_organization_id(actor, db), not_found_detail='Driver not found'
+        db,
+        Driver,
+        driver_id,
+        membership.organization_id,
+        not_found_detail='Driver not found',
+        include_legacy_null=False,
     )
     return _driver_to_read(driver)
 
@@ -124,7 +129,7 @@ def update_driver(
     payload: DriverUpdate,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
     driver = organization_scoped_get(
         db,
@@ -160,7 +165,7 @@ def update_driver(
         entity_type='driver',
         entity_id=driver.id,
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(driver.organization_id),
         description=f'Updated driver {driver.full_name}',
         payload={k: str(v) for k, v in changed.items()},
     )
@@ -174,14 +179,15 @@ def list_driver_shipments(
     driver_id: str,
     limit: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
 ):
     """What this driver is currently carrying.
 
     Answers the operator's actual question — "what has Yohannes got on the van
     right now?" — without reading the whole shipment table.
     """
-    organization_id = actor_organization_id(actor, db)
+    organization_id = membership.organization_id
     driver = organization_scoped_get(
         db, Driver, driver_id, organization_id, not_found_detail='Driver not found'
     )
@@ -210,7 +216,7 @@ def deactivate_driver(
     driver_id: str,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
     """Deactivate rather than delete.
 
@@ -234,7 +240,7 @@ def deactivate_driver(
         entity_type='driver',
         entity_id=driver.id,
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(driver.organization_id),
         description=f'Deactivated driver {driver.full_name}',
         payload={},
     )

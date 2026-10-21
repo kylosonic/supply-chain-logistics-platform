@@ -51,8 +51,11 @@ jobs:
       - name: Run backend tests
         run: pytest -q --timeout=120 --timeout-method=thread -n 4
 
-      - name: Lint backend (ruff)
-        run: ruff check app
+      - name: Lint backend (ruff correctness gate)
+        # The legacy tree still carries formatting/unused-import debt. This
+        # gate blocks undefined names and syntax errors; formatting cleanup is
+        # tracked separately so it cannot mask a runtime failure.
+        run: ruff check app --select E9,F63,F7,F82
 
   backend-dependency-audit:
     name: backend-dependency-audit

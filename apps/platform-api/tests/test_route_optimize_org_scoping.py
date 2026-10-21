@@ -4,8 +4,8 @@ Regression: POST /api/v1/routes/optimize with ``persist_schedule=true``
 (the ops-console default) 500ed with MultipleResultsFound once 2+ orgs
 held identical seeded codes (WH-001..003 per org). All four warehouse
 queries in ``optimize_routes`` are org-scoped via
-``resolve_actor_organization_id``; org-less actors keep the unfiltered
-pass-through contract (Phase 4 decision #5).
+``resolve_actor_organization_id``. Business access now requires an active
+organization membership, so an unaffiliated actor cannot reach this path.
 """
 
 from uuid import UUID

@@ -113,8 +113,10 @@ set DATABASE_URL=postgresql+psycopg://postgres.<project-ref>:<db-password>@aws-0
 python -m alembic upgrade head
 ```
 
-Migration chain head: `20260811_0019` (org scoping for operational surfaces + the `shipment_no`
-uniqueness repair). Chain integrity is pinned by `tests/test_migration_chain_integrity.py`.
+Migration chain head: `20260823_0024` (customer stops, driver execution, proof of delivery, and
+day-end cash close). The chain also includes `20260813_0021` route explanations, `20260821_0022`
+legacy NULL-organization quarantine, and `20260822_0023` workspace invitations. Chain integrity is
+pinned by `tests/test_migration_chain_integrity.py`.
 
 ### Supabase CLI (database operations only — auth is retired)
 

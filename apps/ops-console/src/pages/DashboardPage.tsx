@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ActivationBanner } from '../components/ActivationBanner';
+import { DecisionBriefPanel } from '../components/DecisionBriefPanel';
 import { DockGanttChart } from '../components/DockGanttChart';
 import { FeedbackForm } from '../components/FeedbackForm';
 import { FreightReconciliationPanel } from '../components/FreightReconciliationPanel';
@@ -256,14 +257,14 @@ export function DashboardPage() {
         )}
         {milestone >= gateMilestone('weather-risk') ? (
           <MetricTile
-            title="Weather risk"
+            title="Simulated weather risk"
             value={summary.maxRiskScore > 0 ? `${summary.maxRiskScore}/10` : 'None'}
-            detail="Max disruption across active route zones."
+            detail="Deterministic simulation; not live weather data."
             tone={summary.maxRiskScore >= 8 ? 'danger' : summary.maxRiskScore >= 5 ? 'warning' : 'success'}
           />
         ) : (
           <MetricTile
-            title="Weather risk"
+            title="Simulated weather risk"
             value="Locked"
             detail="Unlocks after Milestone 5."
             tone="neutral"
@@ -285,6 +286,8 @@ export function DashboardPage() {
           </p>
         </Panel>
       ) : null}
+
+      <DecisionBriefPanel />
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <Panel
@@ -401,7 +404,11 @@ export function DashboardPage() {
             </Panel>
           )}
           {milestone >= gateMilestone('forecast-chart') ? (
-            <ForecastChart points={forecast} />
+            <ForecastChart
+              points={forecast}
+              quality={forecastQ.data?.quality}
+              modelName={forecastQ.data?.model_name}
+            />
           ) : (
             <Panel eyebrow="Forecast" title="4-week demand projection">
               <GatePlaceholder milestone={gateMilestone('forecast-chart')} />

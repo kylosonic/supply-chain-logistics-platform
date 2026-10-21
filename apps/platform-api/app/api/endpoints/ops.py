@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import timedelta, timezone
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc, select, text
 from sqlalchemy.orm import Session
 
 from app.api.security import (
-    actor_organization_id,
+    get_current_membership,
     order_by_organization_first,
     organization_scoped_get,
     require_roles,
@@ -14,11 +15,11 @@ from app.api.security import (
     resolve_scoped_organization,
     scoped_to_organization,
 )
-from app.core.config import settings
 from app.core.observability import app_metrics
 from app.db.session import get_db
 from app.models.alert import Alert
 from app.models.audit_event import AuditEvent
+from app.models.dock_appointment import DockAppointment
 from app.models.item import Item
 from app.models.membership import OrganizationMembership
 from app.models.replenishment import ReplenishmentPlan
@@ -26,10 +27,14 @@ from app.models.route_history import RouteOptimizationRun
 from app.models.shipment import Shipment
 from app.models.user import User
 from app.models.warehouse import Warehouse
-from app.models.dock_appointment import DockAppointment
 from app.schemas.auth import UserRole
 from app.schemas.dock_appointment import DockAppointmentPayload, DockAppointmentResponse
-from app.schemas.ops_insights import AuditEventRead, ExceptionFeedItem, ExceptionFeedResponse, ExceptionFeedSummary
+from app.schemas.ops_insights import (
+    AuditEventRead,
+    ExceptionFeedItem,
+    ExceptionFeedResponse,
+    ExceptionFeedSummary,
+)
 
 router = APIRouter()
 
@@ -40,7 +45,7 @@ def readiness(db: Session = Depends(get_db)) -> dict:
         db.execute(text('SELECT 1'))
     except Exception as exc:
         raise HTTPException(status_code=503, detail='Database unavailable') from exc
-    return {'status': 'ok', 'env': settings.app_env}
+    return {'status': 'ok'}
 
 
 @router.get('/metrics')
@@ -52,11 +57,12 @@ def metrics(_: User = Depends(require_roles(UserRole.ADMIN))) -> dict:
 def audit_timeline(
     limit: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     # NB-64 (audit H-1): the audit trail holds operator emails and phone-masked
     # payloads, so it must never leak across tenants.
-    stmt = scoped_to_organization(select(AuditEvent), AuditEvent, actor_organization_id(actor, db))
+    stmt = scoped_to_organization(select(AuditEvent), AuditEvent, membership.organization_id)
     rows = db.execute(stmt.order_by(desc(AuditEvent.created_at)).limit(limit)).scalars().all()
     return rows
 
@@ -65,9 +71,10 @@ def audit_timeline(
 def exception_feed(
     limit: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    organization_id = actor_organization_id(actor, db)
+    organization_id = membership.organization_id
 
     alert_stmt = scoped_to_organization(
         select(Alert).where(Alert.status.in_(['open', 'acknowledged'])), Alert, organization_id
@@ -140,7 +147,10 @@ def exception_feed(
             severity='medium' if run.unassigned_count == 1 else 'high',
             status='requires_review',
             title=f'Route run {run.route_name} left deliveries unassigned',
-            message=f'{run.unassigned_count} deliver{"" if run.unassigned_count == 1 else "ies"} need manual review.',
+            message=(
+                f'{run.unassigned_count} '
+                f'deliver{"y" if run.unassigned_count == 1 else "ies"} need manual review.'
+            ),
             entity_type='route_optimization_run',
             entity_id=run.id,
             created_at=run.created_at,
@@ -232,10 +242,11 @@ def update_live_eta(
 @router.get('/dock-appointments', response_model=list[DockAppointmentResponse])
 def get_dock_appointments(
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     stmt = scoped_to_organization(
-        select(DockAppointment), DockAppointment, actor_organization_id(actor, db)
+        select(DockAppointment), DockAppointment, membership.organization_id
     )
     rows = db.execute(stmt.order_by(DockAppointment.scheduled_time)).scalars().all()
     return rows

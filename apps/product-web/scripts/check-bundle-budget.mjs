@@ -2,7 +2,7 @@
 /**
  * check:bundle — deterministic page-weight gate (blueprint §1.4 / NB-42.1).
  *
- * Runs after `next build`. For each of the six routes it sums the RAW
+ * Runs after `next build`. For each of the eleven routes it sums the RAW
  * (uncompressed) byte sizes of every asset that route actually references, plus
  * the shared CSS and media totals. Exits 1 when any route >= 1,200,000 bytes.
  *
@@ -42,6 +42,11 @@ const ROUTES = [
   { route: '/pricing', html: 'pricing.html' },
   { route: '/launch', html: 'launch.html' },
   { route: '/contact', html: 'contact.html' },
+  { route: '/docs', html: 'docs.html' },
+  { route: '/privacy', html: 'privacy.html' },
+  { route: '/terms', html: 'terms.html' },
+  { route: '/security', html: 'security.html' },
+  { route: '/status', html: 'status.html' },
 ];
 
 function fail(message) {
@@ -143,4 +148,4 @@ if (failed) {
   fail('one or more routes exceed the 1.2 MB page-weight budget.');
 }
 
-console.log('\ncheck:bundle PASSED — all six routes under the 1.2 MB budget.\n');
+console.log('\ncheck:bundle PASSED — all eleven routes under the 1.2 MB budget.\n');

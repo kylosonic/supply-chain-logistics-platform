@@ -10,10 +10,9 @@ be imported from anywhere (``app.api.security`` re-exports it for endpoint use);
 importing ``app.repositories`` here would recreate the import cycle that
 ``repositories/routes.py`` -> ``api.security`` -> ``repositories`` would form.
 
-Contract preserved from TECH-58: an actor with **no** organization (legacy
-org-less accounts, seeded demo users) keeps the unfiltered pass-through
-behaviour, so pre-existing single-tenant flows and their tests are unchanged.
-Only org-scoped actors gain the filter.
+Business endpoints require an active organization membership. These helpers
+also fail closed for an org-less actor: reads may see only explicitly legacy
+NULL-org rows, and single-record access with no organization is denied.
 """
 
 from __future__ import annotations
@@ -37,7 +36,7 @@ __all__ = [
 
 
 def actor_organization_id(actor: User | None, db: Session) -> UUID | None:
-    """Resolve the caller's organization id, or ``None`` for org-less actors.
+    """Resolve the caller's organization id, or ``None`` when unaffiliated.
 
     Mirrors ``app.services.audit.resolve_actor_organization_id`` but returns a
     real ``UUID`` (not a string) so it can be compared directly against
@@ -56,20 +55,27 @@ def actor_organization_id(actor: User | None, db: Session) -> UUID | None:
 
 def scoped_to_organization(
     query: Select,
-    model: type,
+    model: Any,
     organization_id: UUID | None,
     *,
-    include_legacy_null: bool = True,
+    include_legacy_null: bool = False,
 ) -> Select:
     """Restrict ``query`` over ``model`` to ``organization_id``.
 
-    ``include_legacy_null=True`` (the default for read paths) also matches rows
-    whose ``organization_id`` is NULL — they predate org scoping and belong to
-    the same single-tenant deployment (TECH-58 semantics). Write paths pass
-    ``False`` so an org-scoped actor can never mutate an unattributed row.
+    Business reads default to exact organization scope. Callers that
+    deliberately need a legacy NULL-organization view must pass
+    ``include_legacy_null=True`` explicitly; migration 0022 moves existing
+    orphan rows into a memberless quarantine workspace.
     """
     if organization_id is None:
-        return query
+        # Defense in depth: business endpoints require membership, but a
+        # missed dependency must never turn an org-less actor into a global
+        # reader. The only possible legacy view is explicitly NULL-org rows.
+        if include_legacy_null:
+            return query.where(model.organization_id.is_(None))
+        return query.where(model.organization_id.is_(None)).where(
+            model.organization_id.is_not(None)
+        )
     if include_legacy_null:
         return query.where(
             or_(
@@ -80,7 +86,7 @@ def scoped_to_organization(
     return query.where(model.organization_id == organization_id)
 
 
-def order_by_organization_first(query: Select, model: type) -> Select:
+def order_by_organization_first(query: Select, model: Any) -> Select:
     """Order so the caller's own rows come before legacy NULL-org rows.
 
     Seed data gives every organization the *same* natural codes
@@ -101,12 +107,12 @@ def order_by_organization_first(query: Select, model: type) -> Select:
 
 def organization_scoped_get(
     db: Session,
-    model: type,
+    model: Any,
     entity_id: str | UUID,
     organization_id: UUID | None,
     *,
     not_found_detail: str,
-    include_legacy_null: bool = True,
+    include_legacy_null: bool = False,
 ) -> Any:
     """Load one row by id, returning 404 when it belongs to another tenant.
 
@@ -114,24 +120,32 @@ def organization_scoped_get(
     organization's record is never leaked
     (``docs/behaviors/production-security-hardening.md`` §4).
     """
+    if organization_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Active organization membership required',
+        )
+
     row = db.get(model, entity_id)
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_detail)
-    if organization_id is not None:
-        row_org = row.organization_id
-        if row_org is not None and row_org != organization_id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_detail)
-        if row_org is None and not include_legacy_null:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_detail)
+    row_org = row.organization_id
+    if row_org is not None and row_org != organization_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_detail)
+    if row_org is None and not include_legacy_null:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_detail)
     return row
 
 
-def resolve_scoped_organization(actor: User | None, writable: Any) -> UUID | None:
+def resolve_scoped_organization(actor: User | None, writable: Any) -> UUID:
     """Organization id for write paths: prefer the resolved writable workspace.
 
     ``require_writable_workspace`` already resolved (and lock-checked) the
     caller's membership, so reuse it rather than querying twice.
     """
-    if writable is not None:
-        return writable.organization_id
-    return None
+    if writable is None or writable.organization_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Active organization membership required',
+        )
+    return writable.organization_id

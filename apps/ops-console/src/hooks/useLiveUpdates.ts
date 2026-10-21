@@ -18,6 +18,14 @@ type Props = {
 
 let _wsToken: string | null = null;
 
+export function clearLiveSession(): void {
+  _wsToken = null;
+  livePayload = null;
+  for (const listener of livePayloadListeners) {
+    listener();
+  }
+}
+
 export function useLiveUpdates({ getToken, enabled, onMessage }: Props) {  const socketRef = useRef<WebSocket | null>(null);
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;

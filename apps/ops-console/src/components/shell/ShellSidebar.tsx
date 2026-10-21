@@ -14,6 +14,7 @@ const navGroups = [
     items: [
       { to: '/', label: 'Control Tower', code: 'CT' },
       { to: '/routes', label: 'Route Studio', code: 'RT' },
+      { to: '/dispatch', label: 'Customer Dispatch', code: 'DP' },
       { to: '/shipments', label: 'Shipments', code: 'SH' },
       { to: '/alerts', label: 'Exceptions', code: 'EX' },
       { to: '/planning', label: 'Planning', code: 'PL' },
