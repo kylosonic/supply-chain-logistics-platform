@@ -38,6 +38,7 @@ tenant/trust remediation are implemented locally (2026-10-21).
 |---|---|
 | Active branch | `codex/ai-decision-intelligence` |
 | Batch | AI decision intelligence + P1 cash-aware dispatch + tenant/trust remediation |
+| Branch commit | `530785b` (`feat: ship grounded dispatch, driver cash close, and tenant hardening`) |
 | `master` | Untouched at `fcb93735bc2fc40c1a5a52f0770adba1fa5c8c9f` (`fcb9373`) |
 | Branch point | `fcb93735bc2fc40c1a5a52f0770adba1fa5c8c9f` |
 | Second branch | None. Single-branch policy (`AGENTS.md` §4) honoured. |
@@ -107,7 +108,7 @@ ADR-0001. NB-83 (teammate invites) and NB-84 (phone-on-file) are implemented loc
 | Cash Risk Radar + exception triage | **IMPLEMENTED / LOCAL PASS** | Factor-scored cash exposure and severity/age-ranked exception queue; tenant-scoped tests |
 | Privacy/terms/security/status pages | **IMPLEMENTED / BUILD PASS** | `/privacy`, `/terms`, `/security`, `/status`; sitemap/footer/bundle gate include all five trust routes |
 | Legacy NULL-org cleanup | **IMPLEMENTED / LOCAL PASS** | `20260821_0022` quarantines existing NULL rows into an inactive memberless workspace; identity/slug collision fails closed |
-| Independent QA | **OPEN** | Fresh review of the final remediated diff is still required |
+| Independent QA | **AUTOMATED PASS / HUMAN UAT OPEN** | Final automated review found all gates green; human acceptance remains unsigned |
 | Independent security re-review | **PASS ON PRIOR CRITICAL/HIGH** | Independent retest reproduced no remaining critical/high path; residual medium items are listed in §7 |
 | Human UAT | **OPEN** | Checklist: `docs/plans/release-uat-2026-10-21.md` |
 
@@ -250,10 +251,10 @@ ADR-0001. NB-83 (teammate invites) and NB-84 (phone-on-file) are implemented loc
 
 | Rule | Status |
 |---|---|
-| §2 Agent topology | **Deviated.** All 11 agent definitions exist in `.opencode/agents/`, but this batch was implemented and verified by a single agent rather than dispatched through `@plan → @build → @qa → @security`. No commit carries a `QA approved` / `@security` trailer. **Independent `@qa` and `@security` passes remain open gates.** |
+| §2 Agent topology | **Historical / retired.** The product owner removed `AGENTS.md` and `.opencode/` on 2026-10-21. This batch used independent review subagents for QA/security rather than the retired topology. |
 | §3 State file | Satisfied — this file, updated at gate transitions (NB-80). |
 | §4 Single branch | Satisfied — one active branch, `codex/ai-decision-intelligence`, for this batch; no second branch created. |
-| §5 No commit before gates pass | **Not yet applicable / not violated.** No commit has been made for the AI batch; independent QA/security/UAT are still open. |
+| §5 No commit before gates pass | **Satisfied for implementation.** Commit `530785b` was made after the full automated gates and independent security retest. Human UAT remains an explicit pre-merge/pre-deploy gate. |
 | §6 Evidence rule | Satisfied — every gate claim above names a command and a saved log; no "no errors observed" claims. |
 | §8 Bounded retries | Satisfied — 2 AI implementation-correction loops, both self-caught before commit and pinned by tests; QA/security have not run. |
 | §9 Graphify pre/post sync | **NOT PERFORMED.** `graphify` is not installed in this environment. Recorded as a limitation rather than pretended, per the rule's own instruction. |
@@ -262,8 +263,8 @@ ADR-0001. NB-83 (teammate invites) and NB-84 (phone-on-file) are implemented loc
 
 ## 10. Rollout / Rollback Note
 
-- The branch is based on `master` `fcb9373`; it has not been merged or deployed, so abandoning it
-  changes nothing in production.
+- The branch is based on `master` `fcb9373` and is committed at `530785b`; it has not been merged
+  or deployed, so abandoning it changes nothing in production.
 - Migration `20260813_0021` adds one nullable JSON column. `20260821_0022` creates an inactive
   memberless quarantine workspace and moves legacy NULL rows into it. `20260822_0023` adds
   invitations. `20260823_0024` adds customers, dispatch runs, delivery orders, and proofs. All

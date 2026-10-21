@@ -1,6 +1,7 @@
 # FreightPilot Release UAT — 2026-10-21
 
 > Branch: `codex/ai-decision-intelligence`
+> Prepared from commit: `530785b`
 > Scope: tenant-boundary trust reset, public trust pages, legacy data quarantine, customer-stop
 > dispatch, driver PWA/POD/cash close, team invitations, Amharic driver UX, and the grounded
 > Decision Brief / Cash Risk Radar / exception triage.
