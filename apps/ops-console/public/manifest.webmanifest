@@ -1,0 +1,16 @@
+{
+  "name": "FreightPilot Driver",
+  "short_name": "FP Driver",
+  "start_url": "/driver",
+  "display": "standalone",
+  "background_color": "#071018",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "/driver-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

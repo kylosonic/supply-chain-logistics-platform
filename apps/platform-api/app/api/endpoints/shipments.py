@@ -7,7 +7,7 @@ from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
 from app.api.security import (
-    actor_organization_id,
+    get_current_membership,
     order_by_organization_first,
     organization_scoped_get,
     require_roles,
@@ -34,7 +34,7 @@ from app.schemas.shipment import (
     ShipmentStatusUpdate,
 )
 from app.services import cash_ledger
-from app.services.audit import record_audit_event, resolve_actor_organization_id
+from app.services.audit import record_audit_event
 
 router = APIRouter()
 
@@ -71,12 +71,13 @@ def _shipment_to_read(db: Session, shipment: Shipment) -> ShipmentRead:
 @router.get('', response_model=list[ShipmentRead])
 def list_shipments(
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     # NB-64 (audit H-1): shipments are tenant data. An org-scoped actor sees
-    # their own rows plus unattributed legacy rows; an org-less actor keeps the
-    # pre-NB-64 pass-through behaviour.
-    organization_id = actor_organization_id(actor, db)
+    # their own rows plus explicitly legacy rows; business access requires an
+    # active organization membership, so an org-less actor is denied upstream.
+    organization_id = membership.organization_id
     stmt = scoped_to_organization(select(Shipment), Shipment, organization_id)
     shipments = db.execute(stmt.order_by(asc(Shipment.created_at))).scalars().all()
     return [_shipment_to_read(db, shipment) for shipment in shipments]
@@ -87,7 +88,7 @@ def create_shipment(
     payload: ShipmentCreate,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
     organization_id = resolve_scoped_organization(actor, writable)
 
@@ -201,7 +202,7 @@ def create_shipment(
         entity_type='shipment',
         entity_id=shipment.id,
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(organization_id),
         description=f'Created shipment {shipment.shipment_no}',
         payload={
             'origin_warehouse_code': payload.origin_warehouse_code,
@@ -219,14 +220,16 @@ def create_shipment(
 def get_shipment(
     shipment_id: str,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     shipment = organization_scoped_get(
         db,
         Shipment,
         shipment_id,
-        actor_organization_id(actor, db),
+        membership.organization_id,
         not_found_detail='Shipment not found',
+        include_legacy_null=False,
     )
     return _shipment_to_read(db, shipment)
 
@@ -237,24 +240,41 @@ def update_shipment_status(
     payload: ShipmentStatusUpdate,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
+    organization_id = resolve_scoped_organization(actor, writable)
     shipment = organization_scoped_get(
         db,
         Shipment,
         shipment_id,
-        resolve_scoped_organization(actor, writable),
+        organization_id,
         not_found_detail='Shipment not found',
+        include_legacy_null=False,
     )
 
     if payload.status == ShipmentStatus.DELAYED and not payload.delay_reason:
-        raise HTTPException(status_code=400, detail='delay_reason is required when marking a shipment delayed')
+        raise HTTPException(
+            status_code=400,
+            detail='delay_reason is required when marking a shipment delayed',
+        )
 
     if payload.cash_collected_etb is not None and payload.status != ShipmentStatus.DELIVERED:
         raise HTTPException(
             status_code=400,
             detail='cash_collected_etb is only accepted when marking a shipment delivered',
         )
+    if payload.cash_collected_etb is not None:
+        expected_cash = shipment.cod_amount_etb or 0
+        if payload.cash_collected_etb > expected_cash:
+            raise HTTPException(
+                status_code=422,
+                detail='Collected cash cannot exceed the cash-on-delivery amount',
+            )
+        if payload.cash_collected_etb < expected_cash and not (payload.cash_note or '').strip():
+            raise HTTPException(
+                status_code=422,
+                detail='A cash note is required when collecting less than the expected amount',
+            )
 
     previous_status = shipment.status
     shipment.status = payload.status
@@ -313,13 +333,17 @@ def update_shipment_status(
         entity_type='shipment',
         entity_id=shipment.id,
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(organization_id),
         description=f'Updated shipment {shipment.shipment_no} to {payload.status}',
         payload={
             'from_status': previous_status,
             'to_status': payload.status,
             'delay_reason': payload.delay_reason,
-            'cash_collected_etb': str(payload.cash_collected_etb) if payload.cash_collected_etb is not None else None,
+            'cash_collected_etb': (
+                str(payload.cash_collected_etb)
+                if payload.cash_collected_etb is not None
+                else None
+            ),
             'cash_shortfall_etb': str(cash_record.shortfall_etb) if cash_record else None,
         },
     )
@@ -334,7 +358,7 @@ def assign_shipment_driver(
     payload: ShipmentAssignDriver,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
     """Assign or clear the driver on a shipment.
 
@@ -349,6 +373,7 @@ def assign_shipment_driver(
         shipment_id,
         organization_id,
         not_found_detail='Shipment not found',
+        include_legacy_null=False,
     )
 
     previous_driver_id = shipment.driver_id
@@ -384,7 +409,7 @@ def assign_shipment_driver(
         entity_type='shipment',
         entity_id=shipment.id,
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(organization_id),
         description=(
             f'Assigned {driver_name} to shipment {shipment.shipment_no}'
             if driver_name

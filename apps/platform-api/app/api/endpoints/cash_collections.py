@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.security import (
-    actor_organization_id,
+    get_current_membership,
     organization_scoped_get,
     require_roles,
     require_writable_workspace,
@@ -23,7 +23,6 @@ from app.api.security import (
 from app.db.session import get_db
 from app.models.cash_collection import CashCollection
 from app.models.membership import OrganizationMembership
-from app.models.shipment import Shipment
 from app.models.user import User
 from app.schemas.auth import UserRole
 from app.schemas.shipment import (
@@ -34,7 +33,7 @@ from app.schemas.shipment import (
     CashLedgerSummary,
 )
 from app.services import cash_ledger
-from app.services.audit import record_audit_event, resolve_actor_organization_id
+from app.services.audit import record_audit_event
 
 router = APIRouter()
 
@@ -57,10 +56,11 @@ def _scoped_record(db: Session, record_id: str, organization_id) -> CashCollecti
 @router.get('/ledger', response_model=CashLedgerSummary)
 def cash_ledger_summary(
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
 ):
     """End-of-day position: outstanding, collected-but-not-banked, shortfall."""
-    organization_id = actor_organization_id(actor, db)
+    organization_id = membership.organization_id
 
     base = scoped_to_organization(
         select(CashCollection).where(CashCollection.status != 'voided'),
@@ -95,10 +95,11 @@ def list_cash_collections(
     driver_id: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
 ):
     stmt = scoped_to_organization(
-        select(CashCollection), CashCollection, actor_organization_id(actor, db)
+        select(CashCollection), CashCollection, membership.organization_id
     )
     if status is not None:
         stmt = stmt.where(CashCollection.status == status)
@@ -112,9 +113,10 @@ def list_cash_collections(
 def get_cash_collection(
     record_id: str,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN, UserRole.VIEWER)),
 ):
-    record = _scoped_record(db, record_id, actor_organization_id(actor, db))
+    record = _scoped_record(db, record_id, membership.organization_id)
     return cash_ledger.serialize(db, record)
 
 
@@ -124,7 +126,7 @@ def declare_cash(
     payload: CashCollectionDeclare,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
     """Record what the driver is holding, and surface any shortfall immediately.
 
@@ -138,6 +140,16 @@ def declare_cash(
         raise HTTPException(status_code=409, detail='This cash record was voided')
     if record.status == 'settled':
         raise HTTPException(status_code=409, detail='This cash record is already settled')
+    if payload.collected_etb > record.expected_etb:
+        raise HTTPException(
+            status_code=422,
+            detail='Collected cash cannot exceed the expected cash amount',
+        )
+    if payload.collected_etb < record.expected_etb and not (payload.note or '').strip():
+        raise HTTPException(
+            status_code=422,
+            detail='A note is required when declaring less than the expected cash',
+        )
 
     previous_collected = record.collected_etb
     cash_ledger.declare(db, record, collected=payload.collected_etb, note=payload.note)
@@ -148,7 +160,7 @@ def declare_cash(
         entity_type='cash_collection',
         entity_id=record.id,
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(organization_id),
         description=f'Declared {payload.collected_etb} ETB against shipment cash',
         payload={
             'expected_etb': str(record.expected_etb),
@@ -168,7 +180,7 @@ def settle_cash(
     payload: CashCollectionSettle,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
     """Office-side close: the cash is in hand.
 
@@ -192,7 +204,7 @@ def settle_cash(
         entity_type='cash_collection',
         entity_id=record.id,
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(organization_id),
         description=(
             f'Settled cash for shipment (shortfall {record.shortfall_etb} ETB)'
         ),

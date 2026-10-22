@@ -21,9 +21,9 @@ _DOWN_REVISION_RE = re.compile(
 # Head advances with each migration batch. Keep this pin deliberate: it is the
 # tripwire that makes an accidental second head or a forgotten down_revision fail
 # loudly instead of silently forking the chain.
-_HEAD = '20260812_0020'
-_HEAD_PARENT = '20260811_0019'
-_MIN_EXPECTED = 20
+_HEAD = '20260823_0024'
+_HEAD_PARENT = '20260822_0023'
+_MIN_EXPECTED = 24
 
 
 def _parse_migrations() -> dict[str, tuple[str | None, str]]:
@@ -43,11 +43,11 @@ def test_migration_chain_is_linear_and_head_is_current():
     assert len(migrations) >= _MIN_EXPECTED, f'expected the full migration chain (>= {_MIN_EXPECTED})'
 
     # No duplicate revision ids.
-    assert len({revision for revision in migrations}) == len(migrations)
+    assert len(set(migrations)) == len(migrations)
 
     # Every down_revision resolves to a known revision (root may be None).
     known = set(migrations)
-    for revision, (down, filename) in migrations.items():
+    for _revision, (down, filename) in migrations.items():
         if down is not None:
             assert down in known, f'{filename}: down_revision {down!r} does not exist'
 

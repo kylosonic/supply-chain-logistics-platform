@@ -5,7 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.security import (
-    actor_organization_id,
     require_roles,
     require_writable_workspace,
     resolve_scoped_organization,
@@ -18,7 +17,7 @@ from app.models.order import HistoricalOrder
 from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.schemas.auth import UserRole
-from app.schemas.forecast import ForecastPoint, ForecastRequest, ForecastResponse
+from app.schemas.forecast import ForecastPoint, ForecastQuality, ForecastRequest, ForecastResponse
 from app.services.forecasting import forecast_weekly_demand
 from app.services.weather import simulated_weather_features
 
@@ -30,11 +29,11 @@ def weekly_demand_forecast(
     payload: ForecastRequest,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
     # NB-64 (audit H-1): a forecast must be computed from the caller's own
     # order history, never from every tenant's combined demand.
-    organization_id = resolve_scoped_organization(actor, writable) or actor_organization_id(actor, db)
+    organization_id = resolve_scoped_organization(actor, writable)
 
     stmt = (
         select(
@@ -48,8 +47,16 @@ def weekly_demand_forecast(
             Warehouse.longitude,
             Item.sku.label('sku'),
         )
-        .join(Warehouse, Warehouse.id == HistoricalOrder.warehouse_id)
-        .join(Item, Item.id == HistoricalOrder.item_id)
+        .join(
+            Warehouse,
+            (Warehouse.id == HistoricalOrder.warehouse_id)
+            & (Warehouse.organization_id == organization_id),
+        )
+        .join(
+            Item,
+            (Item.id == HistoricalOrder.item_id)
+            & (Item.organization_id == organization_id),
+        )
     )
     stmt = scoped_to_organization(stmt, HistoricalOrder, organization_id)
     rows = db.execute(stmt).all()
@@ -60,7 +67,11 @@ def weekly_demand_forecast(
     weather_lookup: dict[str, dict[str, float]] = {}
 
     for row in rows:
-        if row.weather_avg_temp_c is None or row.weather_precip_mm is None or row.weather_disruption_index is None:
+        if (
+            row.weather_avg_temp_c is None
+            or row.weather_precip_mm is None
+            or row.weather_disruption_index is None
+        ):
             w = simulated_weather_features(date.today(), row.latitude, row.longitude)
             temp = w['weather_avg_temp_c']
             precip = w['weather_precip_mm']
@@ -87,10 +98,15 @@ def weekly_demand_forecast(
             'weather_disruption_index': disruption,
         }
 
-    output = forecast_weekly_demand(orders=orders, warehouse_weather_lookup=weather_lookup, horizon_weeks=payload.horizon_weeks)
+    output = forecast_weekly_demand(
+        orders=orders,
+        warehouse_weather_lookup=weather_lookup,
+        horizon_weeks=payload.horizon_weeks,
+    )
 
     return ForecastResponse(
         horizon_weeks=payload.horizon_weeks,
         model_name=output.model_name,
         points=[ForecastPoint(**p) for p in output.predictions],
+        quality=ForecastQuality(**output.quality),
     )

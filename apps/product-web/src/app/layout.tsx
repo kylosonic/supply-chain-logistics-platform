@@ -11,7 +11,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://freightpilot.com';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://product-web-chi.vercel.app';
 
 const siteDescription =
   'Sign up and your workspace loads with sample data — warehouses, fleet, inventory, orders, all ready. Optimize your first route immediately.';

@@ -1,0 +1,4 @@
+.artifacts/
+.pytest-*-temp/
+.venv/
+__pycache__/

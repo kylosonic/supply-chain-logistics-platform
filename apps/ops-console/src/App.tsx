@@ -18,6 +18,9 @@ const UploadPage = lazy(() => import('./pages/UploadPage').then((m) => ({ defaul
 const ProvidersPage = lazy(() => import('./pages/ProvidersPage').then((m) => ({ default: m.ProvidersPage })));
 const ReceiptsPage = lazy(() => import('./pages/ReceiptsPage').then((m) => ({ default: m.ReceiptsPage })));
 const AdminReceiptsPage = lazy(() => import('./pages/AdminReceiptsPage').then((m) => ({ default: m.AdminReceiptsPage })));
+const DispatchPage = lazy(() => import('./pages/DispatchPage').then((m) => ({ default: m.DispatchPage })));
+const DriverPage = lazy(() => import('./pages/DriverPage').then((m) => ({ default: m.DriverPage })));
+const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })));
 
 export default function App() {
   return (
@@ -25,6 +28,8 @@ export default function App() {
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/accept-invite" element={<AcceptInvitePage />} />
+          <Route path="/driver" element={<DriverPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
           {/* TECH-72: ONE layout route with an auth-only gate — unauthenticated
@@ -45,6 +50,7 @@ export default function App() {
             <Route path="/drivers" element={<ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}><DriversPage /></ProtectedRoute>} />
             <Route path="/alerts" element={<ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}><AlertsPage /></ProtectedRoute>} />
             <Route path="/planning" element={<ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}><PlanningPage /></ProtectedRoute>} />
+            <Route path="/dispatch" element={<ProtectedRoute allowedRoles={['admin', 'operator']}><DispatchPage /></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute allowedRoles={['admin', 'operator', 'viewer']}><AccountPage /></ProtectedRoute>} />
             <Route path="/providers" element={<ProtectedRoute allowedRoles={['admin', 'owner', 'operator']}><ProvidersPage /></ProtectedRoute>} />
             <Route path="/receipts" element={<ProtectedRoute allowedRoles={['admin', 'owner', 'operator', 'viewer']}><ReceiptsPage /></ProtectedRoute>} />

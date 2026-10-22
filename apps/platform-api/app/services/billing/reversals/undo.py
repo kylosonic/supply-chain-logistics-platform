@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.organization import Organization
@@ -29,10 +30,19 @@ from app.services.billing.reversals.core import ReversalError
 
 
 def undo_verification(
-    db: Session, admin_user: User, receipt_id: str, note: str | None = None
+    db: Session,
+    admin_user: User,
+    receipt_id: str,
+    note: str | None = None,
+    organization_id=None,
 ) -> PaymentReceipt:
     """Silent undo of a verified receipt within the 24h window (NB-19)."""
-    receipt = db.get(PaymentReceipt, receipt_id)
+    receipt = db.execute(
+        select(PaymentReceipt).where(
+            PaymentReceipt.id == receipt_id,
+            PaymentReceipt.organization_id == organization_id,
+        )
+    ).scalar_one_or_none()
     if receipt is None:
         raise ReversalError(404, 'Receipt not found')
     if receipt.status != 'verified':

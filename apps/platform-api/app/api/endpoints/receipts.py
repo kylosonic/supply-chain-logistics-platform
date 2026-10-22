@@ -39,8 +39,8 @@ from app.services.billing import lifecycle
 from app.services.billing import receipts as receipts_service
 from app.services.billing.receipts import (
     NO_OPEN_INVOICE_MESSAGE,
-    UPLOAD_CONFIRMATION_MESSAGE,
     UNSUPPORTED_FORMAT_MESSAGE,
+    UPLOAD_CONFIRMATION_MESSAGE,
     ReceiptVerdictError,
 )
 
@@ -198,24 +198,27 @@ def submit_dispute_endpoint(
 @router.get('/queue', response_model=list[ReceiptQueueItemRead])
 def receipt_queue(
     db: Session = Depends(get_db),
-    _membership: OrganizationMembership = Depends(
+    membership: OrganizationMembership = Depends(
         require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)
     ),
 ):
     """Admin verification queue (pending + escalated, oldest first).
     Write-guard EXEMPT — locked workspaces must still be serviced."""
-    return [_queue_item(db, receipt) for receipt in receipts_service.list_queue(db)]
+    return [
+        _queue_item(db, receipt)
+        for receipt in receipts_service.list_queue(db, membership.organization_id)
+    ]
 
 
 @router.get('/queue/{receipt_id}', response_model=ReceiptQueueItemRead)
 def receipt_queue_item(
     receipt_id: str,
     db: Session = Depends(get_db),
-    _membership: OrganizationMembership = Depends(
+    membership: OrganizationMembership = Depends(
         require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)
     ),
 ):
-    receipt = receipts_service.get_queue_item(db, receipt_id)
+    receipt = receipts_service.get_queue_item(db, receipt_id, membership.organization_id)
     if receipt is None:
         raise HTTPException(status_code=404, detail='Receipt not found')
     return _queue_item(db, receipt)
@@ -225,12 +228,12 @@ def receipt_queue_item(
 def receipt_queue_file(
     receipt_id: str,
     db: Session = Depends(get_db),
-    _membership: OrganizationMembership = Depends(
+    membership: OrganizationMembership = Depends(
         require_org_roles(OrganizationRole.OWNER, OrganizationRole.ADMIN)
     ),
 ):
     """Raw receipt bytes for the admin detail panel (DB blob re-display)."""
-    receipt = receipts_service.get_queue_item(db, receipt_id)
+    receipt = receipts_service.get_queue_item(db, receipt_id, membership.organization_id)
     if receipt is None:
         raise HTTPException(status_code=404, detail='Receipt not found')
     # NB-71 (audit L-4): the stored content_type is client-supplied. Force a
@@ -260,10 +263,16 @@ def render_decision_endpoint(
     through dispute-resolution semantics (verify -> credit path;
     any rejection -> maintain_rejection)."""
     try:
-        if receipts_service.has_open_dispute(db, receipt_id):
-            receipt = receipts_service.resolve_dispute(db, user, receipt_id, payload)
+        if receipts_service.has_open_dispute(
+            db, receipt_id, membership.organization_id
+        ):
+            receipt = receipts_service.resolve_dispute(
+                db, user, receipt_id, payload, membership.organization_id
+            )
         else:
-            receipt = receipts_service.render_verdict(db, user, receipt_id, payload)
+            receipt = receipts_service.render_verdict(
+                db, user, receipt_id, payload, membership.organization_id
+            )
     except ReceiptVerdictError as exc:
         raise _as_verdict_http(exc) from None
     db.commit()  # persist when the unlock refresh did not commit (phase unchanged)

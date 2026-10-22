@@ -17,8 +17,9 @@ Surfaces covered here (the ones the audit flagged as global-role-only):
 - ``POST /forecast/weekly-demand``
 - ``POST /ingestion/telematics``, ``/ingestion/iot-telemetry``
 
-Org-less pass-through (legacy accounts) is pinned separately so the TECH-58
-contract cannot silently regress.
+Org-less actors are denied every business surface. Registration must attach a
+new user to the actor's workspace; an unaffiliated token is never a global
+read credential.
 """
 from __future__ import annotations
 
@@ -566,57 +567,105 @@ def test_telematics_and_iot_writes_cannot_cross_tenants(
 
 
 # ---------------------------------------------------------------------------
-# Legacy pass-through (TECH-58 contract must not regress)
+# Membership boundary
 # ---------------------------------------------------------------------------
 
 
-def test_orgless_actor_keeps_unfiltered_pass_through(
-    client: TestClient, db_session: Session):
-    """An account with no organization still sees the global dataset.
+def test_registered_user_is_attached_to_actor_workspace(
+    client: TestClient, db_session: Session, admin_token: str
+):
+    """A workspace admin cannot create an unaffiliated global reader."""
+    from app.models.membership import OrganizationMembership
+    from app.models.organization import Organization
+    from app.models.user import User
 
-    This is the pinned pre-NB-64 contract for legacy/seeded demo accounts
-    (`warehouses.py` TECH-58 behaviour). It must survive the tenant-scoping
-    work, otherwise single-tenant deployments break.
+    admin = db_session.execute(
+        select(User).where(User.username == 'admin')
+    ).scalar_one()
+    admin_membership = db_session.execute(
+        select(OrganizationMembership).where(
+            OrganizationMembership.user_id == admin.id,
+            OrganizationMembership.is_active.is_(True),
+        )
+    ).scalars().first()
+    assert admin_membership is not None
 
-    Note: registration requires an authenticated admin once any user exists
-    (NB-68 closed the "first visitor becomes admin" bootstrap door), so the
-    legacy actor is created by the seeded admin.
-    """
-    from app.schemas.auth import UserRole
-    from app.services.security import create_access_token
-
-    admin_token = client.post(
-        '/api/v1/auth/login', json={'username': 'admin', 'password': 'admin12345'}
-    ).json()['access_token']
-
-    resp = client.post(
+    response = client.post(
         '/api/v1/auth/register',
         headers=_headers(admin_token),
         json={
-            'username': 'legacyops',
-            'email': 'legacyops@example.com',
-            'full_name': 'Legacy Ops',
+            'username': 'new_operator',
+            'email': 'new_operator@testco.com',
             'password': 'VeryStrongPass9',
             'role': 'operator',
         },
     )
-    assert resp.status_code == 201, resp.text
-    legacy_id = resp.json()['id']
+    assert response.status_code == 201, response.text
 
+    created = db_session.get(User, response.json()['id'])
+    membership = db_session.execute(
+        select(OrganizationMembership).where(
+            OrganizationMembership.user_id == created.id,
+            OrganizationMembership.is_active.is_(True),
+        )
+    ).scalar_one()
+    assert membership.organization_id == admin_membership.organization_id
+    assert membership.role == 'operator'
+
+    login = client.post(
+        '/api/v1/auth/login',
+        json={'username': 'new_operator', 'password': 'VeryStrongPass9'},
+    )
+    token = login.json()['access_token']
+    allowed = client.get('/api/v1/shipments', headers=_headers(token))
+    assert allowed.status_code == 200
+
+    foreign_org = Organization(
+        name='Foreign Co',
+        slug='foreign-co',
+        primary_email_domain='foreign.example',
+        subscription_tier='free',
+        subscription_status='active',
+        billing_phase='free',
+        is_active=True,
+    )
+    db_session.add(foreign_org)
+    db_session.commit()
+    denied = client.get(
+        '/api/v1/shipments',
+        headers={
+            **_headers(token),
+            'X-Organization-Id': str(foreign_org.id),
+        },
+    )
+    assert denied.status_code == 403
+
+
+def test_orgless_actor_is_denied_business_surfaces(
+    client: TestClient, db_session: Session
+):
+    """An authenticated account with no workspace membership is not a reader."""
     from app.models.user import User
+    from app.schemas.auth import UserRole
+    from app.services.security import create_access_token, hash_password
 
-    user = db_session.get(User, legacy_id)
-    assert user.role == UserRole.OPERATOR
-    token = create_access_token(subject=str(user.id), role=UserRole.OPERATOR)
+    orgless = User(
+        username='orgless-operations',
+        email='orgless@example.com',
+        full_name='Orgless Operations',
+        password_hash=hash_password('VeryStrongPass9'),
+        role=UserRole.OPERATOR,
+        is_active=True,
+    )
+    db_session.add(orgless)
+    db_session.commit()
+    db_session.refresh(orgless)
+    token = create_access_token(subject=str(orgless.id), role=UserRole.OPERATOR)
 
-    # No membership row exists, so the actor is org-less: unfiltered listing.
-    shipments = client.get('/api/v1/shipments', headers=_headers(token))
-    assert shipments.status_code == 200
+    for path in ('/api/v1/warehouses', '/api/v1/shipments', '/api/v1/alerts'):
+        response = client.get(path, headers=_headers(token))
+        assert response.status_code == 403, f'{path}: {response.text}'
 
-    alerts = client.get('/api/v1/alerts', headers=_headers(token))
-    assert alerts.status_code == 200
-
-    # Authorization still applies: a viewer-role token cannot write.
     viewer_token = client.post(
         '/api/v1/auth/login', json={'username': 'viewer', 'password': 'viewer12345'}
     ).json()['access_token']

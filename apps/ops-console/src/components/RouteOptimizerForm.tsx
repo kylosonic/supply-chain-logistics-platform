@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { Panel } from './ui/Panel';
 import { StatusBadge } from './ui/StatusBadge';
+import { RouteDecisionBrief } from './RouteDecisionBrief';
 import { optimizeRoute } from '../services/logisticsApi';
 import type { RouteOptimizeResponse } from '../types/api';
 import { apiErrorMessage } from '../services/authErrors';
@@ -103,14 +104,15 @@ export function RouteOptimizerForm({
           <label className="grid gap-2 text-sm text-slate-300">
             Deliveries
             <input className={fieldClassName} value={payload.deliveries} onChange={(e) => setPayload({ ...payload, deliveries: e.target.value })} placeholder="WH-002:80,WH-003:60" />
+            <span className="text-xs font-normal text-slate-500">Up to 200 comma-separated warehouse demand entries.</span>
           </label>
           <label className="grid gap-2 text-sm text-slate-300">
             Vehicle capacity
-            <input className={fieldClassName} type="number" value={payload.vehicle_capacity_units} onChange={(e) => setPayload({ ...payload, vehicle_capacity_units: Number(e.target.value) })} />
+            <input className={fieldClassName} type="number" min={1} value={payload.vehicle_capacity_units} onChange={(e) => setPayload({ ...payload, vehicle_capacity_units: Number(e.target.value) })} />
           </label>
           <label className="grid gap-2 text-sm text-slate-300">
             Max stops
-            <input className={fieldClassName} type="number" value={payload.max_stops} onChange={(e) => setPayload({ ...payload, max_stops: Number(e.target.value) })} />
+            <input className={fieldClassName} type="number" min={1} max={100} value={payload.max_stops} onChange={(e) => setPayload({ ...payload, max_stops: Number(e.target.value) })} />
           </label>
         </div>
 
@@ -187,6 +189,8 @@ export function RouteOptimizerForm({
               </span>
             </div>
           ) : null}
+
+          <RouteDecisionBrief explanation={result.decision_explanation} />
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stop sequence</p>

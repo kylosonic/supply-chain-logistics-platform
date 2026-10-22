@@ -5,6 +5,7 @@ import { MetricTile } from '../components/ui/MetricTile';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { TeamPanel } from '../components/TeamPanel';
 import { WorkspaceResetDangerZone } from '../components/WorkspaceResetDangerZone';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -373,6 +374,8 @@ export function AccountPage() {
             </p>
           </div>
         </Panel>
+
+      <TeamPanel />
 
         <Panel
           eyebrow="AI provider control"

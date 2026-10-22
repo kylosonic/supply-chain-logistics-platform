@@ -18,8 +18,14 @@ class RouteScheduleRepository(BaseRepository[RouteSchedule]):
         super().__init__(db)
 
     def list_all_sorted(self, organization_id: UUID | None = None) -> list[RouteSchedule]:
-        # NB-64: optional tenant filter; None preserves the org-less listing.
-        stmt = scoped_to_organization(select(RouteSchedule), RouteSchedule, organization_id)
+        # Fail closed: org-less actors see only legacy NULL-organization rows,
+        # never every tenant's schedules.
+        stmt = scoped_to_organization(
+            select(RouteSchedule),
+            RouteSchedule,
+            organization_id,
+            include_legacy_null=False,
+        )
         return list(
             self.db.execute(
                 stmt.order_by(
@@ -36,9 +42,12 @@ class RouteOptimizationRunRepository(BaseRepository[RouteOptimizationRun]):
         super().__init__(db)
 
     def list_all_desc(self, organization_id: UUID | None = None) -> list[RouteOptimizationRun]:
-        # NB-64: optional tenant filter; None preserves the org-less listing.
+        # Fail closed: a missing organization never means "all organizations".
         stmt = scoped_to_organization(
-            select(RouteOptimizationRun), RouteOptimizationRun, organization_id
+            select(RouteOptimizationRun),
+            RouteOptimizationRun,
+            organization_id,
+            include_legacy_null=False,
         )
         return list(
             self.db.execute(

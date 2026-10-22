@@ -20,12 +20,27 @@ export type ForecastPoint = {
   warehouse_code: string;
   sku: string;
   predicted_demand: number;
+  planning_low: number;
+  planning_high: number;
+};
+
+export type ForecastQuality = {
+  status: 'validated' | 'limited' | 'insufficient_history';
+  history_weeks: number;
+  holdout_weeks: number;
+  evaluated_rows: number;
+  mae: number | null;
+  wape_percent: number | null;
+  range_basis: string;
+  interpretation: string;
+  caveat: string;
 };
 
 export type ForecastResponse = {
   horizon_weeks: number;
   model_name: string;
   points: ForecastPoint[];
+  quality: ForecastQuality;
 };
 
 export type RouteStop = {
@@ -62,6 +77,47 @@ export type RouteOptimizeResponse = {
   co2_saved_kg?: number | null;
   post_aha_toast?: boolean;
   data_origin?: string | null;
+  decision_explanation?: RouteDecisionExplanation | null;
+};
+
+export type RouteFactorShare = {
+  distance: number;
+  time: number;
+  cost: number;
+};
+
+export type RouteDecisionPoint = {
+  sequence: number;
+  chosen_warehouse_code: string;
+  chosen_weighted_cost: number;
+  runner_up_warehouse_code: string | null;
+  runner_up_weighted_cost: number | null;
+  margin: number | null;
+  dominant_factor: string;
+  capacity_excluded_count: number;
+  reason: string;
+};
+
+export type RouteAlternativeSummary = {
+  first_stop_warehouse_code: string;
+  total_distance_km: number;
+  estimated_duration_min: number;
+  total_cost: number;
+  distance_delta_km: number;
+  duration_delta_min: number;
+  cost_delta: number;
+  summary: string;
+};
+
+export type RouteDecisionExplanation = {
+  method: string;
+  summary: string;
+  dominant_factor: string;
+  factor_share_pct: RouteFactorShare;
+  constraints: string[];
+  decision_points: RouteDecisionPoint[];
+  runner_up: RouteAlternativeSummary | null;
+  limitations: string[];
 };
 
 export type RouteOptimizePayload = {
@@ -110,6 +166,7 @@ export type RouteOptimizationRunDetail = RouteOptimizationRunSummary & {
   deliveries: { warehouse_code: string; demand_units: number }[];
   stops: RouteStop[];
   unassigned_deliveries: { warehouse_code: string; demand_units: number }[];
+  decision_explanation?: RouteDecisionExplanation | null;
 };
 
 export type ShipmentStatus = 'planned' | 'in_transit' | 'delivered' | 'delayed' | 'cancelled';
@@ -309,6 +366,186 @@ export type WeatherRiskZone = {
   id: string;
   severity_score: number;
   polygon: [number, number][];
+  source?: 'simulated' | 'live';
+};
+
+export type OrganizationRole = 'owner' | 'admin' | 'operator' | 'viewer';
+
+export type OrganizationMember = {
+  membership_id: string;
+  user_id: string;
+  username: string;
+  email: string | null;
+  full_name: string | null;
+  role: OrganizationRole;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type OrganizationInvitation = {
+  id: string;
+  email: string;
+  role: Exclude<OrganizationRole, 'owner'>;
+  status: 'pending' | 'accepted' | 'revoked';
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+};
+
+export type InvitationCreated = {
+  invitation: OrganizationInvitation;
+  token: string;
+  invite_url: string;
+};
+
+export type Customer = {
+  id: string;
+  code: string;
+  name: string;
+  phone: string | null;
+  address: string;
+  latitude: number;
+  longitude: number;
+  notes: string | null;
+};
+
+export type DeliveryOrder = {
+  id: string;
+  order_no: string;
+  customer_id: string;
+  customer_code: string | null;
+  customer_name: string | null;
+  quantity_units: number;
+  cod_amount_etb: string;
+  window_start: string | null;
+  window_end: string | null;
+  service_minutes: number;
+  priority: number;
+  stop_sequence: number | null;
+  status: string;
+  completed_at: string | null;
+  collected_cash_etb: string;
+  cash_declared_at: string | null;
+  cash_settled_at: string | null;
+  notes: string | null;
+};
+
+export type DispatchStop = {
+  order_id: string;
+  order_no: string;
+  customer_code: string;
+  customer_name: string;
+  address: string;
+  phone: string | null;
+  latitude: number;
+  longitude: number;
+  sequence: number;
+  planned_arrival: string;
+  window_start: string | null;
+  window_end: string | null;
+  demand_units: number;
+  cod_amount_etb: string;
+  status: string;
+  completed_at: string | null;
+  collected_cash_etb: string;
+  proof_id: string | null;
+};
+
+export type DispatchRun = {
+  id: string;
+  route_name: string;
+  plan_date: string;
+  start_label: string;
+  vehicle_capacity_units: number;
+  max_stops: number;
+  total_distance_km: number;
+  estimated_duration_min: number;
+  expected_cash_etb: string;
+  status: string;
+  driver_id: string | null;
+  cash_closed_at: string | null;
+  stops?: DispatchStop[];
+  unassigned?: { order_id: string; order_no: string; reason: string }[];
+};
+
+export type DriverManifest = {
+  run_id: string;
+  route_name: string;
+  plan_date: string;
+  driver_id: string;
+  driver_name: string;
+  start_label: string;
+  stops: DispatchStop[];
+};
+
+export type DriverLink = {
+  token: string;
+  driver_url: string;
+  expires_at: string;
+};
+
+export type CashCloseSummary = {
+  run_id: string;
+  expected_etb: string;
+  collected_etb: string;
+  shortfall_etb: string;
+  terminal_stops: number;
+  total_stops: number;
+  closed_at: string;
+};
+
+export type DecisionEvidence = {
+  record_type: string;
+  record_id: string | null;
+  label: string;
+  value: string | number | null;
+};
+
+export type DecisionRisk = {
+  kind: string;
+  severity: string;
+  message: string;
+  evidence: DecisionEvidence[];
+};
+
+export type DecisionAction = {
+  priority: number;
+  action: string;
+  reason: string;
+  href: string | null;
+  evidence: DecisionEvidence[];
+};
+
+export type CashRiskRow = {
+  driver_id: string | null;
+  driver_name: string;
+  outstanding_count: number;
+  expected_etb: string;
+  collected_etb: string;
+  shortfall_etb: string;
+  risk_score: number;
+  factors: string[];
+};
+
+export type ExceptionTriageRow = {
+  alert_id: string;
+  title: string;
+  severity: string;
+  age_hours: number;
+  priority: number;
+  suggested_action: string;
+  evidence: DecisionEvidence[];
+};
+
+export type DecisionBrief = {
+  generated_at: string;
+  generated_by: string;
+  headline: string;
+  what_changed: string[];
+  risks: DecisionRisk[];
+  actions: DecisionAction[];
+  cash_risk: CashRiskRow[];
+  triage: ExceptionTriageRow[];
 };
 
 export type ReceiptStatus = 'pending' | 'verified' | 'rejected' | 'escalated';

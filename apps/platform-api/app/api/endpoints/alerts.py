@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
 from app.api.security import (
-    actor_organization_id,
-    get_current_user,
+    get_current_membership,
     order_by_organization_first,
     organization_scoped_get,
     require_roles,
@@ -21,12 +21,13 @@ from app.models.alert import Alert
 from app.models.inventory import Inventory
 from app.models.item import Item
 from app.models.membership import OrganizationMembership
+from app.models.route import RouteSchedule
 from app.models.shipment import Shipment
 from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.schemas.alert import AlertAction, AlertCreate, AlertRead, AlertSeverity, AlertStatus, AlertType
 from app.schemas.auth import UserRole
-from app.services.audit import record_audit_event, resolve_actor_organization_id
+from app.services.audit import record_audit_event
 from app.services.rerouting import generate_rerouting_plan
 
 router = APIRouter()
@@ -36,10 +37,11 @@ router = APIRouter()
 def list_alerts(
     status: AlertStatus | None = Query(default=None),
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
+    membership: OrganizationMembership = Depends(get_current_membership),
+    _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     # NB-64 (audit H-1): alerts are tenant data.
-    organization_id = actor_organization_id(actor, db)
+    organization_id = membership.organization_id
     stmt = scoped_to_organization(select(Alert), Alert, organization_id)
     if status:
         stmt = stmt.where(Alert.status == status)
@@ -73,7 +75,7 @@ def create_alert(
         entity_type='alert',
         entity_id=alert.id,
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(organization_id),
         description=f'Created alert {alert.title}',
         payload={'alert_type': alert.alert_type, 'severity': alert.severity},
     )
@@ -126,7 +128,10 @@ def scan_alerts(
                 severity=AlertSeverity.HIGH,
                 status=AlertStatus.OPEN,
                 title=f'Low stock at {row.code}',
-                message=f'SKU {row.sku} below safety stock ({row.Inventory.quantity_on_hand} < {row.Inventory.safety_stock})',
+                message=(
+                    f'SKU {row.sku} below safety stock '
+                    f'({row.Inventory.quantity_on_hand} < {row.Inventory.safety_stock})'
+                ),
                 related_entity_type='inventory',
                 related_entity_id=related_id,
             )
@@ -183,7 +188,7 @@ def scan_alerts(
         event_type='alert.scan_generated',
         entity_type='alert_scan',
         actor=actor,
-        organization_id=resolve_actor_organization_id(db, actor),
+        organization_id=str(organization_id),
         description=f'Generated {len(generated)} alerts from exception scan',
         payload={'generated_count': len(generated)},
     )
@@ -203,18 +208,17 @@ def acknowledge_alert(
     alert_id: str,
     payload: AlertAction,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    user: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
-
-    if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
-        raise HTTPException(status_code=403, detail='Insufficient role')
+    organization_id = resolve_scoped_organization(user, writable)
     alert = organization_scoped_get(
         db,
         Alert,
         alert_id,
-        resolve_scoped_organization(user, writable) or actor_organization_id(user, db),
+        organization_id,
         not_found_detail='Alert not found',
+        include_legacy_null=False,
     )
     if alert.status == AlertStatus.RESOLVED:
         raise HTTPException(status_code=400, detail='Cannot acknowledge a resolved alert')
@@ -232,6 +236,7 @@ def acknowledge_alert(
         entity_type='alert',
         entity_id=alert.id,
         actor=user,
+        organization_id=str(organization_id),
         description=f'Acknowledged alert {alert.title}',
         payload={'status': alert.status, 'note': payload.note},
     )
@@ -245,18 +250,17 @@ def resolve_alert(
     alert_id: str,
     payload: AlertAction,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    user: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
-
-    if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
-        raise HTTPException(status_code=403, detail='Insufficient role')
+    organization_id = resolve_scoped_organization(user, writable)
     alert = organization_scoped_get(
         db,
         Alert,
         alert_id,
-        resolve_scoped_organization(user, writable) or actor_organization_id(user, db),
+        organization_id,
         not_found_detail='Alert not found',
+        include_legacy_null=False,
     )
 
     alert.status = AlertStatus.RESOLVED
@@ -275,6 +279,7 @@ def resolve_alert(
         entity_type='alert',
         entity_id=alert.id,
         actor=user,
+        organization_id=str(organization_id),
         description=f'Resolved alert {alert.title}',
         payload={'status': alert.status, 'note': payload.note},
     )
@@ -287,18 +292,17 @@ def resolve_alert(
 def auto_resolve_alert(
     alert_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-    writable: OrganizationMembership | None = Depends(require_writable_workspace),
+    user: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
-
-    if user.role not in {UserRole.OPERATOR, UserRole.ADMIN}:
-        raise HTTPException(status_code=403, detail='Insufficient role')
+    organization_id = resolve_scoped_organization(user, writable)
     alert = organization_scoped_get(
         db,
         Alert,
         alert_id,
-        resolve_scoped_organization(user, writable) or actor_organization_id(user, db),
+        organization_id,
         not_found_detail='Alert not found',
+        include_legacy_null=False,
     )
 
     if alert.status == AlertStatus.RESOLVED:
@@ -306,21 +310,42 @@ def auto_resolve_alert(
         
     if not alert.payload or 'rerouting_plan' not in alert.payload:
         raise HTTPException(status_code=400, detail='No auto-resolve plan available')
-        
+
     plan = alert.payload['rerouting_plan']
+    if not isinstance(plan, dict):
+        raise HTTPException(status_code=422, detail='Saved rerouting candidate is invalid')
     
     if alert.related_entity_type == 'shipment' and alert.related_entity_id:
-        shipment = db.get(Shipment, alert.related_entity_id)
-        if shipment:
-            shipment.route_schedule_id = plan.get('proposed_route_id')
-            shipment.status = 'in_transit'
-            shipment.delay_reason = None
-            db.add(shipment)
+        shipment = organization_scoped_get(
+            db,
+            Shipment,
+            alert.related_entity_id,
+            organization_id,
+            not_found_detail='Shipment not found',
+            include_legacy_null=False,
+        )
+        try:
+            proposed_route_id = UUID(str(plan.get('proposed_route_id')))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail='Saved rerouting candidate is invalid') from None
+        route = organization_scoped_get(
+            db,
+            RouteSchedule,
+            proposed_route_id,
+            organization_id,
+            not_found_detail='Rerouting candidate not found',
+            include_legacy_null=False,
+        )
+        shipment.route_schedule_id = route.id
+        shipment.status = 'in_transit'
+        shipment.delay_reason = None
+        db.add(shipment)
             
     alert.status = AlertStatus.RESOLVED
     alert.resolved_by_user_id = user.id
     alert.resolved_at = datetime.now(UTC)
-    alert.resolution_note = f"Auto-resolved with reroute to {plan.get('carrier')}."
+    route_name = plan.get('route_name') or 'saved schedule'
+    alert.resolution_note = f'Auto-resolved with saved schedule {route_name}.'
     db.add(alert)
     
     record_audit_event(
@@ -329,6 +354,7 @@ def auto_resolve_alert(
         entity_type='alert',
         entity_id=alert.id,
         actor=user,
+        organization_id=str(organization_id),
         description=f'Auto-resolved alert {alert.title}',
         payload={'status': alert.status, 'note': alert.resolution_note, 'plan': plan},
     )

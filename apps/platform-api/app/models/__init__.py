@@ -35,3 +35,5 @@ from app.models.activation_state import OrganizationActivationState
 from app.models.threshold_crossing import ThresholdCrossing
 from app.models.driver import Driver
 from app.models.cash_collection import CashCollection
+from app.models.organization_invitation import OrganizationInvitation
+from app.models.dispatch import Customer, DeliveryOrder, DeliveryProof, DispatchRun

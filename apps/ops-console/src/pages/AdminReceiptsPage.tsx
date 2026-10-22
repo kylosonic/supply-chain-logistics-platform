@@ -604,7 +604,7 @@ export function AdminReceiptsPage() {
       <ReversalsPanel onUndo={onUndo} onReverse={onReverse} onError={setError} />
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-        <Panel eyebrow="Queue" title="Pending and escalated" description="Oldest first — receipts from every workspace.">
+        <Panel eyebrow="Queue" title="Pending and escalated" description="Oldest first — receipts in the selected workspace.">
           {queue.length === 0 ? (
             <p className="text-sm text-slate-500">No receipts awaiting a verdict.</p>
           ) : (

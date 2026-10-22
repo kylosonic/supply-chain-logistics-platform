@@ -65,14 +65,23 @@ def submit_dispute(db: Session, org: Organization, user: User, receipt_id: str, 
 
 
 def resolve_dispute(
-    db: Session, admin_user: User, receipt_id: str, request: VerdictRequest
+    db: Session,
+    admin_user: User,
+    receipt_id: str,
+    request: VerdictRequest,
+    organization_id,
 ) -> PaymentReceipt:
     """Admin's final decision on a disputed receipt (NB-17.4).
 
     verify -> the normal credit path (A/B/C) + thread resolved; any
     rejection -> maintain_rejection + ``dispute_resolved`` banner.
     """
-    receipt = db.get(PaymentReceipt, receipt_id)
+    receipt = db.execute(
+        select(PaymentReceipt).where(
+            PaymentReceipt.id == receipt_id,
+            PaymentReceipt.organization_id == organization_id,
+        )
+    ).scalar_one_or_none()
     if receipt is None:
         raise ReceiptVerdictError(404, 'Receipt not found')
     thread = db.execute(
@@ -100,7 +109,10 @@ def resolve_dispute(
                 organization_id=org.id,
                 kind='dispute_resolved',
                 title='Dispute resolved',
-                message='Your dispute was reviewed. The original decision stands — your receipt remains rejected.',
+                message=(
+                    'Your dispute was reviewed. The original decision stands — '
+                    'your receipt remains rejected.'
+                ),
                 payload={'resolution': 'maintain_rejection', 'reference_number': receipt.reference_number},
                 expires_at=datetime.now(UTC) + timedelta(days=NOTIFICATION_EXPIRY_DAYS),
             )
@@ -115,7 +127,10 @@ def resolve_dispute(
         entity_id=receipt.id,
         actor=admin_user,
         organization_id=org.id,
-        description=f'Dispute resolved with {thread.resolution} for receipt {receipt.reference_number or receipt.id}',
+        description=(
+            f'Dispute resolved with {thread.resolution} for receipt '
+            f'{receipt.reference_number or receipt.id}'
+        ),
         payload={'resolution': thread.resolution, 'receipt_id': str(receipt.id)},
     )
     return receipt

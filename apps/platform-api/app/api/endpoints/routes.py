@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import asc, or_, select
+from pydantic import ValidationError
+from sqlalchemy import asc, select
 from sqlalchemy.orm import Session
 
 from app.api.security import (
-    actor_organization_id,
-    order_by_organization_first,
+    get_current_membership,
     organization_scoped_get,
     require_roles,
     require_writable_workspace,
+    resolve_scoped_organization,
     scoped_to_organization,
 )
 from app.db.session import get_db
@@ -24,6 +26,7 @@ from app.repositories import RouteOptimizationRunRepository, RouteScheduleReposi
 from app.schemas.auth import UserRole
 from app.schemas.route import (
     DeliveryDemand,
+    RouteDecisionExplanation,
     RouteOptimizationRunDetail,
     RouteOptimizationRunSummary,
     RouteOptimizeRequest,
@@ -34,8 +37,9 @@ from app.schemas.route import (
     RouteWeights,
 )
 from app.services.activation.state import record_route_optimization
-from app.services.audit import record_audit_event, resolve_actor_organization_id
+from app.services.audit import record_audit_event
 from app.services.metering import record_usage_for_user_membership
+from app.services.route_explanations import build_route_explanation
 from app.services.routing import Delivery, Node, optimize_route_greedy
 
 router = APIRouter()
@@ -51,9 +55,14 @@ def optimize_routes(
     # TECH-57: org resolution FIRST — every warehouse query below must be
     # org-scoped so identical seeded codes across orgs (WH-001..003) can
     # never collide (MultipleResultsFound -> 500 on persist=true).
-    organization_id = resolve_actor_organization_id(db, actor)
+    organization_id = resolve_scoped_organization(actor, writable)
 
-    nodes_query = scoped_to_organization(select(Warehouse), Warehouse, organization_id)
+    nodes_query = scoped_to_organization(
+        select(Warehouse),
+        Warehouse,
+        organization_id,
+        include_legacy_null=False,
+    )
     warehouses = db.execute(nodes_query).scalars().all()
     if not warehouses:
         raise HTTPException(status_code=400, detail='No warehouses available')
@@ -63,7 +72,27 @@ def optimize_routes(
     if payload.start_warehouse_code not in nodes:
         raise HTTPException(status_code=404, detail='start_warehouse_code not found')
 
-    deliveries = [Delivery(warehouse_code=d.warehouse_code, demand_units=d.demand_units) for d in payload.deliveries]
+    delivery_codes = {d.warehouse_code for d in payload.deliveries}
+    unknown_codes = sorted(delivery_codes - nodes.keys())
+    if unknown_codes:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                'delivery warehouse_code not found in your organization: '
+                + ', '.join(unknown_codes)
+            ),
+        )
+    if payload.start_warehouse_code in delivery_codes:
+        raise HTTPException(
+            status_code=422,
+            detail='start_warehouse_code cannot also be a delivery target',
+        )
+
+    deliveries = [
+        Delivery(warehouse_code=d.warehouse_code, demand_units=d.demand_units)
+        for d in payload.deliveries
+    ]
+    effective_weights = payload.weights.model_dump()
     
     from app.utils.emissions import calculate_trip_emissions
     
@@ -75,12 +104,13 @@ def optimize_routes(
         max_stops=payload.max_stops,
         speed_kmh=payload.speed_kmh,
         cost_per_km=payload.cost_per_km,
-        weights=payload.weights.model_dump(),
+        weights=effective_weights,
     )
     
     co2_saved_kg = None
     
     if payload.minimize_carbon_footprint:
+        eco_weights = {'distance': 1.0, 'time': 0.0, 'cost': 0.0}
         eco_result = optimize_route_greedy(
             nodes=nodes,
             start_code=payload.start_warehouse_code,
@@ -89,7 +119,7 @@ def optimize_routes(
             max_stops=payload.max_stops,
             speed_kmh=payload.speed_kmh,
             cost_per_km=payload.cost_per_km,
-            weights={'distance': 1.0, 'time': 0.0, 'cost': 0.0},
+            weights=eco_weights,
         )
         
         co2_standard = calculate_trip_emissions(result['total_distance_km'] / 1.60934, 'heavy_duty')
@@ -97,20 +127,46 @@ def optimize_routes(
         
         if co2_eco < co2_standard:
             result = eco_result
+            effective_weights = eco_weights
             co2_saved_kg = round(co2_standard - co2_eco, 2)
         else:
             co2_saved_kg = 0.0
 
+    trace = result.get('decision_trace') or []
+    alternative_result = None
+    if trace:
+        runner_up_code = trace[0].get('runner_up_warehouse_code')
+        if runner_up_code:
+            alternative_result = optimize_route_greedy(
+                nodes=nodes,
+                start_code=payload.start_warehouse_code,
+                deliveries=deliveries,
+                vehicle_capacity_units=payload.vehicle_capacity_units,
+                max_stops=payload.max_stops,
+                speed_kmh=payload.speed_kmh,
+                cost_per_km=payload.cost_per_km,
+                weights=effective_weights,
+                forced_first_code=runner_up_code,
+            )
+    decision_explanation = RouteDecisionExplanation(
+        **build_route_explanation(
+            result,
+            alternative_result,
+            vehicle_capacity_units=payload.vehicle_capacity_units,
+            max_stops=payload.max_stops,
+        )
+    )
+
     usage_recorded = record_usage_for_user_membership(
         db,
-        user=actor,
+        organization_id=organization_id,
         units=len(payload.deliveries),
     )
     # NB-31.1 gap-fill: the route_optimizations meter was never recorded;
     # both Free-cap meters must be able to hit the cap (decision #12).
     usage_recorded_optimizations = record_usage_for_user_membership(
         db,
-        user=actor,
+        organization_id=organization_id,
         metric='route_optimizations',
         units=1,
     )
@@ -125,6 +181,7 @@ def optimize_routes(
         select(Warehouse.code, Warehouse.data_origin).where(Warehouse.code.in_(list(used_codes))),
         Warehouse,
         organization_id,
+        include_legacy_null=False,
     )
     origin_rows = db.execute(origin_query).all()
     origin_by_code = {row.code: row.data_origin for row in origin_rows}
@@ -154,22 +211,26 @@ def optimize_routes(
         unassigned_count=len(result['unassigned_deliveries']),
         persist_requested=payload.persist_schedule,
         deliveries_json=[delivery.model_dump(mode='json') for delivery in payload.deliveries],
-        weights_json=payload.weights.model_dump(mode='json'),
+        weights_json=dict(effective_weights),
         stops_json=serialized_stops,
-        unassigned_deliveries_json=[DeliveryDemand(**delivery).model_dump(mode='json') for delivery in result['unassigned_deliveries']],
+        unassigned_deliveries_json=[
+            DeliveryDemand(**delivery).model_dump(mode='json')
+            for delivery in result['unassigned_deliveries']
+        ],
         minimize_carbon_footprint=payload.minimize_carbon_footprint,
         co2_saved_kg=co2_saved_kg,
+        explanation_json=(
+            decision_explanation.model_dump(mode='json') if decision_explanation else None
+        ),
     )
     db.add(history_run)
 
     if payload.persist_schedule:
-        start_query = order_by_organization_first(
-            scoped_to_organization(
-                select(Warehouse).where(Warehouse.code == payload.start_warehouse_code),
-                Warehouse,
-                organization_id,
-            ),
+        start_query = scoped_to_organization(
+            select(Warehouse).where(Warehouse.code == payload.start_warehouse_code),
             Warehouse,
+            organization_id,
+            include_legacy_null=False,
         )
         start_wh = db.execute(start_query).scalars().first()
         if start_wh is None:
@@ -191,13 +252,11 @@ def optimize_routes(
 
         current_time = datetime.now(UTC)
         for stop in result['stops']:
-            stop_query = order_by_organization_first(
-                scoped_to_organization(
-                    select(Warehouse).where(Warehouse.code == stop['warehouse_code']),
-                    Warehouse,
-                    organization_id,
-                ),
+            stop_query = scoped_to_organization(
+                select(Warehouse).where(Warehouse.code == stop['warehouse_code']),
                 Warehouse,
+                organization_id,
+                include_legacy_null=False,
             )
             row_wh = db.execute(stop_query).scalars().first()
             if not row_wh:
@@ -231,6 +290,9 @@ def optimize_routes(
             'unassigned_count': len(result['unassigned_deliveries']),
             'data_origin': run_origin,
             'usage_recorded_optimizations': usage_recorded_optimizations,
+            'dominant_route_factor': (
+                decision_explanation.dominant_factor if decision_explanation else None
+            ),
         },
     )
 
@@ -264,30 +326,34 @@ def optimize_routes(
         co2_saved_kg=co2_saved_kg,
         post_aha_toast=post_aha_toast,
         data_origin=run_origin,
+        decision_explanation=decision_explanation,
     )
 
 
 @router.get('/schedules', response_model=list[RouteScheduleSummary])
 def list_route_schedules(
     db: Session = Depends(get_db),
+    membership: OrganizationMembership = Depends(get_current_membership),
     actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     # NB-64 (audit H-1): route schedules are tenant data.
-    return RouteScheduleRepository(db).list_all_sorted(actor_organization_id(actor, db))
+    return RouteScheduleRepository(db).list_all_sorted(membership.organization_id)
 
 
 @router.get('/schedules/{schedule_id}', response_model=RouteScheduleDetail)
 def route_schedule_detail(
-    schedule_id: str,
+    schedule_id: UUID,
     db: Session = Depends(get_db),
+    membership: OrganizationMembership = Depends(get_current_membership),
     actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     schedule = organization_scoped_get(
         db,
         RouteSchedule,
         schedule_id,
-        actor_organization_id(actor, db),
+        membership.organization_id,
         not_found_detail='Route schedule not found',
+        include_legacy_null=False,
     )
 
     stops = db.execute(
@@ -326,25 +392,40 @@ def route_schedule_detail(
 @router.get('/history', response_model=list[RouteOptimizationRunSummary])
 def list_route_optimization_history(
     db: Session = Depends(get_db),
+    membership: OrganizationMembership = Depends(get_current_membership),
     actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     # NB-64: run history carries route names, warehouse codes and costs.
-    return RouteOptimizationRunRepository(db).list_all_desc(actor_organization_id(actor, db))
+    return RouteOptimizationRunRepository(db).list_all_desc(membership.organization_id)
 
 
 @router.get('/history/{run_id}', response_model=RouteOptimizationRunDetail)
 def route_optimization_history_detail(
-    run_id: str,
+    run_id: UUID,
     db: Session = Depends(get_db),
+    membership: OrganizationMembership = Depends(get_current_membership),
     actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
     run = organization_scoped_get(
         db,
         RouteOptimizationRun,
         run_id,
-        actor_organization_id(actor, db),
+        membership.organization_id,
         not_found_detail='Route optimization run not found',
+        include_legacy_null=False,
     )
+
+    try:
+        decision_explanation = (
+            RouteDecisionExplanation.model_validate(run.explanation_json)
+            if run.explanation_json
+            else None
+        )
+    except (TypeError, ValueError, ValidationError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail='Stored route explanation is invalid',
+        ) from exc
 
     return RouteOptimizationRunDetail(
         id=run.id,
@@ -374,4 +455,5 @@ def route_optimization_history_detail(
         unassigned_deliveries=[DeliveryDemand(**delivery) for delivery in run.unassigned_deliveries_json],
         minimize_carbon_footprint=run.minimize_carbon_footprint,
         co2_saved_kg=run.co2_saved_kg,
+        decision_explanation=decision_explanation,
     )

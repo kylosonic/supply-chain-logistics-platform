@@ -3,4 +3,4 @@ Allow: /
 Disallow: /launch
 Disallow: /api/
 
-Sitemap: https://freightpilot.com/sitemap.xml
+Sitemap: https://product-web-chi.vercel.app/sitemap.xml

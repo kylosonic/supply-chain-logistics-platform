@@ -77,9 +77,6 @@ describe('site-content phase 5 (NB-43, NB-39)', () => {
     for (const link of allLinks) {
       expect(link.href).not.toBe('#');
       expect(link.href.startsWith('#')).toBe(false);
-      expect(link.href).not.toBe('/privacy');
-      expect(link.href).not.toBe('/terms');
-      expect(link.href).not.toBe('/security');
       expect(link.href).not.toBe('/about');
       expect(link.href).not.toBe('/blog');
       expect(link.href).not.toBe('/careers');

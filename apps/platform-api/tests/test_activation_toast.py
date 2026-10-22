@@ -102,6 +102,10 @@ def test_toast_survives_second_user(
     assert resp.status_code == 200
     operator_token = resp.json()['access_token']
 
-    second = client.post('/api/v1/routes/optimize', headers=_headers(operator_token), json=_OPTIMIZE)
+    second = client.post(
+        '/api/v1/routes/optimize',
+        headers={**_headers(operator_token), 'X-Organization-Id': org_id},
+        json=_OPTIMIZE,
+    )
     assert second.status_code == 200, second.text
     assert second.json()['post_aha_toast'] is False

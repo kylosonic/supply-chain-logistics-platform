@@ -1,11 +1,12 @@
-from datetime import date
-from fastapi import APIRouter, Depends
 import uuid
+from datetime import date
 
-from app.api.security import get_current_user
-from app.models.user import User
-from app.services.weather import simulated_weather_features
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
+from app.api.security import get_current_membership
+from app.models.membership import OrganizationMembership
+from app.services.weather import simulated_weather_features
 
 router = APIRouter()
 
@@ -13,11 +14,15 @@ class WeatherRiskZone(BaseModel):
     id: str
     severity_score: int
     polygon: list[list[float]]
+    source: str = 'simulated'
 
 @router.get('/risk-zones', response_model=list[WeatherRiskZone])
-def get_weather_risk_zones(user: User = Depends(get_current_user)):
+def get_weather_risk_zones(
+    _membership: OrganizationMembership = Depends(get_current_membership),
+):
     """
-    Returns simulated weather risk zones based on the disruption index.
+    Returns explicitly simulated weather risk zones based on a deterministic
+    disruption model. Do not present these as live weather observations.
     """
     zones = []
     target_date = date.today()
@@ -46,22 +51,10 @@ def get_weather_risk_zones(user: User = Depends(get_current_user)):
                 zones.append(WeatherRiskZone(
                     id=f"zone-{uuid.uuid4().hex[:8]}",
                     severity_score=severity,
-                    polygon=polygon
+                    polygon=polygon,
+                    source='simulated',
                 ))
             lng += lng_step
         lat += lat_step
-        
-    # If the simulated logic yields no zones, inject a mock one for demonstration
-    if not zones:
-        zones.append(WeatherRiskZone(
-            id="mock-storm-alpha",
-            severity_score=8,
-            polygon=[
-                [8.8, 38.6],
-                [8.8, 38.9],
-                [9.1, 38.9],
-                [9.1, 38.6]
-            ]
-        ))
         
     return zones

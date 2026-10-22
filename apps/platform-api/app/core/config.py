@@ -4,7 +4,6 @@ from typing import Annotated
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-
 DEFAULT_CORS_ORIGINS = [
     'http://localhost',
     'http://localhost:5173',
@@ -22,12 +21,14 @@ DEFAULT_CORS_ORIGINS = [
 # to pass the length-only guards. Exact-match rejection only — a secret that
 # differs by a single character is a real secret decision
 # (production-security-hardening.md:30). Dev/test environments stay permissive.
-KNOWN_PLACEHOLDER_SECRETS = frozenset({
-    'change-me-in-production',                                # 23 — docker-compose legacy JWT fallback
-    'change-me-in-production-minimum-32-bytes',               # 40 — committed platform-api/.env.example value
-    'change-me-provider-key-secret-min-32-chars!',            # 43 — committed provider encryption placeholder
-    'dev-secret-do-not-use-in-production-minimum-32',         # 46 — dev fallback copy-pasted into prod
-})
+KNOWN_PLACEHOLDER_SECRETS = frozenset(
+    {
+        'change-me-in-production',  # 23 — docker-compose legacy JWT fallback
+        'change-me-in-production-minimum-32-bytes',  # 40 — committed platform-api/.env.example value
+        'change-me-provider-key-secret-min-32-chars!',  # 43 — committed provider encryption placeholder
+        'dev-secret-do-not-use-in-production-minimum-32',  # 46 — dev fallback copy-pasted into prod
+    }
+)
 
 
 class Settings(BaseSettings):
@@ -79,6 +80,7 @@ class Settings(BaseSettings):
     sms_gateway_api_key: str = ''
     sms_sender_name: str = 'FreightPilot'
     sample_data_dir: str = 'sample-data'
+    console_url: str = 'https://ops-console-azure.vercel.app'
 
     @property
     def effective_database_url(self) -> str:
@@ -111,16 +113,13 @@ class Settings(BaseSettings):
             return self.receipt_extraction_mode
         if self.receipt_extraction_mode not in ('real', 'zero_confidence'):
             raise ValueError(
-                'RECEIPT_EXTRACTION_MODE must be "real" or "zero_confidence" '
-                'in non-dev environments'
+                'RECEIPT_EXTRACTION_MODE must be "real" or "zero_confidence" in non-dev environments'
             )
         if self.receipt_extraction_mode == 'real' and not (
             self.receipt_extraction_base_url.startswith('http://')
             or self.receipt_extraction_base_url.startswith('https://')
         ):
-            raise ValueError(
-                'RECEIPT_EXTRACTION_BASE_URL must start with http:// or https:// in real mode'
-            )
+            raise ValueError('RECEIPT_EXTRACTION_BASE_URL must start with http:// or https:// in real mode')
         return self.receipt_extraction_mode
 
     @property
@@ -166,8 +165,7 @@ class Settings(BaseSettings):
             raise ValueError('PROVIDER_KEY_ENCRYPTION_SECRET is required in non-dev environments')
         if len(self.provider_key_encryption_secret) < 32:
             raise ValueError(
-                'PROVIDER_KEY_ENCRYPTION_SECRET must be at least 32 characters '
-                'in non-dev environments'
+                'PROVIDER_KEY_ENCRYPTION_SECRET must be at least 32 characters in non-dev environments'
             )
         if self.provider_key_encryption_secret in KNOWN_PLACEHOLDER_SECRETS:
             raise ValueError('PROVIDER_KEY_ENCRYPTION_SECRET must not be a known placeholder value')

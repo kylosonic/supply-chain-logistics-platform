@@ -173,8 +173,8 @@ export const faqItems: FaqItem[] = [
 // ---------------------------------------------------------------------------
 
 export const externalLinks = {
-  console: process.env.NEXT_PUBLIC_APP_CONSOLE_URL || 'http://localhost',
-  docs: process.env.NEXT_PUBLIC_DOCS_URL || 'https://example.com/docs',
+  console: process.env.NEXT_PUBLIC_APP_CONSOLE_URL || 'https://ops-console-azure.vercel.app',
+  docs: '/docs',
   desktop: process.env.NEXT_PUBLIC_DESKTOP_DOWNLOAD_URL || 'https://example.com/download',
 };
 
@@ -201,10 +201,16 @@ export const footerNavigation = {
   ],
   resources: [
     { label: 'Documentation', href: externalLinks.docs },
-    { label: 'API Reference', href: externalLinks.docs + '/api' },
-    { label: 'Desktop App', href: externalLinks.desktop },
+    { label: 'API Reference', href: '/docs#api' },
+    { label: 'Open console', href: externalLinks.console },
   ],
-  company: [{ label: 'Contact', href: '/contact' }],
+  company: [
+    { label: 'Contact', href: '/contact' },
+    { label: 'Privacy', href: '/privacy' },
+    { label: 'Terms', href: '/terms' },
+    { label: 'Security', href: '/security' },
+    { label: 'Status', href: '/status' },
+  ],
 };
 
 export const platformStacks: FeatureCard[] = [

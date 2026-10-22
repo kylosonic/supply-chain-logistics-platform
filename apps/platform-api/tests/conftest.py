@@ -32,7 +32,7 @@ from app.models.trial_record import TrialRecord
 from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.schemas.auth import UserRole
-from app.services.security import hash_password
+from app.services.security import create_access_token, hash_password
 
 
 @pytest.fixture()
@@ -71,6 +71,41 @@ def db_session() -> Generator[Session, None, None]:
         is_active=True,
     )
     session.add_all([admin, viewer, operator])
+    session.flush()
+
+    default_org = Organization(
+        name='Test Co',
+        slug='testco',
+        primary_email_domain='testco.com',
+        subscription_tier='free',
+        subscription_status='active',
+        billing_phase='free',
+        is_active=True,
+    )
+    session.add(default_org)
+    session.flush()
+    session.add_all(
+        [
+            OrganizationMembership(
+                organization_id=default_org.id,
+                user_id=admin.id,
+                role='owner',
+                is_active=True,
+            ),
+            OrganizationMembership(
+                organization_id=default_org.id,
+                user_id=viewer.id,
+                role='viewer',
+                is_active=True,
+            ),
+            OrganizationMembership(
+                organization_id=default_org.id,
+                user_id=operator.id,
+                role='operator',
+                is_active=True,
+            ),
+        ]
+    )
     session.commit()
 
     try:
@@ -137,6 +172,28 @@ def operator_token(client: TestClient) -> str:
     return resp.json()['access_token']
 
 
+@pytest.fixture()
+def orgless_token(db_session: Session) -> str:
+    """An authenticated account with no workspace membership.
+
+    Business endpoints must deny this token. It is deliberately created
+    directly rather than through /auth/register, because registration now
+    attaches every new user to the actor's workspace.
+    """
+    user = User(
+        username='orgless',
+        email='orgless@testco.com',
+        full_name='Orgless User',
+        password_hash=hash_password('orgless12345'),
+        role=UserRole.OPERATOR,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return create_access_token(subject=str(user.id), role=UserRole.OPERATOR)
+
+
 # ---------------------------------------------------------------------------
 # Phase 2 receipt-processing fixtures (blueprint §9.1)
 #
@@ -175,7 +232,19 @@ def mock_extraction_payload(**overrides) -> dict:
             'reference_number': 'TXN-1001',
             'bank_identifier': 'cbe',
         },
-        'confidence': {name: 0.95 for name in ('sender_name', 'sender_account_number', 'receiver_account_number', 'receiver_name', 'transfer_amount', 'transfer_date', 'reference_number', 'bank_identifier')},
+        'confidence': dict.fromkeys(
+            (
+                'sender_name',
+                'sender_account_number',
+                'receiver_account_number',
+                'receiver_name',
+                'transfer_amount',
+                'transfer_date',
+                'reference_number',
+                'bank_identifier',
+            ),
+            0.95,
+        ),
         'model_name': 'mock-1',
     }
     payload.update(overrides)

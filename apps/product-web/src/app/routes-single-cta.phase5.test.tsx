@@ -89,7 +89,7 @@ describe('site chrome (NB-46.3)', () => {
     expect(footer).toContain('href="/contact"');
   });
 
-  it('footer contains no dead links (# or non-existent routes)', () => {
+  it('footer contains no dead links and exposes the real trust routes', () => {
     const html = renderToString(
       <SiteChrome>
         <div />
@@ -97,9 +97,12 @@ describe('site chrome (NB-46.3)', () => {
     );
 
     expect(html).not.toContain('href="#"');
-    expect(html).not.toContain('href="/privacy"');
-    expect(html).not.toContain('href="/terms"');
-    expect(html).not.toContain('href="/security"');
+    expect(html).toContain('href="/privacy"');
+    expect(html).toContain('href="/terms"');
+    expect(html).toContain('href="/security"');
+    expect(html).toContain('href="/status"');
+    expect(html).toContain('https://ops-console-azure.vercel.app');
+    expect(html).not.toContain('href="http://localhost"');
     expect(html).not.toContain('>About<');
     expect(html).not.toContain('>Blog<');
     expect(html).not.toContain('>Careers<');

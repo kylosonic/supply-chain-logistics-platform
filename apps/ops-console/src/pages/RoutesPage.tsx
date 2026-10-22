@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { PostAhaToast } from '../components/PostAhaToast';
+import { RouteHistoryCard } from '../components/RouteHistoryCard';
 import { RouteMap } from '../components/RouteMap';
 import { RouteOptimizerForm } from '../components/RouteOptimizerForm';
 import { RouteSchedulesTable } from '../components/RouteSchedulesTable';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Panel } from '../components/ui/Panel';
-import { StatusBadge } from '../components/ui/StatusBadge';
 import { useActivationState } from '../hooks/queries';
 import { useLivePayloadStream } from '../hooks/useLiveUpdates';
 import { getRouteOptimizationHistory, getRouteSchedules, getWeatherRiskZones } from '../services/logisticsApi';
@@ -104,7 +104,7 @@ export function RoutesPage() {
         {weatherMapUnlocked ? (
           <RouteMap stops={latestRouteStops} riskZones={riskZones} />
         ) : (
-          <Panel eyebrow="Weather risk" title="Weather risk zones map">
+          <Panel eyebrow="Simulated weather risk" title="Simulated weather risk zones">
             <div className="grid h-full min-h-[240px] place-items-center rounded-[var(--fp-radius-panel)] border border-dashed border-slate-700/60 bg-slate-900/30 p-6 text-center">
               <div>
                 <p className="font-['Space_Grotesk'] text-lg font-semibold text-slate-300">
@@ -134,25 +134,7 @@ export function RoutesPage() {
       >
         <div className="space-y-3">
           {history.slice(0, 6).map((run) => (
-            <article key={run.id} className="fp-row">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge label={run.persist_requested ? 'persisted run' : 'draft run'} tone={run.persist_requested ? 'success' : 'info'} />
-                    {run.unassigned_count > 0 ? <StatusBadge label={`${run.unassigned_count} unassigned`} tone="warning" /> : null}
-                  </div>
-                  <h3 className="mt-2 font-['Space_Grotesk'] text-lg font-semibold text-slate-50">{run.route_name}</h3>
-                  <p className="mt-1 text-sm text-slate-400">{run.schedule_date} from {run.start_warehouse_code}</p>
-                </div>
-                <span className="text-xs text-slate-500">{new Date(run.created_at).toLocaleString()}</span>
-              </div>
-              <div className="mt-3 grid gap-2 text-sm text-slate-400 sm:grid-cols-4">
-                <span><span className="font-mono font-semibold tabular-nums text-slate-200">{run.total_distance_km}</span> km</span>
-                <span><span className="font-mono font-semibold tabular-nums text-slate-200">${run.total_cost}</span></span>
-                <span><span className="font-mono font-semibold tabular-nums text-slate-200">{run.estimated_duration_min}</span> min</span>
-                <span><span className="font-mono font-semibold tabular-nums text-slate-200">{run.deliveries_count}</span> deliveries</span>
-              </div>
-            </article>
+            <RouteHistoryCard key={run.id} run={run} />
           ))}
 
           {history.length === 0 ? (

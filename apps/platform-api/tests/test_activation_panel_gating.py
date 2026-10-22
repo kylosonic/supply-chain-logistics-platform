@@ -38,6 +38,7 @@ def _upload_prefix(client, token, upload_csv, count: int):
     specs = [
         ('warehouses', real_warehouse_csv([
             ('WH-REAL-1', 'Real WH', '1 Rd', 'Addis', 'AA', 'Ethiopia', 9.0, 38.7, 100),
+            ('WH-REAL-2', 'Real WH 2', '2 Rd', 'Addis', 'AA', 'Ethiopia', 9.1, 38.8, 100),
         ])),
         ('items', real_items_csv([('SKU-REAL-1', 'Real Item', 'Mechanical', 5.0, 2)])),
         ('fleet', real_fleet_csv([('TRUCK-REAL-1', 'Real Driver', 40)])),
@@ -66,7 +67,7 @@ def test_panel_gate_payload_milestone_mapping(client, signup_workspace, seed_csv
     resp = client.post(
         '/api/v1/routes/optimize', headers={'Authorization': f'Bearer {token}'},
         json={**_OPTIMIZE, 'start_warehouse_code': 'WH-REAL-1',
-              'deliveries': [{'warehouse_code': 'WH-REAL-1', 'demand_units': 10}]},
+              'deliveries': [{'warehouse_code': 'WH-REAL-2', 'demand_units': 10}]},
     )
     assert resp.status_code == 200, resp.text
     state = _activation(client, token)
