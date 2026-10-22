@@ -109,3 +109,13 @@ triage.
 
 This is an agent-assisted UAT execution recorded under explicit product-owner approval, not a
 claim that a separate human tester independently clicked every screen.
+
+## 6. Production verification after release
+
+- Alembic: `20260812_0020` → `20260823_0024`; post-migration NULL-org rows: **0**.
+- Production funnel verifier: **46/46 passed**.
+- New production surfaces: Decision Brief, Cash Risk Radar, exception triage, dispatch plan,
+  driver manifest, cash declaration/close, and cross-tenant dispatch **404** all passed.
+- Public trust routes and ops login: **200**.
+- Temporary migration route: removed; returns **404**.
+- Production `/health`: `{"status":"ok","db":"ok"}`.

@@ -117,10 +117,10 @@ surface or an unverifiable "AI" label.
 | Gate | Current result | Artifact |
 |---|---|---|
 | Targeted backend suites | **33 passed** in the membership/tenant/auth/route regression batch; **14 passed** in the explanation + rerouting batch | Tool output |
-| Backend full suite | **474 passed, 7 warnings** (complete `tests/` discovery) | Tool output, final gate |
+| Backend full suite | **482 passed, 7 warnings** (post-merge production release tree) | Tool output, final gate |
 | Backend Ruff | All checks passed | Tool output |
 | Backend mypy | Three AI services pass with the project-pinned command; 10 Phase 0 files pass with `--follow-imports=skip` | Tool output |
-| Ops tests | **26 files / 150 tests passed** | Tool output |
+| Ops tests | **28 files / 174 tests passed** | Tool output |
 | Ops typecheck / lint | Passed on current code | Tool output |
 | Ops production build | **PASS with real Vite config**, including manual chunks | Tool output |
 | Product web build | Passed with **mocked Google Fonts** because outbound font fetch is blocked; all trust routes are static | Tool output |

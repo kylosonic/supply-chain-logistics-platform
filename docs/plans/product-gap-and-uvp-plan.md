@@ -50,9 +50,9 @@ The first trust-reset slice is implemented locally on `codex/ai-decision-intelli
 - rerouting no longer invents a carrier, recovery time, or cost; it uses only a saved active route
   candidate and fails closed otherwise.
 
-Backend verification after these changes: **474 passed** (full suite). Product-web typecheck/build
+Backend verification after these changes: **482 passed** (full suite). Product-web typecheck/build
 and the eleven-route bundle gate pass with mocked Google Fonts because outbound font fetch is
-blocked in this environment. Ops typecheck/lint pass, and **26 files / 150 tests** plus a real-config
+blocked in this environment. Ops typecheck/lint pass, and **28 files / 174 tests** plus a real-config
 production build pass. Independent security review cleared all previously reproduced critical/high
 blockers; human UAT and final QA sign-off remain open. The P1 Cash-Aware Dispatch work is now
 implemented locally on the same branch: customer
@@ -96,8 +96,8 @@ The current repository is broader than the public site suggests, but several cap
 
 #### P0.1 Tenant boundary escape (fixed locally)
 
-This was the most serious issue in the product assessment. It is fixed locally on
-`codex/ai-decision-intelligence`; it is not deployed until the release gates pass.
+This was the most serious issue in the product assessment. It is fixed and deployed on
+`master` after the release gates passed.
 
 The current path allows an organization admin to create a user through the global `/auth/register` endpoint without attaching that user to an organization. The created user can receive a global `ADMIN` role. With no membership:
 
@@ -164,10 +164,10 @@ enterprise launch.
 
 #### P0.4 Release evidence (backend and UI green; default Vite script environment-blocked)
 
-The AI branch is not released. The backend full suite now passes at **474 tests**, including the
+The release is deployed. The backend full suite now passes at **482 tests**, including the
 new tenant-scope, receipt, live-socket, rerouting, and multi-workspace regressions. Product-web
 typecheck/build and the eleven-route bundle gate pass with mocked Google Fonts. The operations
-console passes **26 files / 150 tests**, typecheck, lint, and the real-config production build.
+console passes **28 files / 174 tests**, typecheck, lint, and the real-config production build.
 The release decision should remain:
 
 - no merge, migration, or deploy until human UAT signs the release checklist;
