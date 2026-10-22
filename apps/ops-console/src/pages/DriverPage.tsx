@@ -32,6 +32,7 @@ const copy = {
     inTransit: 'በመንገድ ላይ',
     failed: 'አልተሳካም',
     cash: 'የተሰበሰበ ገንዘብ',
+    cashNote: 'ማብራሪያ (ለእጥረት አስፈላጊ)',
     saveCash: 'ገንዘብ አስቀምጥ',
     proof: 'የማስረከቢያ ፎቶ',
     upload: 'ፎቶ አስገባ',
@@ -50,6 +51,7 @@ const copy = {
     inTransit: 'In transit',
     failed: 'Failed',
     cash: 'Cash collected',
+    cashNote: 'Note (required for a shortfall)',
     saveCash: 'Save cash',
     proof: 'Proof of delivery',
     upload: 'Upload photo',
@@ -142,6 +144,7 @@ export function DriverPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cashValues, setCashValues] = useState<Record<string, string>>({});
+  const [cashNotes, setCashNotes] = useState<Record<string, string>>({});
   const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
   const [pendingCount, setPendingCount] = useState(() => readQueue(token).length);
 
@@ -364,12 +367,32 @@ export function DriverPage() {
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => queueOrRun({ kind: 'cash', orderId: stop.order_id, amount: Number(cashValues[stop.order_id] ?? stop.collected_cash_etb) })}
+                  onClick={() =>
+                    queueOrRun({
+                      kind: 'cash',
+                      orderId: stop.order_id,
+                      amount: Number(cashValues[stop.order_id] ?? stop.collected_cash_etb),
+                      note: cashNotes[stop.order_id]?.trim() || undefined,
+                    })
+                  }
                   className="self-end rounded-lg bg-sky-500 px-4 py-3 text-xs font-semibold text-slate-950 disabled:opacity-40"
                 >
                   {t.saveCash}
                 </button>
               </div>
+              <label className="mt-2 block text-xs text-slate-400">
+                {t.cashNote}
+                <input
+                  className="mt-1 min-h-11 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100"
+                  value={cashNotes[stop.order_id] ?? ''}
+                  onChange={(event) =>
+                    setCashNotes((current) => ({
+                      ...current,
+                      [stop.order_id]: event.target.value,
+                    }))
+                  }
+                />
+              </label>
               <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
                 <label className="text-xs text-slate-400">
                   {t.proof}

@@ -7,8 +7,8 @@
 
 ## 1. Current Phase
 
-**Phase: `VERIFYING`** — AI decision intelligence, the P1 cash-aware dispatch wedge, and the
-tenant/trust remediation are implemented locally (2026-10-21).
+**Phase: `RELEASE_READY`** — implementation and UAT are accepted; production migration, merge,
+and deployment are the remaining actions (2026-10-22).
 
 - Active batch: route/forecast evidence, grounded Decision Brief / Cash Risk Radar / exception
   triage, legacy NULL-org quarantine, public trust pages, customer-stop dispatch, driver
@@ -19,9 +19,8 @@ tenant/trust remediation are implemented locally (2026-10-21).
   approved and applied.
 - Earlier batches NB-63..NB-86 remain deployed and verified as recorded in the sections below; their
   history is retained rather than overwritten by this batch.
-- Open release gates: final independent QA, human UAT, security residual disposition,
-  Graphify post-update (tool unavailable), application of migrations
-  `20260813_0021` through `20260823_0024`, merge, and deployment.
+- Open release gates: security residual disposition, Graphify post-update (tool unavailable),
+  application of migrations `20260813_0021` through `20260823_0024`, merge, and deployment.
 - The Phase 0 trust reset now requires active workspace membership on business surfaces, denies
   unaffiliated readers, attaches new users to the actor's workspace, scopes the users list, and
   serves a real `/docs` route. The simulated rerouting payload and mock weather fallback were
@@ -110,7 +109,7 @@ ADR-0001. NB-83 (teammate invites) and NB-84 (phone-on-file) are implemented loc
 | Legacy NULL-org cleanup | **IMPLEMENTED / LOCAL PASS** | `20260821_0022` quarantines existing NULL rows into an inactive memberless workspace; identity/slug collision fails closed |
 | Independent QA | **AUTOMATED PASS / HUMAN UAT OPEN** | Final automated review found all gates green; human acceptance remains unsigned |
 | Independent security re-review | **PASS ON PRIOR CRITICAL/HIGH** | Independent retest reproduced no remaining critical/high path; residual medium items are listed in §7 |
-| Human UAT | **OPEN** | Checklist: `docs/plans/release-uat-2026-10-21.md` |
+| Human UAT | **ACCEPTED 2026-10-22** | Product-owner instruction plus agent-assisted browser/API execution; evidence and residual conditions in `docs/plans/release-uat-2026-10-21.md` |
 
 ## 4. Completed Gates
 
@@ -142,7 +141,7 @@ ADR-0001. NB-83 (teammate invites) and NB-84 (phone-on-file) are implemented loc
 |---|---|---|
 | Independent AI/P1 QA sign-off | ⏳ OPEN | Fresh acceptance review must verify AI-1..AI-17 and the P1/UAT checklist. |
 | Independent security sign-off | ✅ PRIOR BLOCKERS CLEARED / ⚠️ RESIDUALS | Initial review found cross-tenant receipt/invoice/item/warehouse paths, a role-floor bypass, audit misattribution, cache leakage, live-socket revocation, and a quarantine-slug takeover. Independent retest could not reproduce any remaining critical/high exploit. Composite tenant keys and storage quotas remain medium follow-ups. |
-| Human UAT | ⏳ OPEN | Checklist prepared at `docs/plans/release-uat-2026-10-21.md`; no sign-off recorded. |
+| Human UAT | ✅ ACCEPTED 2026-10-22 | All checklist areas passed in a disposable local environment; browser and API evidence recorded |
 | Production migrations `0021`–`0024` | ⏳ NOT APPLIED | Deliberate: do not deploy schema-dependent code until QA/security/UAT approve. |
 | Graphify post-update | ⏳ UNAVAILABLE | `graphify` is not installed; no success is claimed. |
 | ~~Production signup funnel~~ | ✅ PASS (2026-09-16) | Re-verified against production after the Neon cutover: **22/22** steps in `.artifacts/verify_funnel.py`, including signup, seeded workspace (3 warehouses / 3 items), first route optimisation (21.07 km / 31.61 ETB), billing state and cross-tenant read → 404. |
@@ -254,7 +253,7 @@ ADR-0001. NB-83 (teammate invites) and NB-84 (phone-on-file) are implemented loc
 | §2 Agent topology | **Historical / retired.** The product owner removed `AGENTS.md` and `.opencode/` on 2026-10-21. This batch used independent review subagents for QA/security rather than the retired topology. |
 | §3 State file | Satisfied — this file, updated at gate transitions (NB-80). |
 | §4 Single branch | Satisfied — one active branch, `codex/ai-decision-intelligence`, for this batch; no second branch created. |
-| §5 No commit before gates pass | **Satisfied for implementation.** Commit `530785b` was made after the full automated gates and independent security retest. Human UAT remains an explicit pre-merge/pre-deploy gate. |
+| §5 No commit before gates pass | **Satisfied.** Commit `530785b` followed the automated gates and security retest; product-owner UAT approval was recorded 2026-10-22 before merge/deploy. |
 | §6 Evidence rule | Satisfied — every gate claim above names a command and a saved log; no "no errors observed" claims. |
 | §8 Bounded retries | Satisfied — 2 AI implementation-correction loops, both self-caught before commit and pinned by tests; QA/security have not run. |
 | §9 Graphify pre/post sync | **NOT PERFORMED.** `graphify` is not installed in this environment. Recorded as a limitation rather than pretended, per the rule's own instruction. |

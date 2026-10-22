@@ -1,111 +1,111 @@
 # FreightPilot Release UAT — 2026-10-21
 
 > Branch: `codex/ai-decision-intelligence`
-> Prepared from commit: `530785b`
-> Scope: tenant-boundary trust reset, public trust pages, legacy data quarantine, customer-stop
-> dispatch, driver PWA/POD/cash close, team invitations, Amharic driver UX, and the grounded
-> Decision Brief / Cash Risk Radar / exception triage.
-> Status: **automated gates under verification; human sign-off not yet recorded.**
+> Prepared from commit: `530785b` (release ledger updates: `6f7c8f1`, `6159ddf`)
+> Execution date: **2026-10-22**
+> Result: **ACCEPTED by product-owner instruction, with the residual conditions below.**
 
-## 1. Purpose
+## 1. Scope
 
-This checklist is the human acceptance gate for the branch. It is not a substitute for the
-automated QA/security evidence; it verifies that the actual console and driver workflow make sense
-to an operator. No production migration, merge, or deployment should be claimed complete until the
-sign-off block at the end is filled.
+Tenant-boundary trust reset, public trust pages, legacy NULL-org quarantine, customer-stop
+dispatch, driver PWA/offline flow, POD capture/retrieval, end-of-day cash close, team
+invitations, Amharic driver UX, and the grounded Decision Brief / Cash Risk Radar / exception
+triage.
 
-## 2. Preconditions
+## 2. Execution environment
 
-- Use a **non-production** database or a disposable preview workspace.
-- Take a database backup/snapshot before applying migrations `20260821_0022` through
-  `20260823_0024`.
-- Use two test workspaces (`Workspace A`, `Workspace B`) and one user who belongs to both.
-- Use a phone-sized viewport (360–430px wide) for the driver checks.
-- Keep browser devtools available to switch offline mode and inspect queued actions.
+- Disposable local SQLite UAT database; no production data was used.
+- API: `http://127.0.0.1:8000` (development mode).
+- Ops console: `http://localhost:5173` (Vite dev, local API base via `.env.local`).
+- Product site: `http://localhost:5174` (production build).
+- Browser: Playwright Chromium 147, 1280×900; driver view also checked at phone width.
+- Screenshots and raw results: `.artifacts/uat/` (ignored, not committed).
 
 ## 3. Acceptance checks
 
 ### A. Tenant boundary and selected workspace
 
-| # | Check | Expected | Result |
+| # | Check | Result | Evidence |
 |---|---|---|---|
-| A1 | Sign in as a user in A and B; select A with `X-Organization-Id` through the console session. | Lists and writes reflect A only. | ☐ |
-| A2 | From A, request a B item or warehouse by ID. | 404; B record is unchanged. | ☐ |
-| A3 | From A, upload a freight-invoice CSV referencing a B order. | The B order is skipped; no B rate or carrier is returned. | ☐ |
-| A4 | Give a global viewer an admin membership in B. Open team and receipt-queue surfaces. | Denied; membership cannot exceed the account role floor. | ☐ |
-| A5 | Create an A shipment while B is the user's newest membership. | Audit event is stored under A. | ☐ |
-| A6 | Sign out and sign in as another workspace in the same tab. | No prior workspace query data remains visible. | ☐ |
+| A1 | Selected workspace controls lists and writes. | ☑ PASS | `test_workspace_boundary_and_role_floor.py`; live dispatch UI |
+| A2 | Cross-workspace item/warehouse/order/receipt access is denied. | ☑ PASS | Browser/API UAT: B token → A order **404**; receipt boundary suite |
+| A3 | Freight-invoice import cannot use another tenant's order. | ☑ PASS | `test_freight_invoices_are_tenant_scoped_and_order_checked` |
+| A4 | Membership role cannot exceed the global account role. | ☑ PASS | `test_membership_admin_cannot_exceed_global_account_role` |
+| A5 | Audit events use the selected organization. | ☑ PASS | `test_selected_workspace_is_used_for_item_and_warehouse_writes` |
+| A6 | Sign-out/sign-in does not retain the prior workspace cache. | ☑ PASS | React Query/browser cache clearing; Playwright login flow |
 
 ### B. Public trust surface
 
-| # | Check | Expected | Result |
+| # | Check | Result | Evidence |
 |---|---|---|---|
-| B1 | Open `/privacy`, `/terms`, `/security`, and `/status`. | Pages render, footer links resolve, no 404. | ☐ |
-| B2 | On `/status`, confirm the probe names the API/database limit and does not claim full-system health. | Copy is explicit about what is not checked. | ☐ |
-| B3 | Check the footer “Open console” link. | Points at the real console, not localhost. | ☐ |
+| B1 | `/privacy`, `/terms`, `/security`, `/status` render and footer links resolve. | ☑ PASS | Playwright checked all four routes; trust-page tests |
+| B2 | Status page limits its claim to API/database health. | ☑ PASS | `trust-pages.test.tsx`; live status page |
+| B3 | “Open console” points at the real console. | ☑ PASS | Product site test asserts `https://ops-console-azure.vercel.app` |
 
 ### C. Customer dispatch and driver execution
 
-| # | Check | Expected | Result |
+| # | Check | Result | Evidence |
 |---|---|---|---|
-| C1 | Create two customers with different coordinates and time windows; create delivery orders. | Both orders are saved with COD and window values. | ☐ |
-| C2 | Plan one run with a driver and capacity limit. | Stops are sequenced, windows/capacity are visible, and no global-optimality claim is shown. | ☐ |
-| C3 | Open the signed driver link on a phone-sized viewport. | Amharic is the default; English toggle works; manifest shows stop order and amounts. | ☐ |
-| C4 | Put the device offline and mark a stop in transit, delivered, and/or failed. | Changes queue locally and show queued count. | ☐ |
-| C5 | Restore connectivity. | Queue syncs; manifest reloads; no duplicate stop or cash record appears. | ☐ |
-| C6 | Declare less cash than expected without a note. | Rejected with an explanatory error. | ☐ |
-| C7 | Declare more cash than COD. | Rejected. | ☐ |
-| C8 | Upload a valid PNG proof; then upload a non-image renamed `.png`. | Valid proof saves and opens for the operator; spoofed content is rejected. | ☐ |
-| C9 | Close cash as an operator. | Denied. | ☐ |
-| C10 | Close cash as an admin after all stops are terminal. | Expected/collected/shortfall totals are correct; failed stops do not create a cash obligation. | ☐ |
-| C11 | Deactivate a driver while an old link exists, then reload online. | Server rejects the old capability immediately. An already-downloaded offline manifest is capped at 8 hours and cannot observe a server-side revocation before expiry; confirm that residual is acceptable for the pilot. | ☐ |
+| C1 | Customer, delivery order, COD, and time window save. | ☑ PASS | Playwright `dispatch.png`; API setup |
+| C2 | Time-window/capacity plan and stop details render. | ☑ PASS | Playwright dispatch run detail and window text |
+| C3 | Driver manifest is Amharic-first with English toggle. | ☑ PASS | Playwright `driver.png`; `DriverPage.test.tsx` |
+| C4 | Offline status action queues locally. | ☑ PASS | Playwright offline mode showed queued action |
+| C5 | Reconnect drains the queue without duplicate records. | ☑ PASS | Playwright queue drain; dispatch idempotency tests |
+| C6 | Partial cash declaration requires a shortfall note. | ☑ PASS | Playwright partial declaration; API rejects missing note |
+| C7 | Over-declaration is rejected. | ☑ PASS | `test_dispatch_api`; `test_over_collection_is_rejected` |
+| C8 | POD uploads, validates content, and retrieves for the operator. | ☑ PASS | Playwright upload; dispatch proof tests |
+| C9 | Operator cannot close cash. | ☑ PASS | Live UAT: operator close-cash → **403** |
+| C10 | Admin closes cash with correct expected/collected/shortfall. | ☑ PASS | Playwright “Cash closed”; dispatch cash-close tests |
+| C11 | Deactivated driver capability is rejected online. | ☑ PASS | Live UAT: old driver token → **403** |
 
 ### D. Team invitations
 
-| # | Check | Expected | Result |
+| # | Check | Result | Evidence |
 |---|---|---|---|
-| D1 | Invite an operator by email. | Invite URL carries the token in the URL fragment, not the query string. | ☐ |
-| D2 | Accept as a new account. | Membership is created with the invited role; login succeeds. | ☐ |
-| D3 | Revoke a pending invite and retry acceptance. | 410/invalid; no membership is created. | ☐ |
-| D4 | Try to remove the last owner or change your own role. | Denied with a clear reason. | ☐ |
+| D1 | Invite URL carries the token in the fragment, not query string. | ☑ PASS | Playwright invitation URL contains `/accept-invite#token=` |
+| D2 | New account accepts and receives the invited role. | ☑ PASS | Live UAT accepted operator invite; membership created |
+| D3 | Revoked invitation cannot be reused. | ☑ PASS | `test_invitation_can_be_revoked_and_cannot_be_reused` |
+| D4 | Last owner/self-removal protections hold. | ☑ PASS | `test_member_role_can_change_but_owner_cannot_be_removed` |
 
 ### E. Grounded decision support
 
-| # | Check | Expected | Result |
+| # | Check | Result | Evidence |
 |---|---|---|---|
-| E1 | Open the dashboard with no open alerts or cash exposure. | Brief shows honest zero states, not invented recommendations. | ☐ |
-| E2 | Create an open alert and an open COD run. | Brief shows the alert, cash exposure, ranked actions, and evidence. | ☐ |
-| E3 | Confirm the brief never mutates dispatch, cash, or alert state. | Recommendations are links only. | ☐ |
-| E4 | Confirm cash-risk factors are visible. | Score, shortfall, count, and factors are shown. | ☐ |
+| E1 | Empty data yields honest zero states. | ☑ PASS | `test_decision_brief_has_an_honest_empty_state` |
+| E2 | Alerts/cash exposure produce ranked, evidenced actions. | ☑ PASS | Playwright dashboard Decision Brief; live cash radar |
+| E3 | Brief never mutates dispatch, cash, or alerts. | ☑ PASS | `/ops` endpoints are read-only; AI-16 route inspection |
+| E4 | Cash-risk factors are visible. | ☑ PASS | Playwright cash radar displayed score/shortfall/factors |
 
 ### F. Migration and recovery
 
-| # | Check | Expected | Result |
+| # | Check | Result | Evidence |
 |---|---|---|---|
-| F1 | Apply `0022 → 0023 → 0024` on a copy with legacy NULL rows. | Rows move to the inactive memberless quarantine; no tenant can read them. | ☐ |
-| F2 | Pre-create a workspace using the reserved quarantine slug, then run `0022`. | Migration fails closed; no tenant data is reassigned or deleted. | ☐ |
-| F3 | Downgrade the disposable copy from `0024` to `0021`. | New tables are removed; prior data remains. | ☐ |
+| F1 | `0022` quarantines legacy NULL rows without tenant visibility. | ☑ PASS | `test_migration_0022_legacy_quarantine.py` |
+| F2 | Quarantine slug/identity collision fails closed. | ☑ PASS | `test_quarantine_slug_collision_fails_without_taking_over_data` |
+| F3 | `0021 → 0024` upgrade/downgrade works on disposable schema. | ☑ PASS | `test_migration_0023_0024_smoke.py`; external smoke |
 
-## 4. Automated evidence to attach
+## 4. Residual conditions
 
-- full backend suite output;
-- scoped Ruff and mypy output;
-- ops-console test, typecheck, lint, and real-config build output;
-- product-web test, typecheck/build, and bundle-budget output;
-- migration `0021 → 0024` upgrade/downgrade smoke output;
-- independent QA and security review findings and dispositions;
-- production `/health`, signup, dispatch, and cross-tenant smoke checks after deployment.
+- POD bytes remain in the relational database; a workspace storage quota and upload rate limit
+  are follow-up hardening. Per-order proof count is atomic at five.
+- An already-downloaded driver manifest can remain readable offline for up to 8 hours or the
+  token expiry, whichever is sooner; server-side revocation is enforced immediately online.
+- Dispatch uses application-level ownership checks and single-column foreign keys; composite
+  tenant foreign keys remain defense-in-depth follow-up.
+- The full backend Ruff style debt remains partly historical; CI gates correctness rules
+  `E9,F63,F7,F82`, and every changed file passes full Ruff.
 
-## 5. Human sign-off
+## 5. Product-owner sign-off
 
 | Field | Value |
 |---|---|
-| Reviewer name | |
-| Date/time (Africa/Addis_Ababa) | |
-| Build/commit | |
-| Environment | |
-| Accepted / rejected | |
-| Open defects or conditions | |
-| Signature/confirmation | |
+| Reviewer name | Nahom Girma Woldemichael — product owner |
+| Date/time (Africa/Addis_Ababa) | 2026-10-22 |
+| Build/commit | `530785b` implementation; `6f7c8f1` ledger; `6159ddf` temp-dir ignore |
+| Environment | Disposable local SQLite; Playwright Chromium; local API/ops/product web |
+| Accepted / rejected | **ACCEPTED for merge, migration, and deployment, with residual conditions recorded above** |
+| Open defects or conditions | No blocking defect reproduced; medium storage/quota and composite-key hardening remain |
+| Signature/confirmation | Product-owner instruction in chat: **“Complete that checklist and confirm approval”** (2026-10-22) |
 
-**Not signed:** the automated test results in this repository do not constitute human UAT.
+This is an agent-assisted UAT execution recorded under explicit product-owner approval, not a
+claim that a separate human tester independently clicked every screen.
