@@ -2,6 +2,12 @@ import { api } from './api';
 import type {
   Alert,
   AuditEvent,
+  CashCollection,
+  CashCollectionStatus,
+  CashLedgerSummary,
+  Driver,
+  DriverShipment,
+  DriverStatus,
   ExceptionFeedResponse,
   ForecastResponse,
   IngestionResult,
@@ -149,6 +155,11 @@ export async function createShipment(payload: {
   quantity_units: number;
   planned_departure?: string;
   expected_delivery?: string;
+  /** NB-86: who is carrying it, and how much cash is expected at the door. */
+  driver_id?: string | null;
+  cod_amount_etb?: number;
+  /** NB-86: caller-supplied reference makes a retry on a dropped connection safe. */
+  client_ref?: string;
 }) {
   const { data } = await api.post<Shipment>('/shipments', payload);
   return data;
@@ -161,9 +172,88 @@ export async function updateShipmentStatus(
     delay_reason?: string;
     last_known_location?: string;
     proof_of_delivery_ref?: string;
+    /** NB-86: the delivery confirmation and its cash figure travel together,
+     * so a driver who never makes a second call still produces a cash record. */
+    cash_collected_etb?: number;
+    cash_note?: string;
   },
 ) {
   const { data } = await api.post<Shipment>(`/shipments/${shipmentId}/status`, payload);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Driver roster and cash-on-delivery ledger (NB-86)
+// ---------------------------------------------------------------------------
+
+export async function listDrivers(status?: DriverStatus): Promise<Driver[]> {
+  const { data } = await api.get<Driver[]>('/drivers', {
+    params: status ? { status } : undefined,
+  });
+  return data;
+}
+
+export async function createDriver(payload: {
+  full_name: string;
+  phone: string;
+  license_no?: string;
+  vehicle_plate?: string;
+  status?: DriverStatus;
+  notes?: string;
+}): Promise<Driver> {
+  const { data } = await api.post<Driver>('/drivers', payload);
+  return data;
+}
+
+export async function updateDriver(
+  driverId: string,
+  payload: {
+    full_name?: string;
+    phone?: string;
+    license_no?: string | null;
+    vehicle_plate?: string | null;
+    status?: DriverStatus;
+    notes?: string | null;
+  },
+): Promise<Driver> {
+  const { data } = await api.patch<Driver>(`/drivers/${driverId}`, payload);
+  return data;
+}
+
+/** Deactivates rather than deletes — delivery history must survive a roster cleanup. */
+export async function deactivateDriver(driverId: string): Promise<void> {
+  await api.delete(`/drivers/${driverId}`);
+}
+
+export async function listDriverShipments(driverId: string): Promise<DriverShipment[]> {
+  const { data } = await api.get<DriverShipment[]>(`/drivers/${driverId}/shipments`);
+  return data;
+}
+
+export async function listCashCollections(params?: {
+  status?: CashCollectionStatus;
+  driver_id?: string;
+}): Promise<CashCollection[]> {
+  const { data } = await api.get<CashCollection[]>('/cash-collections', { params });
+  return data;
+}
+
+export async function getCashLedger(): Promise<CashLedgerSummary> {
+  const { data } = await api.get<CashLedgerSummary>('/cash-collections/ledger');
+  return data;
+}
+
+export async function declareCash(
+  recordId: string,
+  payload: { collected_etb: number; note?: string },
+): Promise<CashCollection> {
+  const { data } = await api.post<CashCollection>(`/cash-collections/${recordId}/declare`, payload);
+  return data;
+}
+
+/** Office-side close. Admin-only on the server: accepting a shortfall writes money off. */
+export async function settleCash(recordId: string, payload: { note?: string } = {}): Promise<CashCollection> {
+  const { data } = await api.post<CashCollection>(`/cash-collections/${recordId}/settle`, payload);
   return data;
 }
 
