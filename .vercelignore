@@ -1,0 +1,6 @@
+.artifacts/
+apps/platform-api/.pytest-*-temp/
+apps/platform-api/.venv*/
+**/__pycache__/
+**/.next/
+**/dist/
