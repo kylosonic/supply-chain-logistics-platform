@@ -79,15 +79,6 @@ def next_billing_period_start(db: Session, org: Organization) -> date | None:
     return pricing.next_period_start_after(anchor.date(), cycle)
 
 
-def _latest_invoice(db: Session, org: Organization) -> SubscriptionInvoice | None:
-    return db.execute(
-        select(SubscriptionInvoice)
-        .where(SubscriptionInvoice.organization_id == org.id)
-        .order_by(SubscriptionInvoice.billing_period_start.desc())
-        .limit(1)
-    ).scalars().first()
-
-
 def derive_phase(db: Session, org: Organization, now: datetime) -> WorkspacePhase:
     """Pure derivation of the authoritative phase — no side effects."""
     has_trial_record = (
@@ -96,7 +87,7 @@ def derive_phase(db: Session, org: Organization, now: datetime) -> WorkspacePhas
         ).first()
         is not None
     )
-    last_invoice = _latest_invoice(db, org)
+    last_invoice = invoices_service.latest_invoice(db, org)
 
     if last_invoice is None and org.subscription_tier == 'free':
         return WorkspacePhase.FREE
@@ -269,7 +260,7 @@ def banner_for(
 def workspace_state_read(db: Session, org: Organization, now: datetime) -> WorkspaceStateRead:
     """Full workspace state surface for GET /billing/state and the guard."""
     phase = refresh_workspace_state(db, org, now)
-    last_invoice = _latest_invoice(db, org)
+    last_invoice = invoices_service.latest_invoice(db, org)
     next_start = next_billing_period_start(db, org)
 
     due_date: date | None = None

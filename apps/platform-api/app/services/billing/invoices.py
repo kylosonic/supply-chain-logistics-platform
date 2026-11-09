@@ -257,7 +257,7 @@ def issue_next_invoice(db: Session, org: Organization, now: datetime) -> Subscri
     rotation continues, overage from the prior paid period. Available
     wallet credits reduce the new total at issuance (blueprint decision #8);
     rows are marked applied FIFO."""
-    last = _latest_invoice(db, org)
+    last = latest_invoice(db, org)
     if last is None:
         raise ValueError('No prior invoice; use issue_first_invoice')
     period_start = last.billing_period_end + timedelta(days=1)
@@ -347,7 +347,7 @@ def try_issue_invoice(db: Session, org: Organization, now: datetime) -> Subscrip
         ).scalar_one_or_none()
 
 
-def _latest_invoice(db: Session, org: Organization) -> SubscriptionInvoice | None:
+def latest_invoice(db: Session, org: Organization) -> SubscriptionInvoice | None:
     return db.execute(
         select(SubscriptionInvoice)
         .where(SubscriptionInvoice.organization_id == org.id)
