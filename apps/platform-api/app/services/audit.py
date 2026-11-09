@@ -1,4 +1,3 @@
-import math
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
@@ -61,10 +60,6 @@ def record_audit_event(
 # ---------------------------------------------------------------------------
 
 _MAX_RADIUS_MILES = 50.0
-
-
-def _dist_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    return haversine_miles(lat1, lon1, lat2, lon2)
 
 
 def auto_resolve_late_pickup(alert_id: UUID, db: Session) -> dict[str, Any]:
@@ -135,7 +130,7 @@ def auto_resolve_late_pickup(alert_id: UUID, db: Session) -> dict[str, Any]:
     # 4. Filter within 50-mile radius using Haversine
     candidates: list[tuple[FleetAsset, float]] = []
     for asset in idle_assets:
-        dist = _dist_miles(origin_lat, origin_lon, asset.latitude, asset.longitude)
+        dist = haversine_miles(origin_lat, origin_lon, asset.latitude, asset.longitude)
         if dist <= _MAX_RADIUS_MILES:
             candidates.append((asset, dist))
 

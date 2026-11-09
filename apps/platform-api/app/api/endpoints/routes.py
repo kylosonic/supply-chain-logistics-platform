@@ -44,6 +44,17 @@ from app.services.routing import Delivery, Node, optimize_route_greedy
 
 router = APIRouter()
 
+_EPA_KG_CO2_PER_TON_MILE = 0.161
+_WEIGHT_CLASS_TONS = {
+    'heavy_duty': 40.0,
+    'medium_duty': 14.0,
+    'light_duty': 6.0,
+}
+
+
+def _trip_emissions_kg(distance_miles: float) -> float:
+    return round(distance_miles * _WEIGHT_CLASS_TONS['heavy_duty'] * _EPA_KG_CO2_PER_TON_MILE, 2)
+
 
 @router.post('/optimize', response_model=RouteOptimizeResponse)
 def optimize_routes(
@@ -93,9 +104,7 @@ def optimize_routes(
         for d in payload.deliveries
     ]
     effective_weights = payload.weights.model_dump()
-    
-    from app.utils.emissions import calculate_trip_emissions
-    
+
     result = optimize_route_greedy(
         nodes=nodes,
         start_code=payload.start_warehouse_code,
@@ -108,7 +117,7 @@ def optimize_routes(
     )
     
     co2_saved_kg = None
-    
+
     if payload.minimize_carbon_footprint:
         eco_weights = {'distance': 1.0, 'time': 0.0, 'cost': 0.0}
         eco_result = optimize_route_greedy(
@@ -122,9 +131,9 @@ def optimize_routes(
             weights=eco_weights,
         )
         
-        co2_standard = calculate_trip_emissions(result['total_distance_km'] / 1.60934, 'heavy_duty')
-        co2_eco = calculate_trip_emissions(eco_result['total_distance_km'] / 1.60934, 'heavy_duty')
-        
+        co2_standard = _trip_emissions_kg(result['total_distance_km'] / 1.60934)
+        co2_eco = _trip_emissions_kg(eco_result['total_distance_km'] / 1.60934)
+
         if co2_eco < co2_standard:
             result = eco_result
             effective_weights = eco_weights
