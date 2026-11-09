@@ -11,10 +11,10 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.schemas.common import UUIDString
 
 class ReceiptStatus(StrEnum):
     PENDING = 'pending'
@@ -57,7 +57,7 @@ class ReceiptUploadResponse(BaseModel):
 class ReceiptRead(BaseModel):
     """Customer surface — no admin internals."""
 
-    id: str
+    id: UUIDString
     status: ReceiptStatus
     verdict: Verdict | None = None
     invoice_number: str | None = None
@@ -70,17 +70,11 @@ class ReceiptRead(BaseModel):
     decided_at: datetime | None = None
     reversal_status: ReversalStatus | None = None
 
-    @field_validator('id', mode='before')
-    @classmethod
-    def _coerce_id(cls, v):
-        return str(v) if isinstance(v, UUID) else v
-
-
 class ReceiptQueueItemRead(BaseModel):
     """Admin verification-queue surface."""
 
-    id: str
-    organization_id: str
+    id: UUIDString
+    organization_id: UUIDString
     organization_name: str
     invoice_number: str | None = None
     designated_bank_code: str | None = None
@@ -110,12 +104,6 @@ class ReceiptQueueItemRead(BaseModel):
     content_type: str
     file_size_bytes: int
     created_at: datetime
-
-    @field_validator('id', 'organization_id', mode='before')
-    @classmethod
-    def _coerce_ids(cls, v):
-        return str(v) if isinstance(v, UUID) else v
-
 
 class VerdictRequest(BaseModel):
     verdict: Verdict
@@ -182,7 +170,7 @@ class ReversalRead(BaseModel):
     """The admin reversal outcome (message populated on Reverse with the
     exact NB-20.3 copy)."""
 
-    receipt_id: str
+    receipt_id: UUIDString
     invoice_number: str | None = None
     reference_number: str | None = None
     amount_etb: Decimal | None = None
@@ -193,18 +181,12 @@ class ReversalRead(BaseModel):
     wallet_voided_etb: Decimal | None = None
     message: str | None = None
 
-    @field_validator('receipt_id', mode='before')
-    @classmethod
-    def _coerce_id(cls, v):
-        return str(v) if isinstance(v, UUID) else v
-
-
 class VerifiedReceiptAuditRead(BaseModel):
     """One row of GET /receipts/audit — availability computed SERVER-side
     (decision #7)."""
 
-    id: str
-    organization_id: str
+    id: UUIDString
+    organization_id: UUIDString
     organization_name: str
     invoice_number: str | None = None
     reference_number: str | None = None
@@ -215,12 +197,6 @@ class VerifiedReceiptAuditRead(BaseModel):
     undo_available: bool
     undo_available_until: datetime | None = None
     reverse_available: bool
-
-    @field_validator('id', 'organization_id', mode='before')
-    @classmethod
-    def _coerce_ids(cls, v):
-        return str(v) if isinstance(v, UUID) else v
-
 
 class ReceiptAuditEventRead(BaseModel):
     """One audit event of the per-receipt timeline (NB-18.1)."""

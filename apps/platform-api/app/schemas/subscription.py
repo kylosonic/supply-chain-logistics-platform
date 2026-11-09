@@ -1,7 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
-from uuid import UUID
 
 import re
 
@@ -9,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.auth import SubscriptionStatus, SubscriptionTier
 from app.schemas.billing import BillingCycle, WorkspacePhase
+from app.schemas.common import UUIDString
 
 
 class PlanRead(BaseModel):
@@ -49,12 +49,12 @@ class UpdateContactPhoneRequest(BaseModel):
 
 
 class SubscriptionRead(BaseModel):
-    organization_id: str
+    organization_id: UUIDString
     organization_name: str
     tier: SubscriptionTier
     status: SubscriptionStatus
     preferred_ai_provider: str | None = None
-    preferred_ai_key_id: str | None = None
+    preferred_ai_key_id: UUIDString | None = None
     contact_phone: str | None = None
     updated_at: datetime | None
     billing_phase: WorkspacePhase | None = None
@@ -62,12 +62,6 @@ class SubscriptionRead(BaseModel):
     next_billing_period_start: date | None = None
 
     model_config = {'from_attributes': True}
-
-    @field_validator('organization_id', 'preferred_ai_key_id', mode='before')
-    @classmethod
-    def _coerce_ids(cls, v):
-        return str(v) if isinstance(v, UUID) else v
-
 
 class UsageMetric(StrEnum):
     DELIVERY_TASKS = 'delivery_tasks'

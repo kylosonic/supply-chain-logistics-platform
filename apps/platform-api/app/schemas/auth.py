@@ -1,9 +1,9 @@
 from datetime import datetime
 from enum import StrEnum
-from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
+from app.schemas.common import UUIDString
 
 class UserRole(StrEnum):
     ADMIN = 'admin'
@@ -59,7 +59,7 @@ class TokenResponse(BaseModel):
 
 
 class UserRead(BaseModel):
-    id: str
+    id: UUIDString
     username: str
     email: str | None = None
     full_name: str | None = None
@@ -69,14 +69,8 @@ class UserRead(BaseModel):
 
     model_config = {'from_attributes': True}
 
-    @field_validator('id', mode='before')
-    @classmethod
-    def _coerce_id(cls, v):
-        return str(v) if isinstance(v, UUID) else v
-
-
 class OrganizationRead(BaseModel):
-    id: str
+    id: UUIDString
     name: str
     slug: str
     primary_email_domain: str | None
@@ -87,12 +81,6 @@ class OrganizationRead(BaseModel):
     created_at: datetime
 
     model_config = {'from_attributes': True}
-
-    @field_validator('id', mode='before')
-    @classmethod
-    def _coerce_id(cls, v):
-        return str(v) if isinstance(v, UUID) else v
-
 
 class CompanySignupRequest(BaseModel):
     company_name: str = Field(min_length=2, max_length=128)

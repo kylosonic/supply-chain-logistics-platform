@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import Any
-from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
-from app.schemas.common import ORMBase
+from app.schemas.common import ORMBase, UUIDString
 
 
 class AuditEventRead(ORMBase):
@@ -19,23 +18,15 @@ class AuditEventRead(ORMBase):
 
 class ExceptionFeedItem(BaseModel):
     source_type: str
-    source_id: str
+    source_id: UUIDString
     severity: str
     status: str
     title: str
     message: str
     entity_type: str | None = None
-    entity_id: str | None = None
+    entity_id: UUIDString | None = None
     created_at: datetime
     metadata: dict[str, Any] | None = None
-
-    @field_validator('source_id', 'entity_id', mode='before')
-    @classmethod
-    def _coerce_ids(cls, v):
-        if v is None:
-            return v
-        return str(v) if isinstance(v, UUID) else v
-
 
 class ExceptionFeedSummary(BaseModel):
     open_alerts: int

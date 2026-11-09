@@ -1,7 +1,8 @@
 from datetime import datetime
-from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
+
+from app.schemas.common import UUIDString
 
 
 class ProviderKeyCreateRequest(BaseModel):
@@ -11,7 +12,7 @@ class ProviderKeyCreateRequest(BaseModel):
 
 
 class ProviderKeyRead(BaseModel):
-    id: str
+    id: UUIDString
     provider_name: str
     key_name: str
     masked_key: str
@@ -21,42 +22,23 @@ class ProviderKeyRead(BaseModel):
 
     model_config = {'from_attributes': True}
 
-    @field_validator('id', mode='before')
-    @classmethod
-    def _coerce_id(cls, v):
-        return str(v) if isinstance(v, UUID) else v
-
-
 class ProviderKeyRevokeRequest(BaseModel):
     reason: str | None = Field(default=None, max_length=255)
 
 
 class ProviderKeyTestResponse(BaseModel):
-    key_id: str
+    key_id: UUIDString
     provider_name: str
     ok: bool
     message: str
 
-    @field_validator('key_id', mode='before')
-    @classmethod
-    def _coerce_key_id(cls, v):
-        return str(v) if isinstance(v, UUID) else v
-
-
 class ProviderPreferenceRequest(BaseModel):
-    key_id: str
+    key_id: UUIDString
 
 
 class ProviderPreferenceRead(BaseModel):
-    organization_id: str
+    organization_id: UUIDString
     provider_name: str | None
-    key_id: str | None
+    key_id: UUIDString | None
 
     model_config = {'from_attributes': True}
-
-    @field_validator('organization_id', 'key_id', mode='before')
-    @classmethod
-    def _coerce_ids(cls, v):
-        if v is None:
-            return v
-        return str(v) if isinstance(v, UUID) else v

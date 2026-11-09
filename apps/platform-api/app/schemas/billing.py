@@ -1,9 +1,10 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
-from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
+
+from app.schemas.common import UUIDString
 
 
 class WorkspacePhase(StrEnum):
@@ -69,7 +70,7 @@ class WorkspaceStateRead(BaseModel):
 
 
 class NotificationRead(BaseModel):
-    id: str
+    id: UUIDString
     kind: str
     title: str
     message: str
@@ -79,7 +80,3 @@ class NotificationRead(BaseModel):
 
     model_config = {'from_attributes': True}
 
-    @field_validator('id', mode='before')
-    @classmethod
-    def _coerce_id(cls, v):
-        return str(v) if isinstance(v, UUID) else v

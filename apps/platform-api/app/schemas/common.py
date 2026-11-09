@@ -1,25 +1,24 @@
 from datetime import datetime
+from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, BeforeValidator, model_validator
 
 
-def _uuid_to_str(v):
+def _uuid_to_str(v: Any) -> Any:
     if isinstance(v, UUID):
         return str(v)
     return v
 
 
+UUIDString = Annotated[str, BeforeValidator(_uuid_to_str)]
+
+
 class ORMBase(BaseModel):
-    id: str
+    id: UUIDString
     created_at: datetime
 
     model_config = {'from_attributes': True}
-
-    @field_validator('id', mode='before')
-    @classmethod
-    def _coerce_id(cls, v):
-        return _uuid_to_str(v)
 
     @model_validator(mode='before')
     @classmethod
