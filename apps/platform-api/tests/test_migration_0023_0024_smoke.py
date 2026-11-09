@@ -43,8 +43,23 @@ def test_dispatch_and_invitation_migrations_upgrade_and_downgrade(tmp_path, monk
     assert 'unassigned_json' in {
         column['name'] for column in inspector.get_columns('dispatch_runs')
     }
+    assert {
+        'cash_declared_etb',
+        'cash_handed_over_etb',
+        'cash_shortfall_etb',
+        'cash_overage_etb',
+        'cash_deposit_bank',
+        'cash_deposit_reference',
+        'cash_close_note',
+        'cash_closed_by_user_id',
+    } <= {
+        column['name'] for column in inspector.get_columns('dispatch_runs')
+    }
     assert 'proof_sequence' in {
         column['name'] for column in inspector.get_columns('delivery_proofs')
+    }
+    assert 'token_version' in {
+        column['name'] for column in inspector.get_columns('users')
     }
 
     command.downgrade(config, '20260813_0021')

@@ -290,6 +290,7 @@ def company_signup(
         role=UserRole(user.role),
         organization_id=str(org.id),
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
+        token_version=user.token_version,
     )
 
     _set_auth_cookie(response, token)
@@ -321,6 +322,7 @@ def login_user(payload: UserLogin, request: Request, response: Response, db: Ses
         subject=str(user.id),
         role=UserRole(user.role),
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
+        token_version=user.token_version,
     )
 
     _set_auth_cookie(response, token)
@@ -353,7 +355,14 @@ def list_users(
 
 
 @router.post('/logout')
-def logout(response: Response):
+def logout(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_user.token_version += 1
+    db.add(current_user)
+    db.commit()
     _clear_auth_cookie(response)
     return {'detail': 'Logged out'}
 
@@ -368,6 +377,7 @@ def get_token_for_ws(
         role=UserRole(current_user.role),
         organization_id=str(membership.organization_id),
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
+        token_version=current_user.token_version,
     )
     return TokenResponse(
         access_token=token,

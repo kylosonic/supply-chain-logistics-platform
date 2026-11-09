@@ -43,6 +43,12 @@ def get_current_user_from_token(token: str, db: Session) -> User:
     user = UserRepository(db).get_by_id(user_id)
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Inactive or missing user')
+    token_version = payload.get('ver', 0)
+    if not isinstance(token_version, int) or token_version != user.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Token has been revoked',
+        )
     return user
 
 

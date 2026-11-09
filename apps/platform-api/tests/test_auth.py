@@ -1,8 +1,7 @@
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import pytest
 
-from app.core.config import settings
 from app.schemas.auth import UserRole
 from app.services.security import create_access_token, decode_access_token, hash_password, verify_password
 

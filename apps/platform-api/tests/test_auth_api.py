@@ -40,6 +40,23 @@ def test_admin_only_users_endpoint_ok_for_admin(client: TestClient, admin_token:
     assert any(user['username'] == 'admin' for user in payload)
 
 
+def test_logout_revokes_the_presented_access_token(client: TestClient, admin_token: str):
+    headers = {'Authorization': f'Bearer {admin_token}'}
+    assert client.get('/api/v1/auth/me', headers=headers).status_code == 200
+
+    logout = client.post('/api/v1/auth/logout', headers=headers)
+    assert logout.status_code == 200, logout.text
+    assert client.get('/api/v1/auth/me', headers=headers).status_code == 401
+
+    login = client.post(
+        '/api/v1/auth/login',
+        json={'username': 'admin', 'password': 'admin12345'},
+    )
+    assert login.status_code == 200
+    fresh = {'Authorization': f"Bearer {login.json()['access_token']}"}
+    assert client.get('/api/v1/auth/me', headers=fresh).status_code == 200
+
+
 def test_register_requires_admin_when_users_exist(client: TestClient):
     resp = client.post(
         '/api/v1/auth/register',

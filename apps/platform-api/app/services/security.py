@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
 import hashlib
 import hmac
 import secrets
 from base64 import urlsafe_b64encode
+from datetime import UTC, datetime, timedelta
 
-from cryptography.fernet import Fernet
 import jwt
+from cryptography.fernet import Fernet
 
 from app.core.config import settings
 from app.schemas.auth import UserRole
@@ -36,12 +36,18 @@ def verify_password(password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(subject: str, role: UserRole, expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    subject: str,
+    role: UserRole,
+    expires_delta: timedelta | None = None,
+    token_version: int = 0,
+) -> str:
     now = datetime.now(UTC)
     expire = now + (expires_delta or timedelta(minutes=settings.jwt_access_token_expire_minutes))
     payload = {
         'sub': str(subject),
         'role': role,
+        'ver': token_version,
         'iat': int(now.timestamp()),
         'exp': int(expire.timestamp()),
     }
@@ -53,6 +59,7 @@ def create_access_token_for_org(
     role: UserRole,
     organization_id: str,
     expires_delta: timedelta | None = None,
+    token_version: int = 0,
 ) -> str:
     now = datetime.now(UTC)
     expire = now + (expires_delta or timedelta(minutes=settings.jwt_access_token_expire_minutes))
@@ -60,6 +67,7 @@ def create_access_token_for_org(
         'sub': str(subject),
         'role': role,
         'org_id': str(organization_id),
+        'ver': token_version,
         'iat': int(now.timestamp()),
         'exp': int(expire.timestamp()),
     }
