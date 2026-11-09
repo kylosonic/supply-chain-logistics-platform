@@ -8,7 +8,7 @@ unique constraint ``uq_subscription_invoice_org_period``.
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import select

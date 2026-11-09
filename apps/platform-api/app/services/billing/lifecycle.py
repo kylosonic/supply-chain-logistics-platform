@@ -17,7 +17,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.organization import Organization
-from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.trial_record import TrialRecord
 from app.schemas.billing import WorkspacePhase, WorkspaceStateRead
 from app.schemas.subscription import SubscriptionRead

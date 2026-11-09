@@ -17,7 +17,6 @@ from sqlalchemy import (
     LargeBinary,
     Numeric,
     String,
-    func,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship

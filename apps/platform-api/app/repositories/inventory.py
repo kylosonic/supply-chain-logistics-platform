@@ -5,7 +5,6 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.models.inventory import Inventory
-from app.models.item import Item
 from app.models.warehouse import Warehouse
 from app.repositories.base import BaseRepository
 

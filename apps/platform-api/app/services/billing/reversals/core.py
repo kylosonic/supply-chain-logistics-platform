@@ -34,7 +34,6 @@ from app.models.user import User
 from app.services.audit import record_audit_event
 from app.services.billing import lifecycle, wallet
 from app.services.billing.money import quantize_money
-from app.services.billing.receipts.intake import NOTIFICATION_EXPIRY_DAYS
 from app.services.billing.reversals import fraud_flags
 
 UNDO_WINDOW_HOURS = settings.reversal_undo_window_hours
