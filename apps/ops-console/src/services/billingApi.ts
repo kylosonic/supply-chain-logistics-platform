@@ -6,7 +6,6 @@ import type {
   ProviderPreference,
   SubscriptionPlan,
   SubscriptionTier,
-  UsageRecordResponse,
   UsageSummary,
 } from '../types/api';
 
@@ -71,7 +70,3 @@ export async function getCurrentUsage(): Promise<UsageSummary> {
   return data;
 }
 
-export async function recordUsage(units: number): Promise<UsageRecordResponse> {
-  const { data } = await api.post<UsageRecordResponse>('/subscriptions/usage/record', { units });
-  return data;
-}

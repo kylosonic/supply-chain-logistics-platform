@@ -41,11 +41,6 @@ export async function listReceiptQueue(): Promise<ReceiptQueueItem[]> {
   return data;
 }
 
-export async function getReceiptQueueItem(id: string): Promise<ReceiptQueueItem> {
-  const { data } = await api.get<ReceiptQueueItem>(`/receipts/queue/${id}`);
-  return data;
-}
-
 export async function getReceiptFileUrl(id: string): Promise<string> {
   const { data } = await api.get<Blob>(`/receipts/queue/${id}/file`, { responseType: 'blob' });
   return URL.createObjectURL(data);

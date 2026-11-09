@@ -305,23 +305,6 @@ export type UsageSummary = {
   estimated_overage_cost_usd: number | null;
 };
 
-export type UsageThresholdLevel = 'approaching_limit' | 'limit_reached' | 'overage';
-
-export type UsageThresholdEvent = {
-  metric: UsageMetric;
-  tier: SubscriptionTier;
-  level: UsageThresholdLevel;
-  usage_units: number;
-  included_units: number;
-  utilization_percent: number;
-  message: string;
-};
-
-export type UsageRecordResponse = {
-  usage: UsageSummary;
-  events: UsageThresholdEvent[];
-};
-
 export type ProviderKey = {
   id: string;
   provider_name: string;

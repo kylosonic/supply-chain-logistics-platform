@@ -9,14 +9,11 @@ import {
   getForecast,
   getRouteSchedules,
   listShipments,
-  listAlerts,
   getExceptionFeed,
   getAuditTimeline,
   listReplenishmentPlans,
   getDockAppointments,
   getWeatherRiskZones,
-  listProviderKeys,
-  getRouteOptimizationHistory,
 } from '../services/logisticsApi';
 import { getCurrentUsage } from '../services/billingApi';
 import { dismissPitch, getActivationState, resetWorkspace } from '../services/activationApi';
@@ -28,12 +25,10 @@ import {
   listReceipts,
   listVerifiedAudit,
   removeTrustedPayer,
-  renderDecision,
   reverseReceipt,
   submitDispute,
   undoReceipt,
 } from '../services/receiptsApi';
-import type { RenderDecisionPayload } from '../services/receiptsApi';
 
 export function useInventoryOverview() {
   return useQuery({
@@ -63,14 +58,6 @@ export function useShipments() {
   return useQuery({
     queryKey: ['shipments'],
     queryFn: listShipments,
-    staleTime: 30_000,
-  });
-}
-
-export function useAlerts(status?: string) {
-  return useQuery({
-    queryKey: ['alerts', status],
-    queryFn: () => listAlerts(status as 'open' | 'acknowledged' | 'resolved' | undefined),
     staleTime: 30_000,
   });
 }
@@ -123,22 +110,6 @@ export function useWeatherRiskZones() {
   });
 }
 
-export function useProviderKeys() {
-  return useQuery({
-    queryKey: ['providers', 'keys'],
-    queryFn: listProviderKeys,
-    staleTime: 30_000,
-  });
-}
-
-export function useRouteOptimizationHistory() {
-  return useQuery({
-    queryKey: ['routes', 'history'],
-    queryFn: getRouteOptimizationHistory,
-    staleTime: 30_000,
-  });
-}
-
 export function useReceipts() {
   return useQuery({
     queryKey: ['receipts'],
@@ -160,17 +131,6 @@ export function useWallet() {
     queryKey: ['receipts', 'wallet'],
     queryFn: getWallet,
     staleTime: 15_000,
-  });
-}
-
-export function useRenderDecision() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: RenderDecisionPayload }) =>
-      renderDecision(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['receipts'] });
-    },
   });
 }
 
