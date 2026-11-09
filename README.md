@@ -113,10 +113,11 @@ set DATABASE_URL=postgresql+psycopg://postgres.<project-ref>:<db-password>@aws-0
 python -m alembic upgrade head
 ```
 
-Migration chain head: `20260823_0024` (customer stops, driver execution, proof of delivery, and
-day-end cash close). The chain also includes `20260813_0021` route explanations, `20260821_0022`
-legacy NULL-organization quarantine, and `20260822_0023` workspace invitations. Chain integrity is
-pinned by `tests/test_migration_chain_integrity.py`.
+Migration chain head: `20261107_0026` (server-side logout token revocation). The local hardening
+chain also includes `20261107_0025` cash handover and deposit evidence, `20260823_0024` customer
+stops, driver execution, and proof of delivery, `20260813_0021` route explanations,
+`20260821_0022` legacy NULL-organization quarantine, and `20260822_0023` workspace invitations.
+Chain integrity is pinned by `tests/test_migration_chain_integrity.py`.
 
 ### Supabase CLI (database operations only — auth is retired)
 
@@ -258,7 +259,14 @@ Base API prefix: `/api/v1`
 - Orders ingestion and CSV uploads
 - Forecasting endpoints
 - Routing optimization and schedule views
-- Live feed, shipment lifecycle, alerts, replenishment planning
+- Multi-vehicle fleet planning with per-driver capacity and stop limits
+- Signed, expiring customer tracking links with delivery status and arrival windows
+- Live feed with inventory, route, forecast, and dispatch-progress snapshots
+- Shipment lifecycle, alerts, replenishment planning
+- Driver proof storage with per-order and per-workspace quotas
+- Offline driver proof capture queued in IndexedDB until connectivity returns
+- Auditable dispatch cash close with handover amount, shortfall, overage, deposit bank/reference, and note
+- Team invitations with optional SMTP email delivery and a secure copyable fallback link
 - Operations readiness and metrics endpoints
 - Subscription management: plans listing, select tier, tenant subscription state
 - Usage metering: monthly task counters with threshold events at 80%, 100%, and overage, automatically recorded from route optimization delivery tasks and available via `POST /subscriptions/usage/record` and `GET /subscriptions/usage/me`

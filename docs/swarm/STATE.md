@@ -3,21 +3,25 @@
 > Historical governance record. The product owner removed `AGENTS.md` and `.opencode/` on
 > 2026-10-21; older sections below still reference that retired process. This file is retained as
 > evidence and release context, not as a reinstated agent topology.
-> Last updated: 2026-10-22. Verify current claims against the commands and artifacts named below.
+> Last updated: 2026-11-07. Verify current claims against the commands and artifacts named below.
 
 ## 1. Current Phase
 
-**Phase: `DEPLOYED`** — implementation, UAT, production migration, merge, and deployment
-completed on 2026-10-22.
+**Phase: `DEPLOYED + LOCAL HARDENING`** — the 2026-10-22 release remains live; a follow-up
+operational hardening batch is implemented locally and has not yet been deployed.
 
 - Active batch: route/forecast evidence, grounded Decision Brief / Cash Risk Radar / exception
   triage, legacy NULL-org quarantine, public trust pages, customer-stop dispatch, driver
   PWA/POD/cash close, team invitations, and Amharic driver UX. The work is merged and deployed.
-- Production runs `master` at `0d0bf98`; Alembic head is `20260823_0024`.
+  The local follow-up batch adds fleet allocation, customer tracking, evidence-backed cash close,
+  proof quotas, SMTP invitations, exception metrics, and production smoke checks.
+- Production runs `master` at `0d0bf98`; deployed Alembic head is `20260823_0024`. The local tree
+  advances the chain to `20261107_0026`, which must be applied before deploying the new cash-close
+  and token-revocation code.
 - Earlier batches NB-63..NB-86 remain deployed and verified as recorded in the sections below; their
   history is retained rather than overwritten by this batch.
-- Open follow-ups: residual hardening (POD object storage/quota, composite tenant keys, offline
-  cache revocation), Graphify post-update (tool unavailable), and branch-protection plan limit.
+- Open follow-ups: residual hardening (POD object storage, composite tenant keys, offline cache
+  revocation), Graphify post-update (tool unavailable), and branch-protection plan limit.
 - The Phase 0 trust reset now requires active workspace membership on business surfaces, denies
   unaffiliated readers, attaches new users to the actor's workspace, scopes the users list, and
   serves a real `/docs` route. The simulated rerouting payload and mock weather fallback were
@@ -26,7 +30,7 @@ completed on 2026-10-22.
   a selected-workspace write escalation, a membership-only role bypass, audit misattribution, and
   a quarantine-slug takeover path. All are remediated with regression tests, and independent
   retest reproduced no remaining critical/high path. Enterprise tenant-safety is still not claimed
-  while composite tenant keys and POD quotas remain open.
+  while composite tenant keys and object storage remain open.
 
 ## 2. Active Feature Branch & Batch Definition
 
@@ -48,7 +52,7 @@ completed on 2026-10-22.
 | NB-63 — no environment boots with a known placeholder secret | **IMPLEMENTED** | `KNOWN_PLACEHOLDER_SECRETS` exact-match rejection in `app/core/config.py`; `.env.example` ships empty values + generation instructions; `docker-compose.yml` requires `POSTGRES_PASSWORD`/`JWT_SECRET_KEY`/`PROVIDER_KEY_ENCRYPTION_SECRET` and binds Postgres to `127.0.0.1`; boot-time guard in `app/main.py` lifespan. Pinned by 8 tests in `tests/test_config_guards.py`. |
 | NB-64 — every operator sees only their own company's data | **IMPLEMENTED / HARDENED 2026-10-21** | Membership is now mandatory for role-protected business endpoints; write guards reject org-less actors; websocket subscriptions reject org-less users; org-less reads are limited to explicit legacy NULL rows; new users are attached to the actor workspace. Covered by `tests/test_tenant_isolation_operations.py`, `test_route_tenant_scope.py`, `test_auth_api.py`, and the repository-wide suite. |
 | NB-65 — feedback surface cannot be abused | **IMPLEMENTED** | `POST /api/v1/feedback` now requires an authenticated user and stamps the caller's identity. `tests/test_feedback_auth.py`. |
-| NB-66 — no known-vulnerable dependency versions | **IMPLEMENTED** | `next` 14.2.35 → 15.5.21; `axios` → 1.20.0; `electron` 31 → 43; `react-router-dom` 6 → 7.18.3 (production advisory). Each upgrade verified by that surface's tests + build. |
+| NB-66 — no known-vulnerable dependency versions | **IMPLEMENTED** | `next` is now 16.4.5; `axios` 1.20.0; `electron` 43; `react-router-dom` 7.18.3. The 2026-11-07 pass also pins patched `follow-redirects` 1.16.2 and `source-map-js` 1.2.2, with deployed-set audits at zero known advisories. |
 | NB-67 — Supabase auth can never be wired up unsafe | **IMPLEMENTED** | Path retired, not hardened: `supabase/RETIRED.md` records the six preconditions to re-arm; `@supabase/supabase-js` removed from `apps/product-web`; ADR-0001 records the decision. |
 | NB-68 — first visitor can never become platform admin | **IMPLEMENTED / HARDENED 2026-10-21** | Production bootstrap must use company signup; `/auth/register` requires an owner/admin workspace membership once users exist and attaches the created user to that workspace. The old org-less global-admin path is closed. |
 | NB-69 — no account enumeration | **IMPLEMENTED** | Generic conflict messages on register/login. |
@@ -93,7 +97,7 @@ implemented, accepted, and deployed.
 | Customer + delivery order model | **IMPLEMENTED / LOCAL PASS** | `app/models/dispatch.py`; migration `20260823_0024`; `tests/test_dispatch_api.py` |
 | Time-window/capacity planner | **IMPLEMENTED / LOCAL PASS** | Deterministic greedy planner in `app/services/dispatch.py`; windows, service time, priority, capacity, and max stops are explicit |
 | Driver manifest + signed link | **IMPLEMENTED / LOCAL PASS** | `POST /api/v1/dispatch/runs/{id}/driver-link`; capability in URL fragment; 12-hour expiry; active-driver check on every request |
-| Driver PWA / offline flow | **IMPLEMENTED / LOCAL PASS** | `/driver`; installable manifest; service worker scoped to `/driver`; queued status/cash actions; per-token 24-hour manifest cache |
+| Driver PWA / offline flow | **IMPLEMENTED / LOCAL PASS** | `/driver`; installable manifest; service worker scoped to `/driver`; queued status/cash actions; IndexedDB proof queue; per-token 24-hour manifest cache |
 | POD capture + retrieval | **IMPLEMENTED / LOCAL PASS** | JPEG/PNG/WebP magic-byte validation, 4 MB cap, five-proof per-order cap, tenant-scoped download; object storage remains future work |
 | End-of-day cash close | **IMPLEMENTED / LOCAL PASS** | Admin-only close; delivered stops only create expected cash; shortfall note required on declaration; over-declaration rejected |
 | Team invitations | **IMPLEMENTED / LOCAL PASS** | Invite/accept/revoke/role/remove; last-owner protection; fragment-based token delivery; `tests/test_team_invitations.py` |
@@ -107,6 +111,23 @@ implemented, accepted, and deployed.
 | Independent QA | **AUTOMATED PASS / HUMAN UAT OPEN** | Final automated review found all gates green; human acceptance remains unsigned |
 | Independent security re-review | **PASS ON PRIOR CRITICAL/HIGH** | Independent retest reproduced no remaining critical/high path; residual medium items are listed in §7 |
 | Human UAT | **ACCEPTED 2026-10-22** | Product-owner instruction plus agent-assisted browser/API execution; evidence and residual conditions in `docs/plans/release-uat-2026-10-21.md` |
+
+### 3.6 Local operational hardening batch — 2026-11-07
+
+| Item | Status | Evidence |
+|---|---|---|
+| Multi-vehicle allocation | **IMPLEMENTED / LOCAL PASS** | `POST /api/v1/dispatch/plan-fleet`; deterministic capacity/window heuristic in `app/services/dispatch.py`; `tests/test_fleet_dispatch.py` |
+| Live dispatch progress | **IMPLEMENTED / LOCAL PASS** | Tenant-scoped `dispatch_overview` in the live payload; `DispatchPage` refreshes only when the version changes |
+| Customer tracking links | **IMPLEMENTED / LOCAL PASS** | Per-order signed capability in `#token`; public `/track` page; status and ETA only; `tests/test_dispatch_api.py` |
+| Evidence-backed cash close | **IMPLEMENTED / LOCAL PASS** | Handover, shortfall, overage, deposit evidence, close note, and close actor persisted; migration `20261107_0025` |
+| Proof storage bounds | **IMPLEMENTED / LOCAL PASS** | 4 MB per file, five proofs per order, 250 MB default per workspace; serialized against the organization row |
+| SMTP invitation delivery | **IMPLEMENTED / LOCAL PASS** | Optional SMTP adapter; secure invite URL fallback; `tests/test_email_delivery.py` |
+| Exception observability | **IMPLEMENTED / LOCAL PASS** | Unhandled exception count/timestamp and request-ID exception logs; `tests/test_observability.py` |
+| Production smoke workflow | **IMPLEMENTED / LOCAL DEFINITION PASS** | Daily/manual GitHub workflow checks health, public surfaces, and published fleet endpoint |
+| Full private-fleet day regression | **IMPLEMENTED / LOCAL PASS** | `tests/test_daily_operations_workflow.py` covers fleet plan → driver execution → cash close → tracking |
+| Server-side logout revocation | **IMPLEMENTED / LOCAL PASS** | Per-user `token_version`; access and websocket tokens are rejected after logout; migration `20261107_0026` |
+| Offline proof queue | **IMPLEMENTED / LOCAL PASS** | Per-driver-scope IndexedDB blobs; automatic retry on reconnect; `driverProofQueue.test.ts` |
+| Deployed dependency refresh | **IMPLEMENTED / LOCAL PASS** | Next 16.4.5 and product-web React 19.3.1; sharp 0.35.5, zod 4.6.7, patched follow-redirects/source-map-js; `npm audit --omit=dev` reports zero vulnerabilities for ops and product-web |
 
 ## 4. Completed Gates
 
@@ -165,7 +186,7 @@ implemented, accepted, and deployed.
 | Neon API key was pasted into a chat session | The Neon API key used to provision production was shared in the working conversation, so it must be treated as disclosed. It grants control of the Neon organization (`org-holy-moon-30252311`), including the new production project. Blast radius is bounded: it cannot read the database password (the connection string is fetched per request, not stored), but it can delete or recreate projects. | **Rotate it at https://console.neon.tech/app/settings/api-keys when convenient.** Production keeps working afterwards — the key is not stored in Vercel and not referenced at runtime. |
 | ~~Alert rerouting invents a carrier/cost/recovery time~~ | **RESOLVED 2026-10-21.** The delay and invented fields are gone. Rerouting only attaches a saved active route candidate or records `no_saved_alternative`; auto-resolve validates the route and shipment inside the tenant. Pinned by `tests/test_rerouting.py`. | Closed; live-provider rerouting remains future work |
 | **Route factor weights are score-only under current inputs** | With one constant speed and cost per km, distance/time/cost are all proportional to leg distance. The nearest-stop ordering is therefore unchanged by the sliders; this is now stated in every explanation and the assessment plan. | Product expectation risk; not a correctness claim of multi-objective optimization. |
-| Migration batch | `20260813_0021` (nullable explanation), `20260821_0022` (NULL-org quarantine), `20260822_0023` (invitations), `20260823_0024` (dispatch/POD/cash). Applied to production; head verified at `20260823_0024`. | Closed |
+| Migration batch | `20260813_0021` (nullable explanation), `20260821_0022` (NULL-org quarantine), `20260822_0023` (invitations), `20260823_0024` (dispatch/POD/cash). Applied to production; head verified at `20260823_0024`. Local head `20261107_0026` adds cash-close evidence and token revocation and is not yet applied. | Local deploy pending |
 | POD bytes in relational DB | Proof images are capped and tenant-scoped but stored as blobs; object storage and signature capture are future hardening. | Not a blocker for pilots; blocker for large-fleet scale. |
 | Offline proof upload | Status/cash actions queue offline; photo proof requires connectivity. | Product limitation; record in pilot expectations. |
 | Driver capability revocation | Deactivation blocks existing links on the next request; there is no explicit JTI denylist and links expire after 12 hours. | Low residual; revisit before enterprise sales. |
@@ -208,6 +229,8 @@ implemented, accepted, and deployed.
 - `apps/ops-console/src/components/DecisionBriefPanel.tsx` — evidence-only dashboard panel
 - `apps/platform-api/app/models/dispatch.py` — customers, runs, delivery orders, proofs
 - `apps/platform-api/alembic/versions/20260823_0024_dispatch_driver_flow.py` — dispatch migration
+- `apps/platform-api/alembic/versions/20261107_0025_dispatch_cash_close_evidence.py` — cash handover, shortfall/overage, and deposit evidence
+- `apps/platform-api/alembic/versions/20261107_0026_user_token_version.py` — server-side logout token revocation
 - `apps/ops-console/src/pages/DispatchPage.tsx`, `DriverPage.tsx` — operator and driver workflows
 - `apps/platform-api/app/api/endpoints/team.py` — workspace invitations and member controls
 - `apps/product-web/src/app/privacy|terms|security|status/` — public trust routes
@@ -229,6 +252,12 @@ implemented, accepted, and deployed.
 
 | Evidence | Value |
 |---|---|
+| Local hardening backend suite (2026-11-07) | `494 passed, 20 warnings in 568.24s` (xdist, timed, outside the File sandbox) |
+| Local hardening ops console (2026-11-07) | `29 files / 178 tests`; typecheck, ESLint, and production Vite build clean |
+| Local hardening product web (2026-11-07) | `12 files / 72 tests`; Next 16.4.5 production build, React 19.3.1, eleven-route bundle gate clean |
+| Deployed dependency audits (2026-11-07) | `npm audit --omit=dev --audit-level=high` reports zero vulnerabilities for ops and product-web |
+| Migration smoke (2026-11-07) | Chain upgrades from `20260813_0021` through `20261107_0026` and downgrades cleanly on SQLite |
+| Docker config (2026-11-07) | `docker compose config --quiet` exits 0 with the expanded backend environment |
 | Backend tests (locked deps) | `399 passed, 17 warnings in 468.12s` — `.artifacts/backend-lockcheck-final.log` |
 | Backend tests (working venv) | `399 passed, 18 warnings in 419.08s` — `.artifacts/backend-after-nb64.log` |
 | Ops console | `Test Files 19 passed (19) / Tests 143 passed (143)`; typecheck, lint (`--max-warnings=0`) and build clean |
@@ -271,3 +300,6 @@ implemented, accepted, and deployed.
   additive/reversible; `0022` preserves orphan rows in quarantine, and `0023`/`0024` add tables.
 - Rollback downgrade order is `0024 → 0023 → 0022 → 0021`; do not downgrade `0022` while the
   quarantine workspace has members.
+- The local hardening batch adds `20261107_0025` and `20261107_0026` after `20260823_0024`. Apply
+  them before deploying the new cash-close and token-revocation code; both downgrades remove only
+  their new columns.
