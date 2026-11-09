@@ -2,6 +2,9 @@
   "name": "supply-chain-desktop",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "main": "src/main.cjs",
   "scripts": {
     "postinstall": "node scripts/ensure-electron-binary.cjs",
