@@ -115,3 +115,4 @@ After deploying to production:
 - [ ] Signup funnel reachable end to end (`docs/eaii/submission-checklist.md` Part E notes the
       current production database blocker)
 - [ ] No new error spike in the deployment's runtime logs
+- [ ] `Production smoke` workflow passes (manual run after release, then daily health check)

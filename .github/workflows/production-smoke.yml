@@ -1,0 +1,39 @@
+name: Production smoke
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-surfaces:
+    runs-on: ubuntu-latest
+    steps:
+      - name: API health
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+            https://platform-api-smoky.vercel.app/health \
+            | tee /tmp/freightpilot-health.json
+          python3 - <<'PY'
+          import json
+
+          with open('/tmp/freightpilot-health.json', encoding='utf-8') as handle:
+              health = json.load(handle)
+          assert health == {'status': 'ok', 'db': 'ok'}, health
+          PY
+
+      - name: Public surfaces
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+            https://product-web-chi.vercel.app/ > /dev/null
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+            https://ops-console-azure.vercel.app/ > /dev/null
+
+      - name: Dispatch fleet endpoint is published
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+            https://platform-api-smoky.vercel.app/openapi.json \
+            | python3 -c "import json,sys; schema=json.load(sys.stdin); assert '/api/v1/dispatch/plan-fleet' in schema['paths']"
