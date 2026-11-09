@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import UTC, datetime, timedelta
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -27,6 +27,7 @@ from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.user import User
 from app.services.audit import record_audit_event
 from app.services.billing import receipt_extraction, trusted_payers
+from app.services.billing.money import quantize_money
 from app.services.billing.receipt_extraction import (
     EXTRACTION_FIELDS,
     LOW_CONFIDENCE_THRESHOLD,
@@ -125,7 +126,7 @@ def _apply_extraction_fields(receipt: PaymentReceipt, result) -> None:
     amount = _as_str(result.fields.get('transfer_amount'))
     if amount:
         try:
-            receipt.amount_etb = Decimal(amount).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            receipt.amount_etb = quantize_money(Decimal(amount))
         except Exception:
             receipt.amount_etb = None
     transfer_date = _as_str(result.fields.get('transfer_date'))

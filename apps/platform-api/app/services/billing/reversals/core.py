@@ -20,7 +20,7 @@ Never ``app.api``.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -33,6 +33,7 @@ from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.user import User
 from app.services.audit import record_audit_event
 from app.services.billing import lifecycle, wallet
+from app.services.billing.money import quantize_money
 from app.services.billing.receipts.intake import NOTIFICATION_EXPIRY_DAYS
 from app.services.billing.reversals import fraud_flags
 
@@ -49,10 +50,6 @@ class ReversalError(Exception):
         self.status_code = status_code
         self.message = message
         super().__init__(message)
-
-
-def _q(value: Decimal) -> Decimal:
-    return value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 def _as_utc(value: datetime | None) -> datetime | None:
@@ -119,7 +116,7 @@ def _restore_balance(
         raise ReversalError(409, 'Receipt has no routed invoice to restore')
     payload = verified_event.payload or {}
     credit_delta = Decimal(str(payload.get('credit_delta_etb') or '0.00'))
-    new_balance = _q(invoice.balance_remaining_etb + credit_delta)
+    new_balance = quantize_money(invoice.balance_remaining_etb + credit_delta)
     invoice.balance_remaining_etb = new_balance
     if new_balance > 0:
         invoice.status = 'issued'
@@ -172,7 +169,7 @@ def _record_reversal_audit(
     balance (derived exactly: ``restored - credit_delta``)."""
     payload = verified_event.payload or {}
     delta = Decimal(str(payload.get('credit_delta_etb') or '0.00'))
-    balance_before = _q(restored_balance - delta)
+    balance_before = quantize_money(restored_balance - delta)
     event_type = 'receipts.undo' if reversal_kind == 'undo' else 'receipts.reversed'
     fields = {
         'invoice_number': payload.get('invoice_number'),

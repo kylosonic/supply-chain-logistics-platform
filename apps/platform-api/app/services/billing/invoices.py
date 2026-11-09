@@ -9,7 +9,7 @@ unique constraint ``uq_subscription_invoice_org_period``.
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -25,6 +25,7 @@ from app.models.trial_record import TrialRecord
 from app.models.usage_meter import OrganizationUsageCounter
 from app.services.audit import record_audit_event
 from app.services.billing import pricing, wallet
+from app.services.billing.money import quantize_money
 
 _INVOICE_WARNING_EXPIRY_DAYS = 3
 
@@ -178,7 +179,7 @@ def _issue_invoice(
         if rate is None:
             # No overage rate for this metric on this tier — skip the line.
             continue
-        amount = (Decimal(units) * rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        amount = quantize_money(Decimal(units) * rate)
         invoice.lines.append(
             InvoiceLineItem(
                 kind=pricing.OVERAGE_LINE_KIND[metric],
@@ -273,9 +274,7 @@ def issue_next_invoice(db: Session, org: Organization, now: datetime) -> Subscri
         rate = pricing.overage_rate_etb(last.tier, metric)
         if rate is None:
             continue
-        pre_wallet_total = pre_wallet_total + (Decimal(units) * rate).quantize(
-            Decimal('0.01'), rounding=ROUND_HALF_UP
-        )
+        pre_wallet_total = pre_wallet_total + quantize_money(Decimal(units) * rate)
 
     available = wallet.available_wallet_credit(db, org)
     wallet_credit_etb = min(available, pre_wallet_total)

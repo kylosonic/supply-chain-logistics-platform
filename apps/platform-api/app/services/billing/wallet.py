@@ -8,7 +8,7 @@ edge; wallet never imports back).
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,17 +19,14 @@ from app.models.payment_receipt import PaymentReceipt
 from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.wallet_credit import WalletCredit
 from app.services.audit import record_audit_event
+from app.services.billing.money import quantize_money
 
 _WALLET_NOTIFICATION_EXPIRY_DAYS = 3
 
 
-def _q(value: Decimal) -> Decimal:
-    return value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-
 def create_wallet_credit(db: Session, org: Organization, receipt: PaymentReceipt, amount_etb: Decimal) -> WalletCredit:
     """Record a surplus credit from a verified receipt (available state)."""
-    amount = _q(amount_etb)
+    amount = quantize_money(amount_etb)
     credit = WalletCredit(
         organization_id=org.id,
         receipt_id=receipt.id,
@@ -48,7 +45,7 @@ def available_wallet_credit(db: Session, org: Organization) -> Decimal:
             WalletCredit.status == 'available',
         )
     ).scalars().all()
-    return _q(sum(total, Decimal('0.00')))
+    return quantize_money(sum(total, Decimal('0.00')))
 
 
 def apply_available_wallet_credits(
@@ -60,7 +57,7 @@ def apply_available_wallet_credits(
     ``total_etb``: any excess stays ``available`` and rolls to the invoice
     after that (blueprint decision #8).
     """
-    remaining = _q(total_etb)
+    remaining = quantize_money(total_etb)
     applied = Decimal('0.00')
     rows = db.execute(
         select(WalletCredit)
@@ -84,7 +81,7 @@ def apply_available_wallet_credits(
             # Single credit exceeding the invoice total: apply only what the
             # invoice needs and roll the excess forward as a NEW available
             # row (blueprint decision #8 — excess stays available, FIFO).
-            excess = _q(row.amount_etb - remaining)
+            excess = quantize_money(row.amount_etb - remaining)
             row.status = 'applied'
             row.applied_to_invoice_id = invoice.id
             row.applied_at = datetime.now(UTC)
@@ -102,7 +99,7 @@ def apply_available_wallet_credits(
     # Flush BEFORE recomputing the pool so callers' audit payloads and any
     # follow-up queries see the applied state (autoflush is off).
     db.flush()
-    return _q(applied), available_wallet_credit(db, org)
+    return quantize_money(applied), available_wallet_credit(db, org)
 
 
 def void_wallet_credits_for_receipt(
@@ -131,7 +128,7 @@ def void_wallet_credits_for_receipt(
         row.voided_at = datetime.now(UTC)
         db.add(row)
         total += row.amount_etb
-    total = _q(total)
+    total = quantize_money(total)
     if rows:
         record_audit_event(
             db,
@@ -151,8 +148,8 @@ def _wallet_notification(db: Session, org: Organization, amount_etb: Decimal) ->
         organization_id=org.id,
         kind='wallet_credit',
         title='Wallet credit',
-        message=f'Wallet balance: +{_q(amount_etb)} ETB applies to next invoice.',
-        payload={'amount_etb': str(_q(amount_etb))},
+        message=f'Wallet balance: +{quantize_money(amount_etb)} ETB applies to next invoice.',
+        payload={'amount_etb': str(quantize_money(amount_etb))},
         expires_at=datetime.now(UTC) + timedelta(days=_WALLET_NOTIFICATION_EXPIRY_DAYS),
     )
     db.add(notification)

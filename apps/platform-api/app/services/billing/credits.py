@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -25,6 +25,7 @@ from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.user import User
 from app.services.audit import record_audit_event
 from app.services.billing import lifecycle, wallet
+from app.services.billing.money import quantize_money
 
 
 class CreditError(Exception):
@@ -41,10 +42,6 @@ class CreditOutcome:
     invoice_paid: bool
     large_surplus_decision: str | None = None
     partial_credit_amount_etb: Decimal | None = None
-
-
-def _q(value: Decimal) -> Decimal:
-    return value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 def classify_surplus(amount_etb: Decimal, balance_etb: Decimal) -> str:
@@ -71,7 +68,7 @@ def _credit_invoice(db: Session, org: Organization, invoice: SubscriptionInvoice
     The credit is floored: a credit larger than the remaining balance can
     never push the balance negative (credit_forward/credit_backward).
     """
-    new_balance = _q(max(Decimal('0.00'), invoice.balance_remaining_etb - amount_etb))
+    new_balance = quantize_money(max(Decimal('0.00'), invoice.balance_remaining_etb - amount_etb))
     invoice.balance_remaining_etb = new_balance
     if new_balance == 0:
         invoice.status = 'paid'
@@ -91,7 +88,7 @@ def _cascade_surplus(
     surplus is wallet/audit-bound per blueprint §5, so today this is
     exercised unit-level (multi-invoice coverage).
     """
-    remaining = _q(amount_etb)
+    remaining = quantize_money(amount_etb)
     invoices = db.execute(
         select(SubscriptionInvoice)
         .where(
@@ -105,7 +102,7 @@ def _cascade_surplus(
             break
         if invoice.id == first_invoice.id:
             continue
-        balance = _q(invoice.balance_remaining_etb)
+        balance = quantize_money(invoice.balance_remaining_etb)
         classification = classify_surplus(remaining, balance)
         if classification in ('partial', 'exact'):
             _credit_invoice(db, org, invoice, remaining)
@@ -116,7 +113,7 @@ def _cascade_surplus(
         else:  # large_surplus: credit the balance and carry the rest forward
             _credit_invoice(db, org, invoice, balance)
             remaining = remaining - balance
-    return _q(remaining)
+    return quantize_money(remaining)
 
 
 def apply_credit(
@@ -143,8 +140,8 @@ def apply_credit(
         raise CreditError('Receipt has no routed invoice to credit')
     if receipt.amount_etb is None:
         raise CreditError('Receipt has no extracted amount to credit')
-    amount = _q(receipt.amount_etb)
-    balance = _q(invoice.balance_remaining_etb)
+    amount = quantize_money(receipt.amount_etb)
+    balance = quantize_money(invoice.balance_remaining_etb)
     classification = classify_surplus(amount, balance)
 
     outcome = CreditOutcome(
@@ -163,7 +160,7 @@ def apply_credit(
         outcome.credit_delta_etb = amount
     elif classification == 'auto_forward':
         _credit_invoice(db, org, invoice, balance)
-        surplus = _q(amount - balance)
+        surplus = quantize_money(amount - balance)
         wallet.create_wallet_credit(db, org, receipt, surplus)
         wallet._wallet_notification(db, org, surplus)
         outcome.credit_delta_etb = balance
@@ -172,7 +169,7 @@ def apply_credit(
     else:  # large_surplus — admin 3-way decision required
         if decision == 'credit_forward':
             _credit_invoice(db, org, invoice, amount)
-            surplus = _q(amount - balance)
+            surplus = quantize_money(amount - balance)
             wallet.create_wallet_credit(db, org, receipt, surplus)
             wallet._wallet_notification(db, org, surplus)
             outcome.credit_delta_etb = amount
@@ -182,13 +179,13 @@ def apply_credit(
             # Full credit; surplus recorded in the audit payload ONLY
             # (offline refund — blueprint decision #9). No wallet row.
             _credit_invoice(db, org, invoice, amount)
-            surplus = _q(amount - balance)
+            surplus = quantize_money(amount - balance)
             outcome.credit_delta_etb = amount
             outcome.surplus_etb = surplus
         elif decision == 'partial_ignore':
             if partial_amount is None:
                 raise CreditError('partial_ignore requires partial_credit_amount_etb')
-            amt = _q(partial_amount)
+            amt = quantize_money(partial_amount)
             if amt <= 0 or amt > min(amount, balance):
                 raise CreditError('partial_credit_amount_etb must be within (0, min(amount, balance)]')
             _credit_invoice(db, org, invoice, amt)
@@ -197,7 +194,7 @@ def apply_credit(
         else:
             raise CreditError('large surplus requires credit_forward, credit_backward, or partial_ignore')
 
-    outcome.invoice_paid = _q(invoice.balance_remaining_etb) == 0
+    outcome.invoice_paid = quantize_money(invoice.balance_remaining_etb) == 0
 
     receipt.status = 'verified'
     receipt.verdict = 'verify'
