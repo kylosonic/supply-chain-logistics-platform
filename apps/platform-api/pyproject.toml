@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "supply-chain-backend"
 version = "0.3.0"
 description = "Supply chain logistics backend"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.111.0",
   "uvicorn[standard]>=0.30.0",
