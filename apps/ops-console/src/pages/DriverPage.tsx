@@ -7,6 +7,14 @@ import {
   updateDriverOrderStatus,
   uploadDriverProof,
 } from '../services/dispatchApi';
+import {
+  clearQueuedProofs,
+  deleteQueuedProof,
+  listQueuedProofs,
+  pruneOtherProofScopes,
+  queueDriverProof,
+  type QueuedProof,
+} from '../services/driverProofQueue';
 import type { DriverManifest, DispatchStop } from '../types/api';
 
 const MANIFEST_PREFIX = 'freightpilot_driver_manifest:';
@@ -36,6 +44,7 @@ const copy = {
     saveCash: 'ገንዘብ አስቀምጥ',
     proof: 'የማስረከቢያ ፎቶ',
     upload: 'ፎቶ አስገባ',
+    proofQueued: 'ፎቶ ተቀምጦ ይጠባበቃል',
     offline: 'ኦፍላይን — ለውጦች በኋላ ይላካሉ',
     online: 'ኦንላይን',
     sync: 'በመላክ ላይ…',
@@ -55,6 +64,7 @@ const copy = {
     saveCash: 'Save cash',
     proof: 'Proof of delivery',
     upload: 'Upload photo',
+    proofQueued: 'Proof queued',
     offline: 'Offline — changes will sync later',
     online: 'Online',
     sync: 'Syncing…',
@@ -116,6 +126,7 @@ function enqueue(token: string, item: QueueItem) {
 }
 
 function pruneDriverStorage(token: string) {
+  void pruneOtherProofScopes(tokenHash(token));
   if (typeof localStorage === 'undefined') return;
   const keepManifest = manifestKey(token);
   const keepQueue = queueKey(token);
@@ -147,6 +158,20 @@ export function DriverPage() {
   const [cashNotes, setCashNotes] = useState<Record<string, string>>({});
   const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
   const [pendingCount, setPendingCount] = useState(() => readQueue(token).length);
+  const [queuedProofs, setQueuedProofs] = useState<QueuedProof[]>([]);
+  const proofScope = tokenHash(token);
+
+  async function refreshProofQueue() {
+    if (!token) {
+      setQueuedProofs([]);
+      return;
+    }
+    try {
+      setQueuedProofs(await listQueuedProofs(proofScope));
+    } catch {
+      setQueuedProofs([]);
+    }
+  }
 
   async function loadManifest() {
     if (!token) {
@@ -204,6 +229,7 @@ export function DriverPage() {
     setManifest(null);
     pruneDriverStorage(token);
     setPendingCount(readQueue(token).length);
+    void refreshProofQueue();
     void loadManifest();
     return () => {
       window.removeEventListener('online', onOnline);
@@ -215,9 +241,17 @@ export function DriverPage() {
   async function syncQueue() {
     if (!online || !token) return;
     const queue = readQueue(token);
-    if (queue.length === 0) return;
+    let proofs: QueuedProof[] = [];
+    try {
+      proofs = await listQueuedProofs(proofScope);
+    } catch {
+      setError('Offline proof storage is unavailable on this device.');
+      return;
+    }
+    if (queue.length === 0 && proofs.length === 0) return;
     setBusy(true);
     const remaining: QueueItem[] = [];
+    let tokenInvalid = false;
     for (const item of queue) {
       try {
         if (item.kind === 'status') {
@@ -232,9 +266,12 @@ export function DriverPage() {
         ) {
           writeQueue(token, []);
           setPendingCount(0);
+          await clearQueuedProofs(proofScope);
+          setQueuedProofs([]);
           localStorage.removeItem(manifestKey(token));
           setManifest(null);
           setError(err.message);
+          tokenInvalid = true;
           break;
         }
         if (
@@ -251,8 +288,51 @@ export function DriverPage() {
     }
     writeQueue(token, remaining);
     setPendingCount(remaining.length);
+    const remainingProofs: QueuedProof[] = [];
+    if (!tokenInvalid) {
+      for (const proof of proofs) {
+        try {
+          await uploadDriverProof(
+            token,
+            proof.orderId,
+            proof.blob,
+            proof.fileName,
+            proof.recipientName,
+            proof.notes,
+          );
+          await deleteQueuedProof(proof.id);
+        } catch (err) {
+          if (
+            err instanceof DriverRequestError &&
+            [401, 403, 404, 410].includes(err.status)
+          ) {
+            writeQueue(token, []);
+            setPendingCount(0);
+            await clearQueuedProofs(proofScope);
+            setQueuedProofs([]);
+            localStorage.removeItem(manifestKey(token));
+            setManifest(null);
+            setError(err.message);
+            tokenInvalid = true;
+            break;
+          }
+          if (
+            err instanceof DriverRequestError &&
+            err.status >= 400 &&
+            err.status < 500 &&
+            err.status !== 429
+          ) {
+            await deleteQueuedProof(proof.id);
+            setSyncError(`One queued proof was rejected: ${err.message}`);
+            continue;
+          }
+          remainingProofs.push(proof);
+        }
+      }
+      setQueuedProofs(remainingProofs);
+    }
     setBusy(false);
-    if (remaining.length === 0) {
+    if (!tokenInvalid && remaining.length === 0 && remainingProofs.length === 0) {
       setNotice(null);
       await loadManifest();
     }
@@ -288,7 +368,19 @@ export function DriverPage() {
       return;
     }
     if (!online) {
-      setError('Proof upload needs a connection. The stop and cash updates remain queued offline.');
+      try {
+        await queueDriverProof({
+          scope: proofScope,
+          orderId: stop.order_id,
+          file,
+          fileName: file.name || 'proof.jpg',
+        });
+        setProofFiles((current) => ({ ...current, [stop.order_id]: null }));
+        setNotice(t.proofQueued);
+        await refreshProofQueue();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not save proof offline.');
+      }
       return;
     }
     setBusy(true);
@@ -297,7 +389,27 @@ export function DriverPage() {
       setProofFiles((current) => ({ ...current, [stop.order_id]: null }));
       await loadManifest();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not upload proof.');
+      if (err instanceof DriverRequestError && err.status >= 400 && err.status < 500) {
+        setError(err.message);
+      } else {
+        try {
+          await queueDriverProof({
+            scope: proofScope,
+            orderId: stop.order_id,
+            file,
+            fileName: file.name || 'proof.jpg',
+          });
+          setProofFiles((current) => ({ ...current, [stop.order_id]: null }));
+          setNotice(t.proofQueued);
+          await refreshProofQueue();
+        } catch (queueError) {
+          setError(
+            queueError instanceof Error
+              ? queueError.message
+              : 'Could not save proof offline.',
+          );
+        }
+      }
     } finally {
       setBusy(false);
     }
@@ -319,7 +431,7 @@ export function DriverPage() {
           </div>
           <div className="mt-4 flex items-center justify-between gap-2 text-xs">
             <span className={online ? 'text-emerald-300' : 'text-amber-300'}>{online ? t.online : t.offline}</span>
-            {pendingCount > 0 ? <span className="text-amber-300">{pendingCount} queued</span> : null}
+            {pendingCount + queuedProofs.length > 0 ? <span className="text-amber-300">{pendingCount + queuedProofs.length} queued</span> : null}
             {busy ? <span className="text-sky-300">{t.sync}</span> : null}
           </div>
         </header>
@@ -404,8 +516,12 @@ export function DriverPage() {
                     onChange={(event) => setProofFiles((current) => ({ ...current, [stop.order_id]: event.target.files?.[0] ?? null }))}
                   />
                 </label>
-                <button type="button" disabled={busy || Boolean(stop.proof_id)} onClick={() => void onProof(stop)} className="self-end rounded-lg border border-slate-600 px-4 py-3 text-xs font-semibold text-slate-200 disabled:opacity-40">
-                  {stop.proof_id ? 'Proof saved' : t.upload}
+                <button type="button" disabled={busy || Boolean(stop.proof_id) || queuedProofs.some((proof) => proof.orderId === stop.order_id)} onClick={() => void onProof(stop)} className="self-end rounded-lg border border-slate-600 px-4 py-3 text-xs font-semibold text-slate-200 disabled:opacity-40">
+                  {stop.proof_id
+                    ? 'Proof saved'
+                    : queuedProofs.some((proof) => proof.orderId === stop.order_id)
+                      ? t.proofQueued
+                      : t.upload}
                 </button>
               </div>
               <p className="mt-2 text-xs text-slate-500">Status: {stop.status} · {stop.collected_cash_etb} ETB declared</p>

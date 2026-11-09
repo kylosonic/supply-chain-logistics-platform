@@ -19,6 +19,7 @@ import {
 } from '../services/api';
 import type { UserRead } from '../types/auth';
 import { clearLiveSession } from '../hooks/useLiveUpdates';
+import { clearAllQueuedProofs } from '../services/driverProofQueue';
 
 type AuthContextValue = {
   user: UserRead | null;
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setOrgId(null);
       queryClient.clear();
       clearLiveSession();
+      void clearAllQueuedProofs().catch(() => undefined);
     });
   }, [queryClient]);
 
@@ -125,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // cookie might already be gone
     }
     clearAuthStorage();
+    await clearAllQueuedProofs().catch(() => undefined);
     setUser(null);
     setOrgId(null);
     queryClient.clear();
