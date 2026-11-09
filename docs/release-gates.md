@@ -10,6 +10,7 @@ A change is ready to merge when the checks in `.github/workflows/ci.yml` pass. T
 | `backend-dependency-audit` | `pip-audit` against `requirements.lock` |
 | `ops-console` | Clean install, typecheck, lint, tests, production build, deployed-dependency audit |
 | `product-web` | Clean install, tests, production build, bundle budget, deployed-dependency audit |
+| `desktop` | Clean install, archive-path tests, Electron runtime check, dependency audit |
 
 The npm applications are installed independently from their per-application lockfiles. The repository root intentionally has no workspace lockfile.
 
