@@ -15,6 +15,7 @@ import { ShipmentsPage } from './ShipmentsPage';
 import { AlertsPage } from './AlertsPage';
 import { PlanningPage } from './PlanningPage';
 import { DispatchPage } from './DispatchPage';
+import { TrackingPage } from './TrackingPage';
 import { ProvidersPage } from './ProvidersPage';
 import { UnauthorizedPage } from './UnauthorizedPage';
 import { WorkspaceResetDangerZone } from '../components/WorkspaceResetDangerZone';
@@ -296,6 +297,7 @@ describe('ops console surface smoke', () => {
       inventory_overview: [],
       route_summaries: [],
       forecast_preview: [],
+      dispatch_overview: { updated_at: null, runs: [] },
     });
 
     const html = renderToString(
@@ -466,8 +468,18 @@ describe('ops console surface smoke', () => {
     expect(html).toContain('Customer dispatch');
     expect(html).toContain('Add customer');
     expect(html).toContain('Add delivery order');
+    expect(html).toContain('Single vehicle');
+    expect(html).toContain('Fleet plan');
     expect(html).toContain('Plan selected orders');
     expect(html).toContain('Dispatch runs');
+  });
+
+  it('renders the public customer tracking surface without the operator shell', () => {
+    const html = renderToString(<TrackingPage />);
+
+    expect(html).toContain('FreightPilot Tracking');
+    expect(html).toContain('Delivery status');
+    expect(html).not.toContain('Control tower');
   });
 
   it('renders the provider governance surface with keys and the credential form for admins', () => {

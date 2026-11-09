@@ -18,6 +18,7 @@ function fullPayload(overrides: Partial<LiveUpdatePayload> = {}): LiveUpdatePayl
     inventory_overview: [],
     route_summaries: [],
     forecast_preview: [],
+    dispatch_overview: { updated_at: null, runs: [] },
     ...overrides,
   };
 }

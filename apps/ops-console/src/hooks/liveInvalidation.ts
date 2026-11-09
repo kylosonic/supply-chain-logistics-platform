@@ -10,17 +10,21 @@ export const LIVE_INVALIDATION_WINDOW_MS = 15_000;
 
 /** Live payload field → react-query key prefix (blueprint decision 5). */
 export const LIVE_PAYLOAD_QUERY_KEYS: Record<
-  'inventory_overview' | 'route_summaries' | 'forecast_preview',
+  'inventory_overview' | 'route_summaries' | 'forecast_preview' | 'dispatch_overview',
   string[]
 > = {
   inventory_overview: ['inventory'],
   route_summaries: ['routes'],
   forecast_preview: ['forecast'],
+  dispatch_overview: ['dispatch'],
 };
 
 type LivePayloadFields = Pick<
   LiveUpdatePayload,
-  'inventory_overview' | 'route_summaries' | 'forecast_preview'
+  | 'inventory_overview'
+  | 'route_summaries'
+  | 'forecast_preview'
+  | 'dispatch_overview'
 >;
 
 /** Maps the fields actually present in a payload to query-key prefixes.

@@ -8,6 +8,9 @@ import type {
   DriverLink,
   DriverManifest,
   DispatchStop,
+  FleetDispatchPlanResponse,
+  CustomerTrackingLink,
+  CustomerTrackingView,
 } from '../types/api';
 
 export async function listCustomers(): Promise<Customer[]> {
@@ -77,6 +80,27 @@ export async function planDispatchRun(payload: {
   return data;
 }
 
+export async function planFleetDispatch(payload: {
+  route_name: string;
+  plan_date: string;
+  start_label: string;
+  start_latitude: number;
+  start_longitude: number;
+  order_ids: string[];
+  vehicles: {
+    driver_id: string;
+    vehicle_capacity_units: number;
+    max_stops: number;
+    average_speed_kmh: number;
+  }[];
+}): Promise<FleetDispatchPlanResponse> {
+  const { data } = await api.post<FleetDispatchPlanResponse>(
+    '/dispatch/plan-fleet',
+    payload,
+  );
+  return data;
+}
+
 export async function listDispatchRuns(): Promise<DispatchRun[]> {
   const { data } = await api.get<DispatchRun[]>('/dispatch/runs');
   return data;
@@ -92,8 +116,28 @@ export async function createDriverLink(runId: string): Promise<DriverLink> {
   return data;
 }
 
-export async function closeDispatchCash(runId: string): Promise<CashCloseSummary> {
-  const { data } = await api.post<CashCloseSummary>(`/dispatch/runs/${runId}/close-cash`);
+export async function createCustomerTrackingLink(
+  orderId: string,
+): Promise<CustomerTrackingLink> {
+  const { data } = await api.post<CustomerTrackingLink>(
+    `/dispatch/orders/${orderId}/tracking-link`,
+  );
+  return data;
+}
+
+export async function closeDispatchCash(
+  runId: string,
+  payload?: {
+    handed_over_etb?: number | string;
+    deposit_bank?: 'cbe' | 'dashen';
+    deposit_reference?: string;
+    note?: string;
+  },
+): Promise<CashCloseSummary> {
+  const { data } = await api.post<CashCloseSummary>(
+    `/dispatch/runs/${runId}/close-cash`,
+    payload,
+  );
   return data;
 }
 
@@ -147,6 +191,23 @@ export async function getDriverManifest(token: string): Promise<DriverManifest> 
   return driverRequest<DriverManifest>(token, '/dispatch/driver/manifest');
 }
 
+export async function getCustomerTracking(token: string): Promise<CustomerTrackingView> {
+  const response = await fetch(`${driverBaseUrl}/dispatch/tracking`, {
+    headers: { 'X-Tracking-Token': token },
+  });
+  if (!response.ok) {
+    let detail = `Tracking request failed (${response.status})`;
+    try {
+      const body = (await response.json()) as { detail?: string };
+      detail = body.detail || detail;
+    } catch {
+      // keep the status-based detail
+    }
+    throw new Error(detail);
+  }
+  return (await response.json()) as CustomerTrackingView;
+}
+
 export async function updateDriverOrderStatus(
   token: string,
   orderId: string,
@@ -176,12 +237,15 @@ export async function declareDriverCash(
 export async function uploadDriverProof(
   token: string,
   orderId: string,
-  file: File,
+  file: Blob,
+  fileName?: string,
   recipientName?: string,
   notes?: string,
 ): Promise<{ id: string }> {
   const form = new FormData();
-  form.append('file', file);
+  const resolvedName =
+    fileName || (typeof File !== 'undefined' && file instanceof File ? file.name : 'proof.jpg');
+  form.append('file', file, resolvedName);
   if (recipientName) form.append('recipient_name', recipientName);
   if (notes) form.append('notes', notes);
   return driverRequest<{ id: string }>(token, `/dispatch/driver/orders/${orderId}/proof`, {

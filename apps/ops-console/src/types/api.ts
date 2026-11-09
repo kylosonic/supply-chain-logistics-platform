@@ -64,6 +64,33 @@ export type RouteScheduleSummary = {
   status: string;
 };
 
+export type DispatchLiveRun = {
+  id: string;
+  route_name: string;
+  plan_date: string;
+  status: string;
+  driver_id: string | null;
+  driver_name: string | null;
+  total_stops: number;
+  terminal_stops: number;
+  progress_percent: number;
+  expected_cash_etb: string;
+  collected_cash_etb: string;
+  cash_declared_etb: string | null;
+  cash_handed_over_etb: string | null;
+  cash_shortfall_etb: string | null;
+  cash_overage_etb: string | null;
+  cash_deposit_bank: string | null;
+  cash_deposit_reference: string | null;
+  cash_closed_at: string | null;
+  updated_at: string | null;
+};
+
+export type DispatchLiveOverview = {
+  updated_at: string | null;
+  runs: DispatchLiveRun[];
+};
+
 export type RouteOptimizeResponse = {
   route_name: string;
   schedule_date: string;
@@ -396,6 +423,8 @@ export type InvitationCreated = {
   invitation: OrganizationInvitation;
   token: string;
   invite_url: string;
+  email_sent: boolean;
+  email_error: string | null;
 };
 
 export type Customer = {
@@ -464,8 +493,21 @@ export type DispatchRun = {
   status: string;
   driver_id: string | null;
   cash_closed_at: string | null;
+  cash_closed_by_user_id: string | null;
+  cash_declared_etb: string | null;
+  cash_handed_over_etb: string | null;
+  cash_shortfall_etb: string | null;
+  cash_overage_etb: string | null;
+  cash_deposit_bank: string | null;
+  cash_deposit_reference: string | null;
+  cash_close_note: string | null;
   stops?: DispatchStop[];
   unassigned?: { order_id: string; order_no: string; reason: string }[];
+};
+
+export type FleetDispatchPlanResponse = {
+  runs: DispatchRun[];
+  unassigned: { order_id: string; order_no: string; reason: string }[];
 };
 
 export type DriverManifest = {
@@ -484,11 +526,36 @@ export type DriverLink = {
   expires_at: string;
 };
 
+export type CustomerTrackingLink = {
+  token: string;
+  tracking_url: string;
+  expires_at: string;
+};
+
+export type CustomerTrackingView = {
+  order_no: string;
+  customer_name: string;
+  status: string;
+  route_name: string | null;
+  driver_name: string | null;
+  planned_arrival: string | null;
+  window_start: string | null;
+  window_end: string | null;
+  proof_available: boolean;
+  updated_at: string | null;
+};
+
 export type CashCloseSummary = {
   run_id: string;
   expected_etb: string;
   collected_etb: string;
+  declared_etb: string;
+  handed_over_etb: string;
   shortfall_etb: string;
+  overage_etb: string;
+  deposit_bank: string | null;
+  deposit_reference: string | null;
+  note: string | null;
   terminal_stops: number;
   total_stops: number;
   closed_at: string;

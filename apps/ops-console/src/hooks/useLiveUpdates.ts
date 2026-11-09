@@ -1,6 +1,11 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 
-import type { ForecastPoint, InventoryOverviewRow, RouteScheduleSummary } from '../types/api';
+import type {
+  DispatchLiveOverview,
+  ForecastPoint,
+  InventoryOverviewRow,
+  RouteScheduleSummary,
+} from '../types/api';
 
 export type LiveUpdatePayload = {
   type: 'live_update';
@@ -8,6 +13,7 @@ export type LiveUpdatePayload = {
   inventory_overview: InventoryOverviewRow[];
   route_summaries: RouteScheduleSummary[];
   forecast_preview: ForecastPoint[];
+  dispatch_overview?: DispatchLiveOverview;
 };
 
 type Props = {

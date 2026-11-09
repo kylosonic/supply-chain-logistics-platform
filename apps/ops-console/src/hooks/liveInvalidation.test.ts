@@ -15,6 +15,7 @@ function fullPayload(overrides: Partial<LiveUpdatePayload> = {}): LiveUpdatePayl
     inventory_overview: [],
     route_summaries: [],
     forecast_preview: [],
+    dispatch_overview: { updated_at: null, runs: [] },
     ...overrides,
   };
 }
@@ -33,12 +34,13 @@ describe('live payload invalidation mapping (TECH-73 decision 5)', () => {
       inventory_overview: ['inventory'],
       route_summaries: ['routes'],
       forecast_preview: ['forecast'],
+      dispatch_overview: ['dispatch'],
     });
   });
 
-  it('maps a full payload to exactly inventory/routes/forecast — never shipments/subscriptions/activation', () => {
+  it('maps a full payload to exactly inventory/routes/forecast/dispatch — never shipments/subscriptions/activation', () => {
     const keys = livePayloadQueryKeys(fullPayload());
-    expect(keys).toEqual([['inventory'], ['routes'], ['forecast']]);
+    expect(keys).toEqual([['inventory'], ['routes'], ['forecast'], ['dispatch']]);
     expect(keys).not.toContain(['shipments']);
     expect(keys).not.toContain(['subscriptions']);
     expect(keys).not.toContain(['activation']);
@@ -47,6 +49,9 @@ describe('live payload invalidation mapping (TECH-73 decision 5)', () => {
   it('skips absent payload fields', () => {
     expect(livePayloadQueryKeys({ inventory_overview: [] })).toEqual([['inventory']]);
     expect(livePayloadQueryKeys({ route_summaries: [] })).toEqual([['routes']]);
+    expect(livePayloadQueryKeys({ dispatch_overview: { updated_at: null, runs: [] } })).toEqual([
+      ['dispatch'],
+    ]);
     expect(livePayloadQueryKeys({})).toEqual([]);
   });
 });

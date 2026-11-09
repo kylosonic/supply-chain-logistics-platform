@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Panel } from '../components/ui/Panel';
 import { PageHeader } from '../components/ui/PageHeader';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { Dialog } from '../components/ui/Dialog';
 import { useAuth } from '../context/AuthContext';
+import { useLivePayloadStream } from '../hooks/useLiveUpdates';
 import { apiErrorMessage } from '../services/authErrors';
 import {
   closeDispatchCash,
   createCustomer,
+  createCustomerTrackingLink,
   createDeliveryOrder,
   createDriver,
   createDriverLink,
@@ -17,6 +20,7 @@ import {
   listDeliveryOrders,
   listDispatchRuns,
   listDrivers,
+  planFleetDispatch,
   planDispatchRun,
 } from '../services/dispatchApi';
 import type { Customer, DeliveryOrder, DispatchRun, Driver } from '../types/api';
@@ -38,10 +42,23 @@ export function DispatchPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [driverLink, setDriverLink] = useState<string | null>(null);
+  const [customerTrackingLink, setCustomerTrackingLink] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
   const [expandedRun, setExpandedRun] = useState<DispatchRun | null>(null);
   const [expandedLoading, setExpandedLoading] = useState(false);
+  const [liveUpdatedAt, setLiveUpdatedAt] = useState<string | null>(null);
+  const lastLiveVersion = useRef<string | null>(null);
+  const [planMode, setPlanMode] = useState<'single' | 'fleet'>('single');
+  const [fleetVehicleIds, setFleetVehicleIds] = useState<string[]>([]);
+  const [fleetCapacities, setFleetCapacities] = useState<Record<string, string>>({});
+  const [cashCloseTarget, setCashCloseTarget] = useState<DispatchRun | null>(null);
+  const [cashCloseForm, setCashCloseForm] = useState({
+    handed_over_etb: '',
+    deposit_bank: '' as '' | 'cbe' | 'dashen',
+    deposit_reference: '',
+    note: '',
+  });
 
   const [customerForm, setCustomerForm] = useState({
     code: '',
@@ -88,10 +105,23 @@ export function DispatchPage() {
         listDrivers(),
         listDispatchRuns(),
       ]);
+      const activeDrivers = nextDrivers.filter((driver) => driver.status === 'active');
       setCustomers(nextCustomers);
       setOrders(nextOrders);
-      setDrivers(nextDrivers.filter((driver) => driver.status === 'active'));
+      setDrivers(activeDrivers);
       setRuns(nextRuns);
+      const activeDriverIds = new Set(activeDrivers.map((driver) => driver.id));
+      setFleetVehicleIds((current) => current.filter((id) => activeDriverIds.has(id)));
+      setFleetCapacities((current) =>
+        Object.fromEntries(
+          activeDrivers.map((driver) => [driver.id, current[driver.id] ?? '100']),
+        ),
+      );
+      if (expandedRunId) {
+        void getDispatchRun(expandedRunId).then(setExpandedRun).catch(() => {
+          setExpandedRun(null);
+        });
+      }
       setSelectedIds((current) => current.filter((id) => nextOrders.some((order) => order.id === id && order.status === 'planned')));
       setError(null);
     } catch (err) {
@@ -101,7 +131,17 @@ export function DispatchPage() {
 
   useEffect(() => {
     void refresh();
+    // Initial load only; mutations and live dispatch updates trigger later refreshes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useLivePayloadStream((payload) => {
+    const version = payload.dispatch_overview?.updated_at;
+    if (!version || version === lastLiveVersion.current) return;
+    lastLiveVersion.current = version;
+    setLiveUpdatedAt(version);
+    void refresh();
+  });
 
   async function onCreateCustomer(event: React.FormEvent) {
     event.preventDefault();
@@ -171,6 +211,36 @@ export function DispatchPage() {
       return;
     }
     try {
+      if (planMode === 'fleet') {
+        if (fleetVehicleIds.length === 0) {
+          setError('Select at least one driver for the fleet plan.');
+          return;
+        }
+        const result = await planFleetDispatch({
+          route_name: planForm.route_name,
+          plan_date: planForm.plan_date,
+          start_label: planForm.start_label,
+          start_latitude: Number(planForm.start_latitude),
+          start_longitude: Number(planForm.start_longitude),
+          order_ids: selectedIds,
+          vehicles: fleetVehicleIds.map((driverId) => ({
+            driver_id: driverId,
+            vehicle_capacity_units: Number(fleetCapacities[driverId] || '100'),
+            max_stops: Number(planForm.max_stops),
+            average_speed_kmh: Number(planForm.average_speed_kmh),
+          })),
+        });
+        const unassignedCount = result.unassigned.length;
+        setNotice(
+          `Planned ${result.runs.length} vehicle run(s)` +
+            (unassignedCount > 0
+              ? `; ${unassignedCount} order(s) remain unassigned.`
+              : '.'),
+        );
+        setSelectedIds([]);
+        await refresh();
+        return;
+      }
       const run = await planDispatchRun({
         route_name: planForm.route_name,
         plan_date: planForm.plan_date,
@@ -205,12 +275,52 @@ export function DispatchPage() {
     }
   }
 
-  async function onCloseCash(runId: string) {
-    if (!window.confirm('Close the cash position for this run? All stops must be terminal.')) return;
+  async function onCustomerTrackingLink(orderId: string) {
     setError(null);
     try {
-      const result = await closeDispatchCash(runId);
-      setNotice(`Cash closed. Shortfall: ${result.shortfall_etb} ETB.`);
+      const link = await createCustomerTrackingLink(orderId);
+      setCustomerTrackingLink(link.tracking_url);
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Could not create the customer tracking link.'));
+    }
+  }
+
+  function openCashClose(run: DispatchRun) {
+    setCashCloseForm({
+      handed_over_etb: run.cash_declared_etb ?? run.expected_cash_etb,
+      deposit_bank: '',
+      deposit_reference: '',
+      note: '',
+    });
+    setCashCloseTarget(run);
+    setError(null);
+  }
+
+  async function onCloseCash(event: React.FormEvent) {
+    event.preventDefault();
+    if (!cashCloseTarget) return;
+    const handedOver = Number(cashCloseForm.handed_over_etb);
+    const expected = Number(cashCloseTarget.expected_cash_etb);
+    if (!Number.isFinite(handedOver) || handedOver < 0) {
+      setError('Enter the amount of cash actually handed over.');
+      return;
+    }
+    if (handedOver !== expected && !cashCloseForm.note.trim()) {
+      setError('Explain why the handed-over amount differs from the expected cash.');
+      return;
+    }
+    setError(null);
+    try {
+      const result = await closeDispatchCash(cashCloseTarget.id, {
+        handed_over_etb: handedOver.toFixed(2),
+        deposit_bank: cashCloseForm.deposit_bank || undefined,
+        deposit_reference: cashCloseForm.deposit_reference.trim() || undefined,
+        note: cashCloseForm.note.trim() || undefined,
+      });
+      setNotice(
+        `Cash closed. Shortfall: ${result.shortfall_etb} ETB. Overage: ${result.overage_etb} ETB.`,
+      );
+      setCashCloseTarget(null);
       await refresh();
     } catch (err) {
       setError(apiErrorMessage(err, 'Could not close cash for this run.'));
@@ -267,6 +377,12 @@ export function DispatchPage() {
           <code className="mt-2 block break-all rounded bg-slate-950/60 p-3 text-xs text-sky-100">{driverLink}</code>
         </div>
       ) : null}
+      {customerTrackingLink ? (
+        <div className="rounded-lg border border-emerald-500/25 bg-emerald-950/25 p-4">
+          <p className="text-sm font-semibold text-emerald-100">Customer tracking link created</p>
+          <code className="mt-2 block break-all rounded bg-slate-950/60 p-3 text-xs text-emerald-100">{customerTrackingLink}</code>
+        </div>
+      ) : null}
 
       <div className="grid gap-5 xl:grid-cols-3">
         <Panel eyebrow="Step 1" title="Customer" description="A customer is a named, mapped delivery location.">
@@ -318,22 +434,91 @@ export function DispatchPage() {
         </Panel>
       </div>
 
-      <Panel eyebrow="Step 4" title="Plan the day" description="Select planned orders. The planner is a transparent time-window heuristic, not a promise of global optimality.">
+      <Panel
+        eyebrow="Step 4"
+        title="Plan the day"
+        description="Select planned orders. The planner is a transparent time-window heuristic, not a promise of global optimality."
+      >
         <form className="grid gap-4" onSubmit={onPlan}>
+          <div className="inline-flex w-fit rounded-lg border border-slate-700 p-1" role="group" aria-label="Planning mode">
+            <button
+              type="button"
+              aria-pressed={planMode === 'single'}
+              onClick={() => setPlanMode('single')}
+              className={`rounded-md px-3 py-2 text-xs font-semibold ${planMode === 'single' ? 'bg-sky-500 text-slate-950' : 'text-slate-300'}`}
+            >
+              Single vehicle
+            </button>
+            <button
+              type="button"
+              aria-pressed={planMode === 'fleet'}
+              onClick={() => setPlanMode('fleet')}
+              className={`rounded-md px-3 py-2 text-xs font-semibold ${planMode === 'fleet' ? 'bg-sky-500 text-slate-950' : 'text-slate-300'}`}
+            >
+              Fleet plan
+            </button>
+          </div>
           <div className="grid gap-3 md:grid-cols-3">
             <input className={FIELD} aria-label="Route name" required value={planForm.route_name} onChange={(event) => setPlanForm({ ...planForm, route_name: event.target.value })} />
             <input className={FIELD} aria-label="Plan date" type="date" required value={planForm.plan_date} onChange={(event) => setPlanForm({ ...planForm, plan_date: event.target.value })} />
-            <select className={FIELD} aria-label="Driver" value={planForm.driver_id} onChange={(event) => setPlanForm({ ...planForm, driver_id: event.target.value })}>
-              <option value="">No driver yet</option>
-              {drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.full_name} · {driver.phone}</option>)}
-            </select>
+            {planMode === 'single' ? (
+              <select className={FIELD} aria-label="Driver" value={planForm.driver_id} onChange={(event) => setPlanForm({ ...planForm, driver_id: event.target.value })}>
+                <option value="">No driver yet</option>
+                {drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.full_name} · {driver.phone}</option>)}
+              </select>
+            ) : null}
             <input className={FIELD} aria-label="Start label" required value={planForm.start_label} onChange={(event) => setPlanForm({ ...planForm, start_label: event.target.value })} />
             <input className={FIELD} aria-label="Start latitude" value={planForm.start_latitude} onChange={(event) => setPlanForm({ ...planForm, start_latitude: event.target.value })} />
             <input className={FIELD} aria-label="Start longitude" value={planForm.start_longitude} onChange={(event) => setPlanForm({ ...planForm, start_longitude: event.target.value })} />
-            <input className={FIELD} aria-label="Vehicle capacity" type="number" min="1" value={planForm.vehicle_capacity_units} onChange={(event) => setPlanForm({ ...planForm, vehicle_capacity_units: event.target.value })} />
+            {planMode === 'single' ? (
+              <input className={FIELD} aria-label="Vehicle capacity" type="number" min="1" value={planForm.vehicle_capacity_units} onChange={(event) => setPlanForm({ ...planForm, vehicle_capacity_units: event.target.value })} />
+            ) : null}
             <input className={FIELD} aria-label="Average speed" type="number" min="1" value={planForm.average_speed_kmh} onChange={(event) => setPlanForm({ ...planForm, average_speed_kmh: event.target.value })} />
-            <input className={FIELD} aria-label="Max stops" type="number" min="1" max="100" value={planForm.max_stops} onChange={(event) => setPlanForm({ ...planForm, max_stops: event.target.value })} />
+            <input className={FIELD} aria-label={planMode === 'fleet' ? 'Max stops per vehicle' : 'Max stops'} type="number" min="1" max="100" value={planForm.max_stops} onChange={(event) => setPlanForm({ ...planForm, max_stops: event.target.value })} />
           </div>
+          {planMode === 'fleet' ? (
+            <div className="space-y-2 rounded-lg border border-slate-800 p-3">
+              <p className="text-sm font-semibold text-slate-200">Drivers and vehicle capacity</p>
+              {drivers.length === 0 ? (
+                <p className="text-sm text-slate-500">No active drivers available.</p>
+              ) : null}
+              {drivers.map((driver) => {
+                const selected = fleetVehicleIds.includes(driver.id);
+                return (
+                  <div key={driver.id} className="grid items-center gap-3 rounded-lg border border-slate-800/70 px-3 py-2 sm:grid-cols-[1fr_160px]">
+                    <label className="flex items-center gap-3 text-sm text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={(event) =>
+                          setFleetVehicleIds((current) =>
+                            event.target.checked
+                              ? [...current, driver.id]
+                              : current.filter((id) => id !== driver.id),
+                          )
+                        }
+                      />
+                      <span>{driver.full_name} · {driver.phone}</span>
+                    </label>
+                    <input
+                      className={FIELD}
+                      aria-label={`${driver.full_name} vehicle capacity`}
+                      type="number"
+                      min="1"
+                      disabled={!selected}
+                      value={fleetCapacities[driver.id] ?? '100'}
+                      onChange={(event) =>
+                        setFleetCapacities((current) => ({
+                          ...current,
+                          [driver.id]: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
           <div className="rounded-lg border border-slate-800 p-3">
             <p className="text-sm font-semibold text-slate-200">Planned orders</p>
             {plannedOrders.length === 0 ? <p className="mt-2 text-sm text-slate-500">No planned orders yet.</p> : null}
@@ -350,12 +535,25 @@ export function DispatchPage() {
               ))}
             </div>
           </div>
-          <button className="w-fit rounded-lg bg-sky-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-sky-400">Plan selected orders</button>
+          <button className="w-fit rounded-lg bg-sky-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-sky-400">
+            {planMode === 'fleet' ? 'Plan across selected vehicles' : 'Plan selected orders'}
+          </button>
         </form>
       </Panel>
 
       <Panel eyebrow="Runs" title="Dispatch runs" description="Open a driver link, monitor stop status, or close the day’s cash.">
         <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 text-xs" aria-live="polite">
+            <span className="flex items-center gap-2 text-slate-400">
+              <span className={`h-2 w-2 rounded-full ${liveUpdatedAt ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+              {liveUpdatedAt ? 'Live dispatch sync' : 'Waiting for live dispatch updates'}
+            </span>
+            {liveUpdatedAt ? (
+              <span className="text-slate-500">
+                {new Date(liveUpdatedAt).toLocaleTimeString()}
+              </span>
+            ) : null}
+          </div>
           {runs.length === 0 ? <p className="text-sm text-slate-500">No dispatch runs yet.</p> : null}
           {runs.map((run) => (
             <article key={run.id} className="rounded-xl border border-slate-800 p-4">
@@ -374,7 +572,7 @@ export function DispatchPage() {
                     {expandedRunId === run.id ? 'Hide stops' : 'View stops'}
                   </button>
                   {run.driver_id ? <button type="button" onClick={() => void onDriverLink(run.id)} className="rounded-full border border-sky-500/30 px-3 py-2 text-xs font-semibold text-sky-200">Create driver link</button> : null}
-                  {run.status !== 'closed' && user?.role === 'admin' ? <button type="button" onClick={() => void onCloseCash(run.id)} className="rounded-full border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200">Close cash</button> : null}
+                  {run.status !== 'closed' && user?.role === 'admin' ? <button type="button" onClick={() => openCashClose(run)} className="rounded-full border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-200">Close cash</button> : null}
                 </div>
               </div>
               {expandedRunId === run.id ? (
@@ -391,11 +589,16 @@ export function DispatchPage() {
                           {stop.window_end ? new Date(stop.window_end).toLocaleTimeString() : '—'}
                         </p>
                       </div>
-                      {stop.proof_id ? (
-                        <button type="button" onClick={() => void onViewProof(stop.order_id, stop.proof_id!)} className="rounded-full border border-sky-500/30 px-3 py-1.5 text-xs font-semibold text-sky-200">
-                          View proof
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => void onCustomerTrackingLink(stop.order_id)} className="rounded-full border border-emerald-500/30 px-3 py-1.5 text-xs font-semibold text-emerald-200">
+                          Customer link
                         </button>
-                      ) : <span className="text-xs text-slate-600">No proof</span>}
+                        {stop.proof_id ? (
+                          <button type="button" onClick={() => void onViewProof(stop.order_id, stop.proof_id!)} className="rounded-full border border-sky-500/30 px-3 py-1.5 text-xs font-semibold text-sky-200">
+                            View proof
+                          </button>
+                        ) : <span className="text-xs text-slate-600">No proof</span>}
+                      </div>
                     </div>
                   ))}
                   {expandedRun && expandedRun.stops?.length === 0 ? <p className="text-sm text-slate-500">No stops recorded.</p> : null}
@@ -417,6 +620,103 @@ export function DispatchPage() {
           ))}
         </div>
       </Panel>
+
+      {cashCloseTarget ? (
+        <Dialog
+          eyebrow="Cash handover"
+          title="Close driver cash"
+          description="Record what the office actually received and attach the bank deposit reference when available."
+        >
+          <form className="grid gap-3" onSubmit={onCloseCash}>
+            <div className="rounded-lg border border-slate-800 px-3 py-2 text-sm text-slate-300">
+              Expected: <span className="font-semibold text-slate-100">{cashCloseTarget.expected_cash_etb} ETB</span>
+              {cashCloseTarget.cash_declared_etb ? (
+                <span className="ml-3 text-slate-400">Declared: {cashCloseTarget.cash_declared_etb} ETB</span>
+              ) : null}
+            </div>
+            <label className="text-xs text-slate-400">
+              Cash handed over
+              <input
+                className={FIELD}
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                value={cashCloseForm.handed_over_etb}
+                onChange={(event) =>
+                  setCashCloseForm((current) => ({
+                    ...current,
+                    handed_over_etb: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-xs text-slate-400">
+                Deposit bank
+                <select
+                  className={FIELD}
+                  value={cashCloseForm.deposit_bank}
+                  onChange={(event) =>
+                    setCashCloseForm((current) => ({
+                      ...current,
+                      deposit_bank: event.target.value as '' | 'cbe' | 'dashen',
+                    }))
+                  }
+                >
+                  <option value="">No deposit slip</option>
+                  <option value="cbe">CBE</option>
+                  <option value="dashen">Dashen</option>
+                </select>
+              </label>
+              <label className="text-xs text-slate-400">
+                Deposit reference
+                <input
+                  className={FIELD}
+                  maxLength={128}
+                  disabled={!cashCloseForm.deposit_bank}
+                  value={cashCloseForm.deposit_reference}
+                  onChange={(event) =>
+                    setCashCloseForm((current) => ({
+                      ...current,
+                      deposit_reference: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+            <label className="text-xs text-slate-400">
+              Close note
+              <textarea
+                className={`${FIELD} min-h-24 py-3`}
+                maxLength={500}
+                value={cashCloseForm.note}
+                onChange={(event) =>
+                  setCashCloseForm((current) => ({
+                    ...current,
+                    note: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCashCloseTarget(null)}
+                className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950"
+              >
+                Close cash
+              </button>
+            </div>
+          </form>
+        </Dialog>
+      ) : null}
     </div>
   );
 }

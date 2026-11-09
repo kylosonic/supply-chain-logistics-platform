@@ -20,6 +20,7 @@ const ReceiptsPage = lazy(() => import('./pages/ReceiptsPage').then((m) => ({ de
 const AdminReceiptsPage = lazy(() => import('./pages/AdminReceiptsPage').then((m) => ({ default: m.AdminReceiptsPage })));
 const DispatchPage = lazy(() => import('./pages/DispatchPage').then((m) => ({ default: m.DispatchPage })));
 const DriverPage = lazy(() => import('./pages/DriverPage').then((m) => ({ default: m.DriverPage })));
+const TrackingPage = lazy(() => import('./pages/TrackingPage').then((m) => ({ default: m.TrackingPage })));
 const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })));
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/accept-invite" element={<AcceptInvitePage />} />
           <Route path="/driver" element={<DriverPage />} />
+          <Route path="/track" element={<TrackingPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
           {/* TECH-72: ONE layout route with an auth-only gate — unauthenticated

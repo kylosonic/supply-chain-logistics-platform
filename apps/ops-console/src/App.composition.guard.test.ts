@@ -77,6 +77,7 @@ describe('App route composition guard (TECH-72 / NB-55)', () => {
 
   it('keeps /login, /unauthorized, and the top-level * catch-all outside the layout route', () => {
     expect(app).toContain('<Route path="/login" element={<LoginPage />} />');
+    expect(app).toContain('<Route path="/track" element={<TrackingPage />} />');
     expect(app).toContain('<Route path="/unauthorized" element={<UnauthorizedPage />} />');
     expect(app).toContain('<Route path="*" element={<Navigate to="/" replace />} />');
     // The catch-all must be a sibling of the layout route, not a child:
