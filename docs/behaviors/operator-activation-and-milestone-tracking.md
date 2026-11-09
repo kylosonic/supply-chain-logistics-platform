@@ -242,7 +242,7 @@ To preserve scope:
 
 ## 11. Open verification items flagged before launch
 
-These open items are tracked in `docs/behaviors/pending-behaviors.md` and must be cleared before this feature launches to production:
+These items require a final product review before a production launch:
 
 - The audit-trail schema for "workspace.reset_to_sample_data" events must be coordinated with the existing `AuditEvent` model in the codebase. The shape must be documented before implementation.
 - The 5-milestone gating logic must be coordinated against the existing `UploadPage` and `CsvUploadPanel` components. The system must distinguish "sample-data-seeded state" from "real-upload state" — a clarification of what "row counts as sample" means at the data layer must be locked before build.

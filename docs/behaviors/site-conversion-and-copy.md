@@ -259,7 +259,7 @@ To preserve scope:
 
 ## 14. Open verification items flagged before launch
 
-These open items are tracked in `docs/behaviors/pending-behaviors.md` and must be cleared before this feature launches to production:
+These items require a final product and copy review before a production launch:
 
 - An audit of the existing `site-chrome.tsx`, `site-content.ts`, `hero-scene.tsx`, `motion-section.tsx`, and `animated-counter.tsx` components must confirm that no current asset or motion pattern violates the page weight budget (§11). Components that violate the budget must be slimmed or removed from the home page render path specifically.
 - The pricing summary table's "What's included" column is intentionally vague in v1 (§8.1). When the deferred feature-gating work item (DEFERRED-05) lands, the column copy must be updated to reflect actual tier-level feature differences.

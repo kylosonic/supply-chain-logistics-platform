@@ -107,10 +107,8 @@ jobs:
         run: npm --prefix apps/ops-console run build
 
       - name: Audit ops console dependencies (deployed set)
-        # The release contract (production-security-hardening.md §6) is about
-        # advisories in DEPLOYED surfaces. vite and vitest are devDependencies
-        # (dev server + test runner) and are never shipped, so they are tracked
-        # in docs/adr/tech-backlog.md rather than blocking a release.
+        # Audit dependencies that ship to users. Development-only advisories
+        # are reported by the non-blocking step below.
         run: npm --prefix apps/ops-console audit --omit=dev --audit-level=high
 
       - name: Report dev-only advisories (non-blocking)

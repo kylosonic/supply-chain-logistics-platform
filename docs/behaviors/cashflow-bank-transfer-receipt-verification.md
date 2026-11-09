@@ -230,6 +230,6 @@ To preserve scope and prevent feature creep, the following are explicitly out of
 
 ## 12. Open verification items flagged before launch
 
-These open items are tracked in `docs/behaviors/pending-behaviors.md` and must be cleared before this feature launches to production:
+These items require a final operations review before a production launch:
 
 - Direct verification of CBE and Dashen published fee schedules for transfers in the 5,000–50,000 ETB range. The ±1,000 ETB tolerance in §6.4 is reasoned from adjacent NBE regulation anchor but is not yet directly verified against the actual fee tables of the two banks in scope.

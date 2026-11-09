@@ -26,8 +26,7 @@ ever connected to a signup flow again, it would ship with
 - `secure_password_change = false` — password change without re-authentication,
 - no CAPTCHA,
 
-so the auth path was hardened-or-retired per
-`docs/behaviors/production-security-hardening.md` §7. It was **retired**.
+so the auth path was retired after a separate security review.
 
 ## What is still intentionally kept
 
