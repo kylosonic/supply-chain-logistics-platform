@@ -227,6 +227,7 @@ Production health checks can be run manually with the "Production smoke" workflo
 - Delivery proof images are stored in PostgreSQL rather than object storage. Upload size and workspace storage limits are enforced.
 - The default route emission calculation uses one heavy-duty vehicle weight class and U.S. EPA ton-mile factors.
 - Receipt extraction depends on a configured provider key. The zero-confidence mode records the upload but does not infer fields.
+- Payment-verification tolerances still require confirmation against current CBE and Dashen fee schedules before production use.
 - SMS and email delivery require external gateway configuration.
 - The desktop project currently runs the web operations console in Electron. It does not define a signed installer build.
 - The production database host and credentials are deployment-specific and intentionally are not recorded in this repository.
