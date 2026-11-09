@@ -76,7 +76,19 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get('x-request-id') or str(uuid4())
         start = time.perf_counter()
-        response: Response = await call_next(request)
+        try:
+            response: Response = await call_next(request)
+        except Exception:
+            duration_ms = round((time.perf_counter() - start) * 1000, 2)
+            app_metrics.record_exception()
+            logger.exception(
+                'request_failed method=%s path=%s duration_ms=%.2f request_id=%s',
+                request.method,
+                request.url.path,
+                duration_ms,
+                request_id,
+            )
+            raise
         duration_ms = round((time.perf_counter() - start) * 1000, 2)
         response.headers['X-Request-ID'] = request_id
         response.headers['X-Content-Type-Options'] = 'nosniff'

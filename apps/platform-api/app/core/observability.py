@@ -11,7 +11,9 @@ class AppMetrics:
     requests_total: int = 0
     requests_4xx: int = 0
     requests_5xx: int = 0
+    unhandled_exceptions: int = 0
     websocket_connections: int = 0
+    last_exception_at: datetime | None = None
     _lock: Lock = field(default_factory=Lock)
 
     def record_http(self, status_code: int) -> None:
@@ -26,6 +28,11 @@ class AppMetrics:
         with self._lock:
             self.websocket_connections += 1
 
+    def record_exception(self) -> None:
+        with self._lock:
+            self.unhandled_exceptions += 1
+            self.last_exception_at = datetime.now(UTC)
+
     def snapshot(self) -> dict:
         with self._lock:
             uptime = int((datetime.now(UTC) - self.started_at).total_seconds())
@@ -35,6 +42,12 @@ class AppMetrics:
                 'requests_total': self.requests_total,
                 'requests_4xx': self.requests_4xx,
                 'requests_5xx': self.requests_5xx,
+                'unhandled_exceptions': self.unhandled_exceptions,
+                'last_exception_at': (
+                    self.last_exception_at.isoformat()
+                    if self.last_exception_at is not None
+                    else None
+                ),
                 'websocket_connections': self.websocket_connections,
             }
 
