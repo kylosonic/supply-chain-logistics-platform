@@ -74,6 +74,6 @@ def undo_verification(
         restored_balance=restored,
         wallet_voided=wallet_voided,
     )
-    # NO Notification row, NO SMS (NB-19.3).
+    # NO Notification row, NO SMS.
     core._relock(db, org, now)
     return receipt

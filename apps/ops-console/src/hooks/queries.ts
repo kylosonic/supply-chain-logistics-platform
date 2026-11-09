@@ -213,12 +213,10 @@ export function useInvalidateDashboard() {
   };
 }
 
-// ---------------------------------------------------------------------------
-// TECH-73 (NB-56): payload-scoped live invalidation — inventory/routes/forecast
+// payload-scoped live invalidation — inventory/routes/forecast
 // ONLY, coalesced to at most one invalidation per 15s window with the latest
 // payload winning. Never touches shipments/subscriptions/activation (those
 // surfaces refresh via their own staleTime or the manual Refresh button).
-// ---------------------------------------------------------------------------
 
 export function useLiveDataInvalidator() {
   const queryClient = useQueryClient();
@@ -243,9 +241,7 @@ export function useLiveDataInvalidator() {
   }, []);
 }
 
-// ---------------------------------------------------------------------------
 // Phase 4 activation hooks (blueprint §9)
-// ---------------------------------------------------------------------------
 
 export function useActivationState() {
   return useQuery({
@@ -261,7 +257,7 @@ export function useResetWorkspace() {
   return useMutation({
     mutationFn: (workspaceName: string) => resetWorkspace(workspaceName),
     onSuccess: async () => {
-      // NB-35.7: clear auth state + server cookie, then land on /login;
+      // clear auth state + server cookie, then land on /login;
       // the next login lands on `/` with the 0% banner (decision #10).
       queryClient.clear();
       await logout();

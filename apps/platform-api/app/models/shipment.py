@@ -35,7 +35,7 @@ class Shipment(UUIDTimestampMixin, Base):
             postgresql_where=text('organization_id IS NULL'),
         ),
         Index('ix_shipments_shipment_no_lookup', 'shipment_no'),
-        # NB-86: a caller-supplied idempotency key. A confirmation replayed over a
+        # a caller-supplied idempotency key. A confirmation replayed over a
         # flaky mobile connection must resolve to the shipment it already created
         # rather than creating a second one (and a second cash record with it).
         # Partial unique index for the same reason as shipment_no: NULLs are
@@ -50,7 +50,7 @@ class Shipment(UUIDTimestampMixin, Base):
         ),
     )
 
-    # NB-64 (audit H-1): tenant scoping. Nullable for legacy rows created
+    # tenant scoping. Nullable for legacy rows created
     # before org scoping; backfilled in migration 20260811_0019.
     organization_id: Mapped[UUID | None] = mapped_column(
         UUIDType, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True, index=True
@@ -70,7 +70,7 @@ class Shipment(UUIDTimestampMixin, Base):
     last_known_location: Mapped[str | None] = mapped_column(String(128), nullable=True)
     delay_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     proof_of_delivery_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    # NB-86: who is carrying it, and how much cash they are expected to bring back.
+    # who is carrying it, and how much cash they are expected to bring back.
     # SET NULL so removing a driver from the roster never deletes delivery history.
     driver_id: Mapped[UUID | None] = mapped_column(
         UUIDType, ForeignKey('drivers.id', ondelete='SET NULL'), nullable=True, index=True

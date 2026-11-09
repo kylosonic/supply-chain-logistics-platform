@@ -150,7 +150,7 @@ def test_state_grace_banner(client: TestClient, db_session: Session):
     token, org_id = _signup(client, 'grace')
     _upgrade(client, token)
     _force_trial_ended(db_session, org_id)
-    # TECH-48: UTC-anchored so the day-difference assertion is stable on
+    # UTC-anchored so the day-difference assertion is stable on
     # machines whose local date (UTC+3) is ahead of the UTC date.
     _inject_invoice(
         db_session, org_id, number='INV-888001',

@@ -77,9 +77,7 @@ def _deliver(client: TestClient, token: str, shipment_id: str, **extra) -> dict:
     return resp.json()
 
 
-# ---------------------------------------------------------------------------
 # The roster
-# ---------------------------------------------------------------------------
 
 
 def test_driver_can_be_added_and_appears_on_the_roster(
@@ -162,9 +160,7 @@ def test_inactive_driver_cannot_be_assigned(
     assert 'not active' in resp.json()['detail']
 
 
-# ---------------------------------------------------------------------------
 # Assignment: who is carrying this
-# ---------------------------------------------------------------------------
 
 
 def test_shipment_can_be_assigned_and_reassigned(
@@ -219,9 +215,7 @@ def test_driver_shipment_list_answers_what_is_on_the_van(
     assert resp.json()[0]['cod_amount_etb'] in ('1500.00', '0.00')
 
 
-# ---------------------------------------------------------------------------
 # Cash on delivery
-# ---------------------------------------------------------------------------
 
 
 def test_delivery_with_no_cash_declared_leaves_the_full_amount_outstanding(
@@ -315,9 +309,7 @@ def test_shipment_without_cod_opens_no_cash_record(
     assert db_session.execute(select(CashCollection)).scalars().all() == []
 
 
-# ---------------------------------------------------------------------------
 # The ledger: end-of-day reconciliation
-# ---------------------------------------------------------------------------
 
 
 def test_ledger_summarises_what_is_out_and_what_is_missing(
@@ -472,9 +464,7 @@ def test_settling_requires_admin(
     assert db_session.execute(select(CashCollection)).scalar_one().status == 'outstanding'
 
 
-# ---------------------------------------------------------------------------
 # Idempotent create: the dropped-connection case
-# ---------------------------------------------------------------------------
 
 
 def test_repeated_create_with_the_same_client_ref_returns_one_shipment(
@@ -529,9 +519,7 @@ def test_reassignment_follows_the_cash(
     assert str(record.driver_id) == second['id'], 'the ledger points at who holds the cash now'
 
 
-# ---------------------------------------------------------------------------
 # Tenant isolation — cash is the most sensitive data here
-# ---------------------------------------------------------------------------
 
 
 def test_drivers_are_invisible_across_organisations(

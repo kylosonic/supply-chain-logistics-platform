@@ -11,7 +11,7 @@ RUN apt-get update \
 
 COPY pyproject.toml ./
 COPY requirements.lock ./
-# NB-70 (audit M-5): install from the committed, hash-pinned lockfile so a
+# Install from the committed, hash-pinned lockfile so a
 # fresh image can never resolve an unpatched transitive dependency (the audit
 # found every dependency declared as an open ``>=`` range with no lockfile).
 # ``--require-hashes`` makes pip refuse any artifact whose digest does not

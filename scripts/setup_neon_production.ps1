@@ -59,9 +59,7 @@ function Ok([string]$t) { Write-Host "  [ok] $t" -ForegroundColor Green }
 function Warn2([string]$t) { Write-Host "  [!!] $t" -ForegroundColor Yellow }
 function Die([string]$t) { Write-Host "  [xx] $t" -ForegroundColor Red; exit 1 }
 
-# ---------------------------------------------------------------------------
 # 0. Preconditions
-# ---------------------------------------------------------------------------
 Step 'Preconditions'
 
 if (-not $NeonApiKey) {
@@ -140,9 +138,7 @@ if ($DryRun) {
     exit 0
 }
 
-# ---------------------------------------------------------------------------
 # 1. Create or reuse the Neon project
-# ---------------------------------------------------------------------------
 Step "Neon project '$ProjectName'"
 $project = @($existing) | Where-Object { $_.name -eq $ProjectName } | Select-Object -First 1
 if ($project) {
@@ -158,9 +154,7 @@ if ($project) {
     Ok "created project $($project.id) in $($project.region_id)"
 }
 
-# ---------------------------------------------------------------------------
 # 2. Connection string (pooled)
-# ---------------------------------------------------------------------------
 Step 'Connection string'
 $raw = & $neon connection-string --project-id $project.id --pooled --api-key $NeonApiKey 2>&1
 if ($LASTEXITCODE -ne 0) { Die "connection-string failed:`n$raw" }
@@ -173,9 +167,7 @@ $pgUrl = $pgUrl.Trim()
 $sqlalchemyUrl = $pgUrl -replace '^postgres(ql)?://', 'postgresql+psycopg://'
 Ok "got a pooled URL (host: $((($sqlalchemyUrl -split '@')[-1] -split '/')[0]))"
 
-# ---------------------------------------------------------------------------
 # 3. Verify it connects
-# ---------------------------------------------------------------------------
 Step 'Verifying the connection'
 $env:FP_NEON_URL = $sqlalchemyUrl
 $probe = & $PythonExe -c @'
@@ -198,9 +190,7 @@ $probe | ForEach-Object { Write-Host "  $_" }
 if ($probe -match 'PROBE_FAIL') { Die 'Neon connection failed; not touching Vercel.' }
 Ok 'Neon database reachable'
 
-# ---------------------------------------------------------------------------
 # 4. Migrate (REQUIRED: a fresh database has no schema)
-# ---------------------------------------------------------------------------
 Step 'Running alembic upgrade head against Neon'
 Push-Location $apiDir
 try {
@@ -227,9 +217,7 @@ finally {
     Remove-Item Env:\APP_ENV -ErrorAction SilentlyContinue
 }
 
-# ---------------------------------------------------------------------------
 # 5. Rotate secrets + set DATABASE_URL on Vercel
-# ---------------------------------------------------------------------------
 Step 'Vercel environment (platform-api / production)'
 $jwt = & $PythonExe -c "import secrets;print(secrets.token_urlsafe(48))"
 $enc = & $PythonExe -c "import secrets;print(secrets.token_urlsafe(48))"
@@ -244,7 +232,7 @@ try {
     # value: the CLI reads stdin as "value, then optional description", and a
     # piped string can be consumed such that a trailing fragment is lost. For a
     # connection string that produced, at runtime,
-    #   invalid channel_binding value: "require
+    # invalid channel_binding value: "require
     # -- an unterminated quote, because the URL had been split. The corruption
     # is silent at write time and only appears as a connection failure, which is
     # exactly how it presented during the Neon cutover.
@@ -274,9 +262,7 @@ try {
 }
 finally { Pop-Location }
 
-# ---------------------------------------------------------------------------
 # 6. Deploy
-# ---------------------------------------------------------------------------
 Step 'Deploying to production'
 # Deploy from the REPO ROOT with --cwd, not by changing into the app directory.
 # Each Vercel project's rootDirectory is already set to apps/<name> in its
@@ -294,9 +280,7 @@ foreach ($app in @('platform-api', 'ops-console', 'product-web')) {
     finally { Pop-Location }
 }
 
-# ---------------------------------------------------------------------------
 # 7. Verify
-# ---------------------------------------------------------------------------
 Step 'Verifying production'
 $health = $null
 for ($i = 1; $i -le 12; $i++) {

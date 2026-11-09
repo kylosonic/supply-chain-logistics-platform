@@ -92,10 +92,8 @@ if (-not $PythonExe -or -not (Test-Path $PythonExe)) {
 }
 Ok "python: $PythonExe"
 
-# ---------------------------------------------------------------------------
 # 1. Isolate neonctl (installing it into the repo root has broken resolution
-#    before; setup_neon_production.ps1 uses the same isolated-dir pattern)
-# ---------------------------------------------------------------------------
+# before; setup_neon_production.ps1 uses the same isolated-dir pattern)
 Step 'neonctl'
 $neon = Join-Path $neonDir 'node_modules/.bin/neonctl.cmd'
 if (-not (Test-Path $neon)) {
@@ -110,9 +108,7 @@ if (-not (Test-Path $neon)) {
 }
 Ok 'neonctl ready'
 
-# ---------------------------------------------------------------------------
 # 2. Locate the project and read its pooled connection string
-# ---------------------------------------------------------------------------
 Step "Neon project '$ProjectName'"
 $orgArgs = @()
 if ($OrgId) { $orgArgs = @('--org-id', $OrgId) }
@@ -181,9 +177,7 @@ Ok "pooled URL host: $((($sqlalchemyUrl -split '@')[-1] -split '/')[0])"
 
 $env:DATABASE_URL = $sqlalchemyUrl
 
-# ---------------------------------------------------------------------------
 # 3. Current state
-# ---------------------------------------------------------------------------
 Step 'Current revision'
 Push-Location $apiDir
 try {
@@ -200,9 +194,7 @@ try {
         exit 0
     }
 
-    # -----------------------------------------------------------------------
     # 4. Apply
-    # -----------------------------------------------------------------------
     Step 'Upgrade to head'
     $upgrade = & $PythonExe -m alembic upgrade head 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { Die "alembic upgrade failed:`n$upgrade" }

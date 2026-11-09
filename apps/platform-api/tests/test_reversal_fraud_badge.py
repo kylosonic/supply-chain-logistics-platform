@@ -138,7 +138,7 @@ def test_badge_surfaces_on_future_queue_item(
     db_session.commit()
     assert _reverse(client, token, receipt_id, reason='Fraud investigation').status_code == 200
 
-    # Every future queue item for that sender carries the badge (NB-21.2).
+    # Every future queue item for that sender carries the badge.
     assert _upload(client, token, ref='TXN-F5', sender='Mulugeta Tesfaye').status_code == 200
     item = next(i for i in _queue(client, token) if i['extracted_fields']['reference_number'] == 'TXN-F5')
     assert item['sender_has_reversed_credit'] is True

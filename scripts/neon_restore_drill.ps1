@@ -95,9 +95,7 @@ function Invoke-Probe([string]$url) {
     try { return ($json | ConvertFrom-Json) } catch { Die "probe produced unparseable output: $json" }
 }
 
-# ---------------------------------------------------------------------------
 # Preconditions: no leftover branch from a previous failed run
-# ---------------------------------------------------------------------------
 Step 'Preconditions'
 $branches = (& $neon branches list --project-id $ProjectId --api-key $NeonApiKey --output json 2>&1) -join "`n"
 if ($LASTEXITCODE -ne 0) { Die "could not list branches:`n$($branches | Select-Object -First 5)" }
@@ -109,18 +107,14 @@ if (@($branchList) | Where-Object { $_.name -eq $DrillBranch }) {
 }
 Ok "clean slate ($(@($branchList).Count) branch(es) before the drill)"
 
-# ---------------------------------------------------------------------------
 # 1. Snapshot production
-# ---------------------------------------------------------------------------
 Step 'Snapshotting production'
 $prodBefore = Invoke-Probe (Get-Conn '')
 if (-not $prodBefore.ok) { Die "production is not reachable: $($prodBefore.error)" }
 Ok ("production: orgs={0} users={1} warehouses={2} shipments={3} head={4}" -f `
     $prodBefore.organizations, $prodBefore.users, $prodBefore.warehouses, $prodBefore.shipments, $prodBefore.alembic_head)
 
-# ---------------------------------------------------------------------------
 # 2. Create the restore branch
-# ---------------------------------------------------------------------------
 Step "Creating restore branch '$DrillBranch' from '$ParentBranch'"
 $created = (& $neon branches create --project-id $ProjectId --name $DrillBranch --parent $ParentBranch --api-key $NeonApiKey --output json 2>&1) -join "`n"
 if ($LASTEXITCODE -ne 0) { Die "branch create failed:`n$($created | Select-Object -First 5)" }
@@ -139,9 +133,7 @@ try {
     }
     if (-not $restored.ok) { Die "restore branch never became reachable: $($restored.error)" }
 
-    # -----------------------------------------------------------------------
     # 3. Data must match
-    # -----------------------------------------------------------------------
     Step 'Comparing restored data against production'
     $fields = @('organizations', 'users', 'warehouses', 'shipments', 'alembic_head')
     $mismatch = @()
@@ -152,9 +144,7 @@ try {
     if ($mismatch.Count -gt 0) { Die "restored data differs from production:`n    $($mismatch -join "`n    ")" }
     Ok ("restored matches production on all {0} fields" -f $fields.Count)
 
-    # -----------------------------------------------------------------------
     # 4. Isolation: a write on the branch must not reach production
-    # -----------------------------------------------------------------------
     Step 'Proving isolation'
     $env:FP_URL = (Get-Conn $DrillBranch)
     & $PythonExe -c @'
@@ -179,9 +169,7 @@ with psycopg.connect(os.environ["FP_URL"], connect_timeout=25) as c:
     if ($leaked -ne 'ABSENT') { Die "a write on the restore branch reached production — isolation is broken" }
     Ok 'branch writes do not reach production'
 
-    # -----------------------------------------------------------------------
     # 5. Production unchanged by the drill itself
-    # -----------------------------------------------------------------------
     Step 'Confirming production was not disturbed'
     $prodAfter = Invoke-Probe (Get-Conn '')
     foreach ($f in @('organizations', 'users', 'warehouses', 'shipments', 'alembic_head')) {

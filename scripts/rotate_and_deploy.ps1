@@ -55,9 +55,7 @@ function Write-Ok([string]$Text) { Write-Host "  [ok] $Text" -ForegroundColor Gr
 function Write-Warn2([string]$Text) { Write-Host "  [!!] $Text" -ForegroundColor Yellow }
 function Write-Fail([string]$Text) { Write-Host "  [xx] $Text" -ForegroundColor Red }
 
-# ---------------------------------------------------------------------------
 # 0. Resolve a Python interpreter
-# ---------------------------------------------------------------------------
 if (-not $PythonExe) {
     $candidates = @(
         (Join-Path $repoRoot '.venv/Scripts/python.exe'),
@@ -70,9 +68,7 @@ Write-Step 'Environment'
 Write-Ok "python: $PythonExe"
 Write-Ok "repo:   $repoRoot"
 
-# ---------------------------------------------------------------------------
 # 1. Validate the supplied URL connects before touching anything
-# ---------------------------------------------------------------------------
 Write-Step 'Verifying the database URL connects'
 if ($DatabaseUrl -notmatch '://') {
     Write-Fail 'DatabaseUrl does not look like a connection URL.'
@@ -119,9 +115,7 @@ if ($probe -match 'PROBE_SKIP') {
     Write-Ok 'database reachable'
 }
 
-# ---------------------------------------------------------------------------
 # 2. Generate rotated secrets
-# ---------------------------------------------------------------------------
 Write-Step 'Generating rotated secrets'
 $jwt = & $PythonExe -c "import secrets; print(secrets.token_urlsafe(48))"
 $enc = & $PythonExe -c "import secrets; print(secrets.token_urlsafe(48))"
@@ -130,9 +124,7 @@ Write-Ok ("JWT_SECRET_KEY: {0} chars" -f $jwt.Length)
 Write-Ok ("PROVIDER_KEY_ENCRYPTION_SECRET: {0} chars" -f $enc.Length)
 Write-Warn2 'Rotating JWT invalidates all existing console sessions (expected, and acceptable for a fix).'
 
-# ---------------------------------------------------------------------------
 # 3. Apply to Vercel
-# ---------------------------------------------------------------------------
 Write-Step 'Vercel environment (platform-api / production)'
 Push-Location $apiDir
 try {
@@ -174,9 +166,7 @@ try {
 }
 finally { Pop-Location }
 
-# ---------------------------------------------------------------------------
 # 4. Deploy the three projects
-# ---------------------------------------------------------------------------
 Write-Step 'Deploying to production'
 foreach ($app in @('platform-api', 'ops-console', 'product-web')) {
     Write-Host "  -> $app" -ForegroundColor Cyan
@@ -190,9 +180,7 @@ foreach ($app in @('platform-api', 'ops-console', 'product-web')) {
     finally { Pop-Location }
 }
 
-# ---------------------------------------------------------------------------
 # 5. Verify
-# ---------------------------------------------------------------------------
 Write-Step 'Verifying production'
 $health = $null
 for ($attempt = 1; $attempt -le 12; $attempt++) {
@@ -216,9 +204,7 @@ if ($health -match '"db"\s*:\s*"ok"') {
     exit 6
 }
 
-# ---------------------------------------------------------------------------
 # 6. Rotation record
-# ---------------------------------------------------------------------------
 $record = Join-Path $repoRoot ".artifacts/secret-rotation-$(Get-Date -Format yyyyMMdd-HHmmss).md"
 @"
 # Secret rotation record

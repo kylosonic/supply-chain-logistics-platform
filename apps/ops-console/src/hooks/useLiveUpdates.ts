@@ -86,15 +86,13 @@ export function useLiveUpdates({ getToken, enabled, onMessage }: Props) {  const
   }, [enabled, getToken]);
 }
 
-// ---------------------------------------------------------------------------
-// TECH-73: module-level live payload store (session-scoped). The single
+// module-level live payload store (session-scoped). The single
 // socket owner (SessionLiveUpdates, mounted once in Layout) publishes here;
 // the dashboard chip + coalesced invalidation and the Route Studio schedule
 // stream consume it. Same pub/sub pattern as the api.ts session signal; no
 // context, no new dependency (useSyncExternalStore is core React 18).
 // The socket itself cannot run in renderToString, so this store is the
 // testable seam (blueprint decision 4).
-// ---------------------------------------------------------------------------
 
 let livePayload: LiveUpdatePayload | null = null;
 const livePayloadListeners = new Set<() => void>();

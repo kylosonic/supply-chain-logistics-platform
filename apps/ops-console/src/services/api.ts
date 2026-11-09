@@ -46,7 +46,7 @@ export function clearAuthStorage(): void {
   setStoredToken(null);
 }
 
-// NB-59: module-level soft-reset signal. The response interceptor clears
+// module-level soft-reset signal. The response interceptor clears
 // auth storage and notifies subscribers; AuthContext nulls its state and
 // ProtectedRoute performs the in-app redirect — no window.location bounce.
 type SessionExpiredListener = () => void;
@@ -61,7 +61,7 @@ export function onAuthSessionExpired(listener: SessionExpiredListener): () => vo
   };
 }
 
-// NB-59: while a session is being established (login POST → me →
+// while a session is being established (login POST → me →
 // subscription), a refused follow-up request must not wipe the freshly
 // issued token or bounce the operator — the login surface owns errors here.
 let establishingSession = false;

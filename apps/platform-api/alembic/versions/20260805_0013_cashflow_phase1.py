@@ -48,7 +48,6 @@ def _collection_account_seeds() -> list[dict]:
 def upgrade() -> None:
     uuid_type = postgresql.UUID(as_uuid=True)
 
-    # --- collection_accounts -------------------------------------------------
     op.create_table(
         'collection_accounts',
         sa.Column('id', uuid_type, primary_key=True),
@@ -62,7 +61,6 @@ def upgrade() -> None:
         sa.UniqueConstraint('bank_code', name='uq_collection_account_bank_code'),
     )
 
-    # --- subscription_invoices ------------------------------------------------
     op.create_table(
         'subscription_invoices',
         sa.Column('id', uuid_type, primary_key=True),
@@ -93,7 +91,6 @@ def upgrade() -> None:
     )
     op.create_index('ix_subscription_invoices_invoice_number', 'subscription_invoices', ['invoice_number'])
 
-    # --- invoice_line_items ---------------------------------------------------
     op.create_table(
         'invoice_line_items',
         sa.Column('id', uuid_type, primary_key=True),
@@ -109,7 +106,6 @@ def upgrade() -> None:
     )
     op.create_index('ix_invoice_line_items_invoice_id', 'invoice_line_items', ['invoice_id'])
 
-    # --- trial_records ----------------------------------------------------------
     op.create_table(
         'trial_records',
         sa.Column('id', uuid_type, primary_key=True),
@@ -124,7 +120,6 @@ def upgrade() -> None:
     )
     op.create_index('ix_trial_records_organization_id', 'trial_records', ['organization_id'])
 
-    # --- notifications ------------------------------------------------------------
     op.create_table(
         'notifications',
         sa.Column('id', uuid_type, primary_key=True),
@@ -144,7 +139,6 @@ def upgrade() -> None:
         'ix_notifications_org_kind_expires', 'notifications', ['organization_id', 'kind', 'expires_at']
     )
 
-    # --- billing_counters (single-row sequence) ----------------------------------
     op.create_table(
         'billing_counters',
         sa.Column('id', sa.Integer(), primary_key=True),
@@ -152,12 +146,10 @@ def upgrade() -> None:
     )
     op.bulk_insert(sa.table('billing_counters', sa.column('id', sa.Integer), sa.column('last_value', sa.Integer)), [{'id': 1, 'last_value': 0}])
 
-    # --- organizations: trial fields --------------------------------------------
     op.add_column('organizations', sa.Column('billing_phase', sa.String(length=24), server_default='free', nullable=False))
     op.add_column('organizations', sa.Column('trial_started_at', sa.DateTime(timezone=True), nullable=True))
     op.add_column('organizations', sa.Column('trial_ends_at', sa.DateTime(timezone=True), nullable=True))
 
-    # --- seed collection accounts --------------------------------------------------
     for seed in _collection_account_seeds():
         op.bulk_insert(
             sa.table(
@@ -172,7 +164,6 @@ def upgrade() -> None:
             [{**seed, 'id': uuid.uuid4(), 'is_active': True}],
         )
 
-    # --- backfill existing orgs (no fabricated invoices) ---------------------------
     _backfill_organizations()
 
 

@@ -70,10 +70,10 @@ def reset_workspace(
     state.seeded_at = now
     db.add(state)
 
-    # (d) pitch crossings cleared (NB-35).
+    # (d) pitch crossings cleared.
     db.execute(delete(ThresholdCrossing).where(ThresholdCrossing.organization_id == org.id))
 
-    # (e) audit with admin user + timestamp (NB-35.5).
+    # (e) audit with admin user + timestamp.
     record_audit_event(
         db,
         event_type='workspace.reset_to_sample_data',

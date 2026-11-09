@@ -58,7 +58,7 @@ export function SignupForm() {
     setStatusMessage(null);
     setStatusTone(null);
 
-    // NB-74: the funnel's primary conversion point. No-ops when analytics is
+    // the funnel's primary conversion point. No-ops when analytics is
     // unconfigured, and never carries form contents — only the fact that the
     // submit happened.
     trackEvent('start_free_click');

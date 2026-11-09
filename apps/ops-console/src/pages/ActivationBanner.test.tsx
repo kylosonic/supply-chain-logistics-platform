@@ -278,7 +278,7 @@ describe('useResetWorkspace (NB-35.7 reset re-login flow)', () => {
 
     // server call contract
     expect(apiMock.post).toHaveBeenCalledWith('/activation/reset', { workspace_name: 'Seed Co' });
-    // NB-35.7: auth state cleared (query cache wiped) + logout cookie-clear
+    // auth state cleared (query cache wiped) + logout cookie-clear
     expect(queryClient.getQueryData(['activation'])).toBeUndefined();
     expect(queryClient.getQueryData(['routes', 'schedules'])).toBeUndefined();
     expect(authMocks.logout).toHaveBeenCalledTimes(1);

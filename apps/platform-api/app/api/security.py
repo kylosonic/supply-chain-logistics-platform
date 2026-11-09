@@ -201,9 +201,7 @@ def require_org_roles(*allowed: OrganizationRole):
     return checker
 
 
-# ---------------------------------------------------------------------------
 # NB-64 — tenant scoping helpers (audit H-1)
-# ---------------------------------------------------------------------------
 # Implementation lives in ``app.core.tenant_scope`` so repositories can apply
 # the same filter without importing this FastAPI dependency module (which would
 # create a cycle via ``app.repositories``). Re-exported here because every

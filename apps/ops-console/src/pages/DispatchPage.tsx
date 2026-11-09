@@ -385,7 +385,7 @@ export function DispatchPage() {
       ) : null}
 
       <div className="grid gap-5 xl:grid-cols-3">
-        <Panel eyebrow="Step 1" title="Customer" description="A customer is a named, mapped delivery location.">
+        <Panel eyebrow="Customers" title="Customer" description="A customer is a named, mapped delivery location.">
           <form className="grid gap-3" onSubmit={onCreateCustomer}>
             <input className={FIELD} placeholder="Customer code" required value={customerForm.code} onChange={(event) => setCustomerForm({ ...customerForm, code: event.target.value })} />
             <input className={FIELD} placeholder="Customer name" required value={customerForm.name} onChange={(event) => setCustomerForm({ ...customerForm, name: event.target.value })} />
@@ -399,7 +399,7 @@ export function DispatchPage() {
           </form>
         </Panel>
 
-        <Panel eyebrow="Step 2" title="Delivery order" description="Demand, cash to collect, and optional time window.">
+        <Panel eyebrow="Orders" title="Delivery order" description="Demand, cash to collect, and optional time window.">
           <form className="grid gap-3" onSubmit={onCreateOrder}>
             <input className={FIELD} placeholder="Order number" required value={orderForm.order_no} onChange={(event) => setOrderForm({ ...orderForm, order_no: event.target.value })} />
             <select className={FIELD} required value={orderForm.customer_id} onChange={(event) => setOrderForm({ ...orderForm, customer_id: event.target.value })}>
@@ -424,7 +424,7 @@ export function DispatchPage() {
           </form>
         </Panel>
 
-        <Panel eyebrow="Step 3" title="Driver" description="Create the driver who will receive the signed manifest link.">
+        <Panel eyebrow="Drivers" title="Driver" description="Create the driver who will receive the signed manifest link.">
           <form className="grid gap-3" onSubmit={onCreateDriver}>
             <input className={FIELD} placeholder="Driver full name" required value={driverForm.full_name} onChange={(event) => setDriverForm({ ...driverForm, full_name: event.target.value })} />
             <input className={FIELD} placeholder="Phone" required value={driverForm.phone} onChange={(event) => setDriverForm({ ...driverForm, phone: event.target.value })} />
@@ -435,7 +435,7 @@ export function DispatchPage() {
       </div>
 
       <Panel
-        eyebrow="Step 4"
+        eyebrow="Planning"
         title="Plan the day"
         description="Select planned orders. The planner is a transparent time-window heuristic, not a promise of global optimality."
       >

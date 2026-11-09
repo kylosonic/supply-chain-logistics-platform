@@ -63,7 +63,7 @@ def optimize_routes(
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
-    # TECH-57: org resolution FIRST — every warehouse query below must be
+    # org resolution FIRST — every warehouse query below must be
     # org-scoped so identical seeded codes across orgs (WH-001..003) can
     # never collide (MultipleResultsFound -> 500 on persist=true).
     organization_id = resolve_scoped_organization(actor, writable)
@@ -182,7 +182,7 @@ def optimize_routes(
 
     serialized_stops = [RouteStopOut(**stop).model_dump(mode='json') for stop in result['stops']]
 
-    # NB-27.3: audit the data substrate of the run (decision #4) — real iff
+    # audit the data substrate of the run (decision #4) — real iff
     # the start warehouse AND every delivery-target warehouse row used in
     # the run exist with data_origin='real' (one IN-select, not N queries).
     used_codes = {payload.start_warehouse_code} | {d.warehouse_code for d in payload.deliveries}
@@ -305,7 +305,7 @@ def optimize_routes(
         },
     )
 
-    # NB-28.4/33: milestone 6 = first route optimization, ANY substrate.
+    # milestone 6 = first route optimization, ANY substrate.
     # post_aha_toast surfaces exactly on that first transition (server truth).
     # Org-less runs (admin with no membership) skip activation — the state
     # row is 1:1 with an organization and cannot be keyed by NULL.
@@ -345,7 +345,7 @@ def list_route_schedules(
     membership: OrganizationMembership = Depends(get_current_membership),
     actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    # NB-64 (audit H-1): route schedules are tenant data.
+    # route schedules are tenant data.
     return RouteScheduleRepository(db).list_all_sorted(membership.organization_id)
 
 
@@ -404,7 +404,7 @@ def list_route_optimization_history(
     membership: OrganizationMembership = Depends(get_current_membership),
     actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    # NB-64: run history carries route names, warehouse codes and costs.
+    # run history carries route names, warehouse codes and costs.
     return RouteOptimizationRunRepository(db).list_all_desc(membership.organization_id)
 
 

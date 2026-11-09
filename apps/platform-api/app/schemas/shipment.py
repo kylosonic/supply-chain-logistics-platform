@@ -49,7 +49,7 @@ class ShipmentStatusUpdate(BaseModel):
     delay_reason: str | None = Field(default=None, max_length=255)
     proof_of_delivery_ref: str | None = Field(default=None, max_length=255)
     actual_delivery: datetime | None = None
-    # NB-86: cash declared by the driver at the point of delivery. Supplying this
+    # cash declared by the driver at the point of delivery. Supplying this
     # with a DELIVERED status opens or updates the shipment's cash record, so a
     # field confirmation and its cash figure travel in one call over one
     # connection attempt.

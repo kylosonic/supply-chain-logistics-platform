@@ -60,7 +60,7 @@ def audit_timeline(
     membership: OrganizationMembership = Depends(get_current_membership),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    # NB-64 (audit H-1): the audit trail holds operator emails and phone-masked
+    # the audit trail holds operator emails and phone-masked
     # payloads, so it must never leak across tenants.
     stmt = scoped_to_organization(select(AuditEvent), AuditEvent, membership.organization_id)
     rows = db.execute(stmt.order_by(desc(AuditEvent.created_at)).limit(limit)).scalars().all()
@@ -190,7 +190,7 @@ def update_live_eta(
 ):
     organization_id = resolve_scoped_organization(actor, writable)
 
-    # NB-64: the warehouse being updated must belong to the caller's tenant,
+    # the warehouse being updated must belong to the caller's tenant,
     # otherwise an operator could rewrite another company's dock schedule.
     warehouse = organization_scoped_get(
         db,

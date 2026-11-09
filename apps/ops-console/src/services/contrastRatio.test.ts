@@ -21,7 +21,7 @@ const PINNED_PAIRS: ReadonlyArray<{
   { fg: '#8fa1b3', bg: '#233040', expected: 5.05 }, // secondary on input (AA)
   { fg: '#5b6b7d', bg: '#233040', expected: 2.45 }, // muted on input (documents exemption)
   { fg: '#94a3b8', bg: '#233040', expected: 5.22 }, // placeholder on input (AA)
-  // Phase 02 (TECH-78) pins — login-page small text on the NEW surfaces:
+  // Phase 02 pins — login-page small text on the NEW surfaces:
   { fg: '#94a3b8', bg: '#0d141d', expected: 7.22 }, // slate-400 on shell surface (FIX, §2.3 #1/#5/#13)
   { fg: '#94a3b8', bg: '#111a26', expected: 6.83 }, // slate-400 on elevated (FIX, §2.3 #3/#12)
   { fg: '#64748b', bg: '#0d141d', expected: 3.89 }, // slate-500 on shell (documents fixed FAIL)

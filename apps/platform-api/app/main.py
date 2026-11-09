@@ -32,7 +32,7 @@ limiter = Limiter(
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # NB-63.1 (audit C-1): touch every effective_* property at boot so a
+    # touch every effective_* property at boot so a
     # misconfigured non-dev environment aborts startup with an error naming
     # the offending variable, instead of failing lazily on first use.
     # Dev/test guards skip, so the pytest suite is unaffected.

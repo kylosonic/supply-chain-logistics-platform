@@ -24,8 +24,8 @@ export function RoutesPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [postAhaVisible, setPostAhaVisible] = useState(false);
 
-  // NB-29.1: the weather risk zones map unlocks at milestone 5; the page
-  // itself remains routable (NB-28.5) — optimize 423s only on locks.
+  // the weather risk zones map unlocks at milestone 5; the page
+  // itself remains routable — optimize 423s only on locks.
   const milestone = activationQ.data?.m6_completed ? 6 : (activationQ.data?.n_of_5 ?? 0);
   const weatherMapUnlocked = milestone >= 5;
 
@@ -49,7 +49,7 @@ export function RoutesPage() {
     loadSchedules();
   }, []);
 
-  // TECH-73: the shared session stream replaces this page's own socket — the
+  // the shared session stream replaces this page's own socket — the
   // listener fires ONLY on new publishes (never on mount), so mount freshness
   // stays with loadSchedules() above (blueprint decision 9).
   useLivePayloadStream((payload) => {
@@ -94,7 +94,7 @@ export function RoutesPage() {
           onOptimized={(route: RouteOptimizeResponse) => {
             setLatestRouteStops(route.stops);
             loadSchedules();
-            // NB-33: fire the one-time toast exactly when the server says
+            // fire the one-time toast exactly when the server says
             // this was the org's FIRST optimization (server truth).
             if (route.post_aha_toast) {
               setPostAhaVisible(true);

@@ -108,7 +108,7 @@ def test_reverse_writes_exact_customer_message(
     assert expires == fixed + timedelta(days=3)
     assert resp.json()['message'] == expected
 
-    # NO SMS on reverse (NB-16: escalation is the only SMS state).
+    # NO SMS on reverse.
     assert db_session.execute(select(SmsMessage)).scalars().all() == []
 
 
@@ -134,11 +134,11 @@ def test_reverse_creates_distinct_audit_record(
     resp = _reverse(client, token, receipt_id, reason=reason)
     assert resp.status_code == 200
 
-    # Original verified record untouched (NB-18.3).
+    # Original verified record untouched.
     db_session.refresh(verified)
     assert json.dumps(verified.payload, sort_keys=True) == original_payload
 
-    # DISTINCT receipts.reversed record with the mandatory note (NB-20.4).
+    # DISTINCT receipts.reversed record with the mandatory note.
     reversed_events = db_session.execute(
         select(AuditEvent).where(
             AuditEvent.event_type == 'receipts.reversed',
@@ -172,7 +172,7 @@ def test_reverse_no_automatic_refund(
     resp = _reverse(client, token, receipt_id, reason='No refund on file')
     assert resp.status_code == 200
 
-    # NO wallet row created (NB-20.5 — no refund execution).
+    # NO wallet row created.
     wallet_after = len(
         db_session.execute(
             select(WalletCredit).where(WalletCredit.organization_id == org.id)

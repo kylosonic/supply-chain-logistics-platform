@@ -706,9 +706,7 @@ export type WalletSummary = {
   credits: WalletCredit[];
 };
 
-// ---------------------------------------------------------------------------
 // Phase 4 activation surfaces (blueprint §2.4 / §9)
-// ---------------------------------------------------------------------------
 
 export type ActivationCategoryStatus = 'real' | 'sample' | 'empty';
 
@@ -764,15 +762,13 @@ export type PitchDismissResult = {
   dismissed: boolean;
 };
 
-// ---------------------------------------------------------------------------
-// Driver roster and cash-on-delivery ledger (NB-86 operator surfaces).
+// Driver roster and cash-on-delivery ledger.
 //
 // The question these answer, at the end of every working day in this market:
 // *who is carrying the load, how much cash is still out with them, and how much
 // never came back?* Money figures arrive as decimal strings — they are summed
 // server-side, and parsing them into JS numbers here would lose the exact
 // shortfall the operator is acting on.
-// ---------------------------------------------------------------------------
 
 export type DriverStatus = 'active' | 'inactive';
 

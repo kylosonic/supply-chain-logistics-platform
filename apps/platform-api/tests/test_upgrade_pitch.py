@@ -50,7 +50,7 @@ def test_p60_fires_at_sixty_percent_once_per_month(
     assert audit.payload['level'] == 'p60'
     assert audit.payload['utilization_pct'] == 60
 
-    # second read: no re-fire (NB-32.5)
+    # second read: no re-fire
     pitch = _activation_pitch(client, token)
     assert pitch['banner'] == 'p60'
     assert pitch['fired'] == []

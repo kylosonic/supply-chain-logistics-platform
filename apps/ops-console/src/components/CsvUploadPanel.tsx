@@ -88,7 +88,7 @@ export function CsvUploadPanel() {
           ...prev,
           [kind]: `${kind} import: processed=${response.records_processed}, created=${response.records_created}, updated=${response.records_updated}, errors=${response.errors.length}`,
         }));
-        // NB-30.4: milestone state reflects without a page reload.
+        // milestone state reflects without a page reload.
         queryClient.invalidateQueries({ queryKey: ['activation'] });
     } catch (err) {
         setResults((prev) => ({

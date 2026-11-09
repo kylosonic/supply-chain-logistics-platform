@@ -23,7 +23,7 @@ export default tseslint.config(
     },
   },
   {
-    // NB-77: a React context module exports its Provider *and* its consumer
+    // a React context module exports its Provider *and* its consumer
     // hooks by design; splitting them across files only to satisfy the fast
     // refresh heuristic makes the provider harder to find. Fast refresh falls
     // back to a full reload for this one directory, which is the intended

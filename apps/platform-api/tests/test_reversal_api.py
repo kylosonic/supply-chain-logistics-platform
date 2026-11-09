@@ -125,10 +125,10 @@ def test_audit_events_per_receipt_with_actions(
     types = [e['event_type'] for e in events]
     assert 'receipts.uploaded' in types
     assert 'receipts.verified' in types
-    # Newest first (NB-18 timeline): the list is sorted by created_at DESC.
+    # Newest first: the list is sorted by created_at DESC.
     timestamps = [e['created_at'] for e in events]
     assert timestamps == sorted(timestamps, reverse=True)
-    # NB-19.1: the Undo/Reverse action is anchored on the verified record.
+    # the Undo/Reverse action is anchored on the verified record.
     verified_event = next(e for e in events if e['event_type'] == 'receipts.verified')
     assert verified_event['available_actions'] == ['undo']
     assert all(e['available_actions'] == [] for e in events if e is not verified_event)

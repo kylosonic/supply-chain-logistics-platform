@@ -236,7 +236,7 @@ def receipt_queue_file(
     receipt = receipts_service.get_queue_item(db, receipt_id, membership.organization_id)
     if receipt is None:
         raise HTTPException(status_code=404, detail='Receipt not found')
-    # NB-71 (audit L-4): the stored content_type is client-supplied. Force a
+    # the stored content_type is client-supplied. Force a
     # download disposition so a crafted type can never be rendered in the
     # console origin (nosniff is already set globally).
     return Response(

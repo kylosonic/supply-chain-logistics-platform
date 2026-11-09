@@ -11,9 +11,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
-# ---------------------------------------------------------------------------
-# Locked tier ladder (NB-01)
-# ---------------------------------------------------------------------------
+# Locked tier ladder
 
 TIER_SPECS: dict[str, dict] = {
     'free': {
@@ -87,9 +85,7 @@ def tier_title(tier: str) -> str:
     return TIER_SPECS[tier]['title']
 
 
-# ---------------------------------------------------------------------------
 # Billing-period math
-# ---------------------------------------------------------------------------
 
 
 def _first_of_month(d: date) -> date:

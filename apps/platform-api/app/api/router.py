@@ -44,7 +44,7 @@ api_router.include_router(live.router, prefix='/live', tags=['live'])
 api_router.include_router(ops.router, prefix='/ops', tags=['ops'])
 api_router.include_router(insights.router, prefix='/ops', tags=['ops'])
 api_router.include_router(shipments.router, prefix='/shipments', tags=['shipments'])
-# NB-86: the oper*ational* half of the product — who is carrying it, and the cash
+# the oper*ational* half of the product — who is carrying it, and the cash
 # they are carrying back.
 api_router.include_router(drivers.router, prefix='/drivers', tags=['drivers'])
 api_router.include_router(cash_collections.router, prefix='/cash-collections', tags=['cash-collections'])

@@ -194,13 +194,11 @@ def orgless_token(db_session: Session) -> str:
     return create_access_token(subject=str(user.id), role=UserRole.OPERATOR)
 
 
-# ---------------------------------------------------------------------------
 # Phase 2 receipt-processing fixtures (blueprint §9.1)
 #
 # The signup/upgrade/force-trial-ended/inject-invoice recipe below is a
 # deliberate REPLICATION of the file-local helpers in test_billing_api.py
 # (never imported across test modules — test isolation; blueprint §11.11).
-# ---------------------------------------------------------------------------
 
 SAMPLE_PNG_BYTES = b'\x89PNG\r\n\x1a\n' + bytes(range(256)) * 4
 BAD_FORMAT_BYTES = b'this is a plain text file pretending to be a receipt'
@@ -395,9 +393,7 @@ def make_admin_membership(db_session: Session):
     return _make
 
 
-# ---------------------------------------------------------------------------
 # Phase 3 reversal fixtures (blueprint §10.1)
-# ---------------------------------------------------------------------------
 
 
 @pytest.fixture()
@@ -503,9 +499,7 @@ def make_verified_with_surplus(
     return _make
 
 
-# ---------------------------------------------------------------------------
 # Phase 4 activation fixtures (blueprint §10.1)
-# ---------------------------------------------------------------------------
 
 CSV_HEADERS = {
     'warehouses': 'code,name,address,city,state,country,latitude,longitude,capacity_units',

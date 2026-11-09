@@ -104,7 +104,6 @@ def main() -> int:
 
     html = COMP.read_text(encoding="utf-8")
 
-    # --- 1. the clip elements -------------------------------------------------
     applied = 0
     for s in scenes:
         pat = re.compile(
@@ -119,7 +118,6 @@ def main() -> int:
             raise SystemExit(f"expected 1 substitution for {s['id']}, made {n}")
         applied += n
 
-    # --- 2. the gsap timeline's own copy of the same numbers ------------------
     # These were duplicated by hand and drifted from the clip attributes; they are
     # now regenerated from the same measured source so the entrance animations
     # cannot fire at a different time from the cut.
@@ -141,7 +139,6 @@ def main() -> int:
     if n != 1:
         raise SystemExit(f"expected to rewrite the SCENES array once, made {n}")
 
-    # --- 3. the final fade, which must start at the last scene's fade-in ------
     end_fade = round(max(0.0, TOTAL - 1.2), 2)
     fade_pat = re.compile(r"(tl\.to\('#s11', \{ opacity: 0, duration: 1\.1, ease: 'power2\.inOut' \}, )[\d.]+(\);)")
     html, n = fade_pat.subn(lambda m: f"{m.group(1)}{end_fade}{m.group(2)}", html, count=1)

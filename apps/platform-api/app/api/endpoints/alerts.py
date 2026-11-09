@@ -40,7 +40,7 @@ def list_alerts(
     membership: OrganizationMembership = Depends(get_current_membership),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    # NB-64 (audit H-1): alerts are tenant data.
+    # alerts are tenant data.
     organization_id = membership.organization_id
     stmt = scoped_to_organization(select(Alert), Alert, organization_id)
     if status:
@@ -91,7 +91,7 @@ def scan_alerts(
     actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
-    # NB-64: a scan must only ever generate alerts from the caller's own
+    # a scan must only ever generate alerts from the caller's own
     # inventory and shipments, and stamp them with the caller's org.
     organization_id = resolve_scoped_organization(actor, writable)
     generated: list[Alert] = []

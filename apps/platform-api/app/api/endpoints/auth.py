@@ -278,7 +278,7 @@ def company_signup(
         },
     )
 
-    # NB-25: seed the fresh workspace from the shipped sample CSVs
+    # seed the fresh workspace from the shipped sample CSVs
     # (per-workspace; audit workspace.seeded_sample_data recorded inside).
     seeding.seed_workspace(db, org, user, now=datetime.now(UTC))
     db.commit()

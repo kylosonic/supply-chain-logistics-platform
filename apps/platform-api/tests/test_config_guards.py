@@ -28,7 +28,6 @@ def _prod_settings(**overrides) -> Settings:
     return Settings(_env_file=None, **base)
 
 
-# --- PROD-02: receipt-extraction mode guard --------------------------------
 
 def test_production_extraction_mode_rejects_mock():
     s = _prod_settings(receipt_extraction_mode='mock')
@@ -41,7 +40,6 @@ def test_production_extraction_mode_accepts_real():
     assert s.effective_receipt_extraction_mode == 'real'
 
 
-# --- PROD-04: CBE/Dashen collection-account guards --------------------------
 
 def test_production_cbe_holder_required():
     s = _prod_settings(cbe_account_holder='')
@@ -67,7 +65,6 @@ def test_production_dashen_number_required():
         s.effective_dashen_account_number
 
 
-# --- PROD-05: secrets guardrails --------------------------------------------
 
 def test_production_requires_provider_key_encryption_secret():
     s = _prod_settings(provider_key_encryption_secret='')
@@ -113,7 +110,6 @@ def test_development_defaults_skip_guards():
     assert s.effective_database_url == 'sqlite+pysqlite:///:memory:'
 
 
-# --- NB-63: known-placeholder secret rejection (audit C-1) ------------------
 
 def test_production_rejects_known_jwt_placeholder():
     """40-char committed .env.example placeholder must raise naming the var."""

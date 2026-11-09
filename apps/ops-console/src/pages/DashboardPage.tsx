@@ -41,7 +41,7 @@ function SkeletonBlock({ className }: { className?: string }) {
 }
 
 // NB-29.3 panel gate map: hidden vs placeholder per surface, milestone
-// threshold fixed — no per-panel configuration path (NB-29.4).
+// threshold fixed — no per-panel configuration path.
 const PANEL_GATES = [
   { id: 'inventory-charts', mode: 'placeholder', milestone: 4 },
   { id: 'utilization', mode: 'placeholder', milestone: 4 },
@@ -112,7 +112,7 @@ export function DashboardPage() {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // TECH-73: the live payload comes from the session-scoped store owned by
+  // the live payload comes from the session-scoped store owned by
   // SessionLiveUpdates — the chip survives page switches (decision 8) and
   // background invalidation is coalesced + payload-scoped (decisions 5/6);
   // invalidations only run while this page is mounted (stream subscription).
@@ -138,7 +138,7 @@ export function DashboardPage() {
   const riskZones = useMemo(() => riskQ.data ?? [], [riskQ.data]);
   const appointments = appointmentsQ.data ?? [];
 
-  // NB-29: milestone = 6 once m6 completes, else the sequential N-of-5.
+  // milestone = 6 once m6 completes, else the sequential N-of-5.
   const activation = activationQ.data ?? null;
   const milestone = activation?.m6_completed ? 6 : (activation?.n_of_5 ?? 0);
 

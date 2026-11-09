@@ -55,9 +55,7 @@ def record_audit_event(
     return event
 
 
-# ---------------------------------------------------------------------------
 # Autonomous Exception Management
-# ---------------------------------------------------------------------------
 
 _MAX_RADIUS_MILES = 50.0
 
@@ -167,4 +165,4 @@ def auto_resolve_late_pickup(alert_id: UUID, db: Session) -> dict[str, Any]:
         'assigned_vehicle_code': closest_asset.vehicle_code,
         'distance_miles': round(closest_distance, 2),
         'route_id': route_id,
-    }
+    }

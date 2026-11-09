@@ -45,9 +45,7 @@ def _invoice_csv(order_id: str, carrier: str = 'CARRIER-001', rate: str = '1000.
     return f'order_id,carrier_id,actual_rate\n{order_id},{carrier},{rate}\n'
 
 
-# ---------------------------------------------------------------------------
 # 1. Inventory serialisation (the 500)
-# ---------------------------------------------------------------------------
 
 
 def test_inventory_list_answers_for_a_seeded_workspace(client: TestClient, signup_workspace):
@@ -119,9 +117,7 @@ def test_inventory_is_not_visible_across_workspaces(client: TestClient):
     assert ids_a.isdisjoint(ids_b), 'no inventory row is shared between workspaces'
 
 
-# ---------------------------------------------------------------------------
 # 2. Freight invoices: tenant scope on read, ownership on write
-# ---------------------------------------------------------------------------
 
 
 def test_invoice_upload_stamps_the_owning_workspace(

@@ -1,6 +1,6 @@
 name: CI
 
-# NB-77 (audit M-5): these gates are the release gate. A red run must block the
+# these gates are the release gate. A red run must block the
 # Vercel deploy for the affected project — wire that with the Vercel "Ignored
 # Build Step" / deployment-check setting documented in docs/release-gates.md.
 # This workflow deliberately runs the SAME commands a release depends on: full
@@ -42,7 +42,7 @@ jobs:
       - name: Install backend dependencies (lockfile, hash-verified)
         run: |
           python -m pip install --upgrade pip
-          # NB-70: the committed lockfile is authoritative for deployments, so
+          # the committed lockfile is authoritative for deployments, so
           # CI installs exactly what Docker installs.
           python -m pip install --require-hashes -r requirements.lock
           python -m pip install --no-deps -e .

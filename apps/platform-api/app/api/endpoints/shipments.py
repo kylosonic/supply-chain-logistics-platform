@@ -74,7 +74,7 @@ def list_shipments(
     membership: OrganizationMembership = Depends(get_current_membership),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    # NB-64 (audit H-1): shipments are tenant data. An org-scoped actor sees
+    # shipments are tenant data. An org-scoped actor sees
     # their own rows plus explicitly legacy rows; business access requires an
     # active organization membership, so an org-less actor is denied upstream.
     organization_id = membership.organization_id
@@ -164,7 +164,7 @@ def create_shipment(
         if not route:
             raise HTTPException(status_code=404, detail='Route schedule not found')
 
-    # NB-86: an assigned driver must belong to the caller's tenant. Without this
+    # an assigned driver must belong to the caller's tenant. Without this
     # check a caller could assign another company's driver by id, leaking the
     # existence of that row and misattributing the cash that follows it.
     if payload.driver_id:
@@ -289,7 +289,7 @@ def update_shipment_status(
     elif payload.status == ShipmentStatus.DELIVERED:
         shipment.actual_delivery = datetime.now(UTC)
 
-    # NB-86: a delivery is where cash actually changes hands, so the cash record is
+    # a delivery is where cash actually changes hands, so the cash record is
     # opened here rather than in a second call the driver might never complete.
     # Opening is idempotent (one row per shipment), which is what makes a replayed
     # confirmation safe over an unreliable connection.

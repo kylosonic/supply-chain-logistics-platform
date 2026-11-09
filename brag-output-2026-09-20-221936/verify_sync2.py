@@ -46,7 +46,6 @@ def main() -> int:
     scene_map = json.loads((OUT / "scene-map.json").read_text(encoding="utf-8"))
     scenes = scene_map["scenes"]
 
-    # ---------------- TEST 1: cut placement ----------------
     # 1x1 luma per frame via ffmpeg's signalstats on a tiny scale: cheap and enough
     # to see change, but too lossy. Use 64x36 luma frames instead.
     raw = subprocess.run(
@@ -99,7 +98,6 @@ def main() -> int:
     print(f"largest cut error: {worst1:.2f}s "
           f"(a crossfade of {XF}s means |delta| up to ~{XF/2 + 1/FPS:.2f}s is expected)")
 
-    # ---------------- TEST 2: global audio alignment ----------------
     SR = 8000
     a_vid = extract_raw(str(VIDEO), [], sr=SR)
     a_ref = extract_raw(str(NARRATION), [], sr=SR)

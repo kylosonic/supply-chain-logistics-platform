@@ -63,7 +63,7 @@ export function RouteOptimizerForm({
       setPreviousResult(result);
       setResult(response);
       onOptimized?.(response);
-      // NB-30.4: m6/activation state reflects without a page reload.
+      // m6/activation state reflects without a page reload.
       queryClient.invalidateQueries({ queryKey: ['activation'] });
     } catch (err) {
       setError(apiErrorMessage(err, 'Failed to optimize route'));

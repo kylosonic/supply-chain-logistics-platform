@@ -58,9 +58,7 @@ def _create_shipment(client: TestClient, token: str, shipment_no: str) -> dict:
     return resp.json()
 
 
-# ---------------------------------------------------------------------------
 # Shipments
-# ---------------------------------------------------------------------------
 
 
 def test_shipments_are_invisible_across_orgs(
@@ -146,9 +144,7 @@ def test_shipment_duplicate_number_is_per_org(
     _create_shipment(client, token_b, 'SHP-SHARED')
 
 
-# ---------------------------------------------------------------------------
 # Alerts
-# ---------------------------------------------------------------------------
 
 
 def test_alerts_are_invisible_and_unmutable_across_orgs(
@@ -228,9 +224,7 @@ def test_alert_scan_only_covers_callers_org(
     assert orgs == {UUID(org_b)}
 
 
-# ---------------------------------------------------------------------------
 # Ops surfaces
-# ---------------------------------------------------------------------------
 
 
 def test_audit_timeline_and_exception_feed_are_org_scoped(
@@ -319,9 +313,7 @@ def test_dock_appointments_and_live_eta_are_org_scoped(
     assert appointment.organization_id == UUID(org_a)
 
 
-# ---------------------------------------------------------------------------
 # Planning
-# ---------------------------------------------------------------------------
 
 
 def test_replenishment_plans_are_org_scoped(
@@ -368,9 +360,7 @@ def test_replenishment_plans_are_org_scoped(
     assert cross_reject.status_code == 404, cross_reject.text
 
 
-# ---------------------------------------------------------------------------
 # Routes and forecast
-# ---------------------------------------------------------------------------
 
 
 def test_route_history_and_schedules_are_org_scoped(
@@ -441,9 +431,7 @@ def test_forecast_rejects_org_without_orders(
     assert resp_b.status_code == 200, resp_b.text
 
 
-# ---------------------------------------------------------------------------
 # Telemetry ingestion (cross-tenant writes)
-# ---------------------------------------------------------------------------
 
 
 def test_telematics_and_iot_writes_cannot_cross_tenants(
@@ -566,9 +554,7 @@ def test_telematics_and_iot_writes_cannot_cross_tenants(
     assert org_a_alerts == [], 'org A raised an excursion alert for a foreign SKU'
 
 
-# ---------------------------------------------------------------------------
 # Membership boundary
-# ---------------------------------------------------------------------------
 
 
 def test_registered_user_is_attached_to_actor_workspace(

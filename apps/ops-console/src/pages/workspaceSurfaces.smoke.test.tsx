@@ -115,7 +115,7 @@ function strip(html: string): string {
   return html.replace(/<!-- -->/g, '');
 }
 
-// TECH-73: the module-level live payload store is session-scoped; reset it
+// the module-level live payload store is session-scoped; reset it
 // between tests so no chip/invalidation state bleeds across renderings.
 afterEach(() => {
   resetLivePayloadStore();
@@ -163,7 +163,7 @@ describe('ops console surface smoke', () => {
     expect(html).toContain('Enter control tower');
     expect(html).toContain('Create company account');
     expect(html).not.toContain('Create initial admin (first-time setup)');
-    // NB-59.5: the signup CTA must carry the real product address — never a
+    // the signup CTA must carry the real product address — never a
     // placeholder, local address, or dead link.
     expect(html).toContain('https://product-web-chi.vercel.app/launch');
   });

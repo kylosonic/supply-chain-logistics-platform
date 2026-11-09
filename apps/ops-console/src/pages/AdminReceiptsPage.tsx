@@ -30,9 +30,7 @@ function verdictTone(status: ReceiptQueueItem['status']) {
   return 'neutral';
 }
 
-// ---------------------------------------------------------------------------
 // Reversal actions (Undo / Reverse) — server-enforced windows (decision #7)
-// ---------------------------------------------------------------------------
 
 type ReversalActionButtonsProps = {
   row: VerifiedReceiptAudit;
@@ -230,9 +228,7 @@ function ReversalsPanel({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Admin queue detail
-// ---------------------------------------------------------------------------
 
 type DetailProps = {
   item: ReceiptQueueItem;
@@ -243,7 +239,7 @@ type DetailProps = {
 function AdminDetail({ item, onRendered, onError }: DetailProps) {
   // Pre-fill ONLY when the service actually recommends verify (trusted payer
   // or wrong-bank-within-portfolio). CASH and new-sender receipts must NOT
-  // pre-fill — the admin picks a verdict explicitly (NB-12.3 suppression).
+  // pre-fill — the admin picks a verdict explicitly.
   const [verdict, setVerdict] = useState<Verdict | null>(item.recommended_verdict);
   const [note, setNote] = useState('');
   const [adminNote, setAdminNote] = useState('');
@@ -536,9 +532,7 @@ function AdminDetail({ item, onRendered, onError }: DetailProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Page
-// ---------------------------------------------------------------------------
 
 export function AdminReceiptsPage() {
   const { data: queue = [], refetch } = useReceiptQueue();

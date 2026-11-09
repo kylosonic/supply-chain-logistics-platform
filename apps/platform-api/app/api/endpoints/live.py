@@ -51,7 +51,7 @@ def _live_principal(token: str, db: Session):
 
 
 def _gather_snapshot(db: Session, organization_id: UUID | None = None) -> dict:
-    # NB-64 (audit H-1): the live snapshot is tenant data. An org-scoped
+    # the live snapshot is tenant data. An org-scoped
     # subscriber receives only their own warehouses/items/routes/orders.
     inventory_stmt = (
         select(

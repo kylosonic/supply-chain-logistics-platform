@@ -36,7 +36,7 @@ describe('pricing page phase 6 (NB-23.5, NB-24, NB-44, NB-46)', () => {
     const trial = faqItems.find((item) => item.question === 'Do you offer a free trial?');
     expect(trial).toBeTruthy();
 
-    // The FAQ answer substance is untouched (NB-23.3): 7-day trial, no charge.
+    // The FAQ answer substance is untouched: 7-day trial, no charge.
     expect(html).toContain(
       'The Free tier is free forever — 2,500 delivery tasks per month, no payment ever. When you upgrade to a paid tier from inside your workspace, the first 7 days on that tier are a trial at no charge.',
     );

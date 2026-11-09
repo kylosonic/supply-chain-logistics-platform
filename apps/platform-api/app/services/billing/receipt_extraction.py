@@ -105,7 +105,7 @@ def extract_receipt(
     key = resolve_extraction_key(db, org)
     result: ExtractionResult
     if settings.effective_receipt_extraction_mode == 'zero_confidence':
-        # PROD-02: deliberate fallback mode — resolve the org key (for audit
+        # deliberate fallback mode — resolve the org key (for audit
         # `has_key` truth) but NEVER call the provider; the admin queue
         # manual-review workflow handles the receipt.
         result = _empty_result(has_key=key is not None, error='zero_confidence_mode')

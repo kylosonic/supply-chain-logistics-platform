@@ -182,9 +182,7 @@ export async function updateShipmentStatus(
   return data;
 }
 
-// ---------------------------------------------------------------------------
-// Driver roster and cash-on-delivery ledger (NB-86)
-// ---------------------------------------------------------------------------
+// Driver roster and cash-on-delivery ledger
 
 export async function listDrivers(status?: DriverStatus): Promise<Driver[]> {
   const { data } = await api.get<Driver[]>('/drivers', {

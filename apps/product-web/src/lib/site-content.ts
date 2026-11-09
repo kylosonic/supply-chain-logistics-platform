@@ -52,9 +52,7 @@ export type FaqItem = {
   answer: string;
 };
 
-// ---------------------------------------------------------------------------
 // Locked copy (blueprint §5 — [EXACT] strings, byte-identical)
-// ---------------------------------------------------------------------------
 
 export const heroHeadline = 'Run your first optimized route in 5 minutes. Free.';
 
@@ -168,9 +166,7 @@ export const faqItems: FaqItem[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
 // Site structure
-// ---------------------------------------------------------------------------
 
 export const externalLinks = {
   console: process.env.NEXT_PUBLIC_APP_CONSOLE_URL || 'https://ops-console-azure.vercel.app',

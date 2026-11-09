@@ -53,9 +53,7 @@ def _org_ids(db: Session, org_id: str) -> set[UUID]:
     return {w.organization_id for w in db.execute(select(Warehouse)).scalars()}
 
 
-# ---------------------------------------------------------------------------
 # Warehouses
-# ---------------------------------------------------------------------------
 
 
 def test_list_warehouses_org_a_sees_only_own_rows(
@@ -206,9 +204,7 @@ def test_update_warehouse_other_org_returns_404_and_own_200(
     assert row.name == 'Renamed Own'
 
 
-# ---------------------------------------------------------------------------
 # Items — mirror the warehouse matrix
-# ---------------------------------------------------------------------------
 
 
 def test_list_items_org_a_sees_only_own_rows(

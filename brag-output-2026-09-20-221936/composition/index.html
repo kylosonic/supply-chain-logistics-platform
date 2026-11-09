@@ -681,13 +681,11 @@
     window.__timelines = window.__timelines || {};
     const tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
 
-    // ---------------------------------------------------------------
     // Transition contract (HyperFrames): every scene gets entrance
     // animations; no exit animations except the final scene, whose exit
     // is the closing fade. Each scene's transition is chosen to suit its
     // content -- push, rise, iris, blur -- and a light bar sweeps the
     // frame on the two hero beats.
-    // ---------------------------------------------------------------
     const SCENES = [
       { id: 's1',  start: 0.0,   dur: 31.4, in: 0.7 },
       { id: 's2',  start: 31.4,   dur: 17.28, in: 0.7 },
@@ -704,7 +702,6 @@
 
     const XF = 0.6;   // crossfade length
 
-    // ---- split headlines into word wrappers for mask reveals -------------
     document.querySelectorAll('[data-split]').forEach((el) => {
       const words = el.textContent.trim().split(/\s+/);
       el.textContent = '';
@@ -719,7 +716,6 @@
       });
     });
 
-    // ---- count-up helper -------------------------------------------------
     // Deterministic: the tween drives an object and writes the value in
     // onUpdate, so seeking to any time reproduces the same frame.
     function countUp(selector, at, dur) {
@@ -738,7 +734,6 @@
       });
     }
 
-    // ---- stage drift: slow, finite, continuous --------------------------
     // NOTE ON LENGTH: a timeline's duration is the maximum TOTAL duration of its
     // children, and a repeated tween's total is duration x (repeat + 1). A tween of
     // duration 165 with repeat:1 therefore totals 330s and silently stretches the
@@ -780,7 +775,6 @@
     tl.to('#fx-leak', { opacity: 0, duration: 0.7, ease: 'power1.in' }, 237.1);
     tl.to('#fx-leak', { xPercent: -170, opacity: 0, duration: 0.01 }, 237.85);
 
-    // ---- per-scene treatment --------------------------------------------
     // entrance: a chosen transform per scene, all settling to identity
     const ENTER = {
       s1:  { from: { opacity: 0, scale: 1.05, filter: 'blur(26px)' }, dur: 1.5 },
@@ -885,11 +879,8 @@
     countUp('#s8-n3', 174.0, 1.4);
     countUp('#s8-n4', 174.3, 1.1);
 
-    // ================================================================
     // MOTION GRAPHICS
-    // ================================================================
 
-    // ---- ambient dust: seeded, deterministic, drifting upward --------
     (function buildDust() {
       const host = document.getElementById('fx-dust');
       if (!host) return;
@@ -924,7 +915,6 @@
       });
     })();
 
-    // ---- dot matrix: cells scatter, then resolve into the figure -----
     (function buildCells() {
       const host = document.getElementById('s3-cells');
       if (!host) return;
@@ -951,7 +941,6 @@
       tl.to(host, { opacity: 1, duration: 0.7, ease: 'sine.inOut' }, T0 + 2.9);
     })();
 
-    // ---- route map: the path draws itself, then a vehicle runs it -----
     (function animateRoute() {
       const path = document.getElementById('s3-path');
       if (!path) return;
@@ -980,7 +969,6 @@
       }
     })();
 
-    // ---- reconciliation flow: the amount travels into the wallet ------
     (function animateFlow() {
       const track = document.getElementById('s5-track');
       const carry = document.getElementById('s5-carry');

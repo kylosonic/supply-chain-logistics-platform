@@ -109,7 +109,7 @@ def test_write_blocked_in_grace_with_days_remaining(client: TestClient, db_sessi
     _force_trial_ended(db_session, org_id)
     _inject_invoice(
         db_session, org_id,
-        # TECH-48: UTC-anchored (see test_billing_api.py::test_state_grace_banner).
+        # UTC-anchored (see test_billing_api.py::test_state_grace_banner).
         grace_ends_at=datetime.now(UTC).date() + timedelta(days=1),
         number='INV-999001',
     )

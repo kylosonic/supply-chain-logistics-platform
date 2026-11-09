@@ -61,7 +61,7 @@ def list_replenishment_plans(
     membership: OrganizationMembership = Depends(get_current_membership),
     _: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
 ):
-    # NB-64 (audit H-1): replenishment plans are tenant data.
+    # replenishment plans are tenant data.
     stmt = scoped_to_organization(
         select(ReplenishmentPlan, Warehouse.code, Item.sku)
         .join(Warehouse, Warehouse.id == ReplenishmentPlan.warehouse_id)
@@ -80,7 +80,7 @@ def generate_replenishment_plans(
     user: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
-    # NB-64: generate only from the caller's own inventory and order history,
+    # generate only from the caller's own inventory and order history,
     # and stamp the plan with the caller's org.
     organization_id = writable.organization_id
 

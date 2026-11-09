@@ -227,7 +227,7 @@ def test_upgrade_during_grace_does_not_reset_grace(db_session: Session):
     result = lifecycle.apply_tier_selection(db_session, org, 'scale', grace_now)
     assert result.billing_phase == WorkspacePhase.GRACE
     assert len(_trial_records(db_session, org, 'scale')) == 0
-    # Grace window untouched by the tier switch (NB-06.4).
+    # Grace window untouched by the tier switch.
     invoice = db_session.execute(
         select(SubscriptionInvoice).where(SubscriptionInvoice.organization_id == org.id)
     ).scalars().one()

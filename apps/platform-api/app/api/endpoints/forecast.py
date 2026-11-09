@@ -31,7 +31,7 @@ def weekly_demand_forecast(
     actor: User = Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.ADMIN)),
     writable: OrganizationMembership = Depends(require_writable_workspace),
 ):
-    # NB-64 (audit H-1): a forecast must be computed from the caller's own
+    # a forecast must be computed from the caller's own
     # order history, never from every tenant's combined demand.
     organization_id = resolve_scoped_organization(actor, writable)
 

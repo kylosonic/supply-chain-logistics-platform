@@ -1,9 +1,7 @@
 import type { LiveUpdatePayload } from './useLiveUpdates';
 
-// ---------------------------------------------------------------------------
-// TECH-73 (NB-56): payload-scoped, trailing-edge-coalesced live invalidation.
+// payload-scoped, trailing-edge-coalesced live invalidation.
 // Pure, React-free module — unit-testable in the node env (blueprint §3.5/.6).
-// ---------------------------------------------------------------------------
 
 /** At most one invalidation per window; the latest payload wins (no starvation). */
 export const LIVE_INVALIDATION_WINDOW_MS = 15_000;

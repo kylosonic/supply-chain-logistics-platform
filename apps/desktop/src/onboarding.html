@@ -163,7 +163,7 @@
         <ol id="wizardSteps" class="wizard-steps" aria-label="Onboarding steps"></ol>
 
         <section class="surface-panel wizard-detail" aria-labelledby="stepTitle">
-          <p class="eyebrow" id="stepStage">Step 1</p>
+          <p class="eyebrow" id="stepStage">Setup 1 of 3</p>
           <h2 id="stepTitle">Loading step...</h2>
           <p id="stepDescription" class="subtle"></p>
           <p id="stepOutcome" class="outcome"></p>
@@ -186,7 +186,7 @@
         </div>
 
         <div id="celebrationBanner" class="celebration-banner" style="display: none;" aria-label="Launch complete">
-          <h3>🚀 Launch-ready!</h3>
+          <h3>Launch-ready</h3>
           <p>All onboarding steps are complete. Your workspace is ready for live operations.</p>
         </div>
 
@@ -502,7 +502,7 @@
 
       function renderStepDetail() {
         const step = STEP_DEFINITIONS[onboarding.activeStep];
-        elements.stepStage.textContent = `Step ${onboarding.activeStep + 1} of ${STEP_DEFINITIONS.length}`;
+        elements.stepStage.textContent = `Setup ${onboarding.activeStep + 1} of ${STEP_DEFINITIONS.length}`;
         elements.stepTitle.textContent = step.title;
         elements.stepDescription.textContent = step.description;
         elements.stepOutcome.textContent = `Success outcome: ${step.outcome}`;

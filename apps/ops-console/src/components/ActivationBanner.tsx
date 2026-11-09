@@ -2,12 +2,10 @@ import { Link } from 'react-router-dom';
 
 import { useActivationState, useDismissPitch } from '../hooks/queries';
 
-// ---------------------------------------------------------------------------
-// Free-cap + upgrade-pitch banners (NB-31.6 / NB-32) — ONE shared rendering,
+// Free-cap + upgrade-pitch banners — ONE shared rendering,
 // mounted in the Layout slot on EVERY console page. The activation/demo
 // banner (ActivationBanner) is page-level on /dashboard + /upload only
-// (NB-30). Stack priority is server-derived (decision #6): p100 > p80 > p60.
-// ---------------------------------------------------------------------------
+//. Stack priority is server-derived (decision #6): p100 > p80 > p60.
 
 const P100_MESSAGE =
   'Free tier cap reached. Writes resume next month, or upgrade now to continue immediately.';
@@ -83,11 +81,9 @@ export function CapPitchBanner() {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Activation / demo banner (decision #8 + NB-34 copy matrix).
-// mode="compact": /dashboard. mode="checklist": /upload (NB-30.5 chips).
+// mode="compact": /dashboard. mode="checklist": /upload.
 // Renders NOTHING once milestone 6 completes.
-// ---------------------------------------------------------------------------
 
 const CATEGORY_ORDER = ['Warehouses', 'Items', 'Fleet Assets', 'Inventory', 'Orders'];
 

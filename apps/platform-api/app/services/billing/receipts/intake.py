@@ -259,9 +259,7 @@ def recommended_verdict(db: Session, receipt: PaymentReceipt, invoice: Subscript
     return None
 
 
-# ---------------------------------------------------------------------------
 # Shared banner builders (used by intake dedup AND verdicts)
-# ---------------------------------------------------------------------------
 
 
 def _rejected_notification(db: Session, org: Organization, receipt: PaymentReceipt, banner: str) -> Notification:

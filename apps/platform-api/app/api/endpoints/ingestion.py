@@ -42,7 +42,7 @@ def _read_csv_to_df(file: UploadFile) -> pd.DataFrame:
     if not file.filename or not file.filename.lower().endswith('.csv'):
         raise HTTPException(status_code=400, detail='Only CSV files are accepted')
 
-    # NB-70 (audit M-4): bound the read before it happens. Receipts had a 5 MB
+    # bound the read before it happens. Receipts had a 5 MB
     # cap; CSVs had none, so an authenticated operator could stream an
     # arbitrarily large body into memory and OOM the API process. Read at most
     # cap+1 bytes so an oversized upload is detected without buffering it.
@@ -220,7 +220,7 @@ async def ingest_iot_telemetry(
     db: Session = Depends(get_db),
     writable: OrganizationMembership | None = Depends(require_writable_workspace),
 ):
-    # NB-64: resolve the SKU inside the caller's tenant, and stamp any alert it
+    # resolve the SKU inside the caller's tenant, and stamp any alert it
     # raises with that tenant so a stranger cannot inject alerts into another
     # company's exception queue.
     organization_id = writable.organization_id if writable else None

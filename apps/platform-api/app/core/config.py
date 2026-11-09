@@ -17,7 +17,7 @@ DEFAULT_CORS_ORIGINS = [
     'https://ops-console-azure.vercel.app',
 ]
 
-# NB-63 (audit C-1): every committed placeholder value that is long enough
+# every committed placeholder value that is long enough
 # to pass the length-only guards. Exact-match rejection only — a secret that
 # differs by a single character is a real secret decision
 # (production-security-hardening.md:30). Dev/test environments stay permissive.
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
         '127.0.0.1',
         # 'testserver' is required by Starlette's TestClient Host header and is
         # never reachable in production — see the non-dev guard in
-        # ``effective_allowed_hosts`` (NB-71 / audit L-2).
+        # ``effective_allowed_hosts``.
         'testserver',
         'platform-api-smoky.vercel.app',
     ]
@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     receipt_extraction_base_url: str = 'https://api.openai.com/v1'
     receipt_extraction_model: str = 'gpt-4o-mini'
     receipt_max_size_bytes: int = 5 * 1024 * 1024
-    # NB-70 (audit M-4): CSV ingestion was unbounded — an authenticated
+    # CSV ingestion was unbounded — an authenticated
     # operator could stream an arbitrarily large body into memory.
     csv_max_size_bytes: int = 10 * 1024 * 1024
     proof_org_quota_bytes: int = 250 * 1024 * 1024

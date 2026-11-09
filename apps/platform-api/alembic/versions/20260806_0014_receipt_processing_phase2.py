@@ -25,7 +25,6 @@ depends_on = None
 def upgrade() -> None:
     uuid_type = postgresql.UUID(as_uuid=True)
 
-    # --- payment_receipts ---------------------------------------------------
     op.create_table(
         'payment_receipts',
         sa.Column('id', uuid_type, primary_key=True),
@@ -106,7 +105,6 @@ def upgrade() -> None:
         sqlite_where=sa.text("status = 'verified'"),
     )
 
-    # --- receipt_extractions --------------------------------------------------
     op.create_table(
         'receipt_extractions',
         sa.Column('id', uuid_type, primary_key=True),
@@ -124,7 +122,6 @@ def upgrade() -> None:
         sa.UniqueConstraint('receipt_id', name='uq_receipt_extraction_receipt'),
     )
 
-    # --- wallet_credits ---------------------------------------------------------
     op.create_table(
         'wallet_credits',
         sa.Column('id', uuid_type, primary_key=True),
@@ -147,7 +144,6 @@ def upgrade() -> None:
     op.create_index('ix_wallet_credits_organization_id', 'wallet_credits', ['organization_id'])
     op.create_index('ix_wallet_credits_org_status', 'wallet_credits', ['organization_id', 'status'])
 
-    # --- sms_messages ------------------------------------------------------------
     op.create_table(
         'sms_messages',
         sa.Column('id', uuid_type, primary_key=True),
@@ -169,7 +165,6 @@ def upgrade() -> None:
     )
     op.create_index('ix_sms_messages_organization_id', 'sms_messages', ['organization_id'])
 
-    # --- trusted_payers -------------------------------------------------------------
     op.create_table(
         'trusted_payers',
         sa.Column('id', uuid_type, primary_key=True),
@@ -184,7 +179,6 @@ def upgrade() -> None:
     )
     op.create_index('ix_trusted_payers_organization_id', 'trusted_payers', ['organization_id'])
 
-    # --- dispute_threads ---------------------------------------------------------------
     op.create_table(
         'dispute_threads',
         sa.Column('id', uuid_type, primary_key=True),
@@ -211,7 +205,6 @@ def upgrade() -> None:
     )
     op.create_index('ix_dispute_threads_organization_id', 'dispute_threads', ['organization_id'])
 
-    # --- organizations: contact_phone -------------------------------------------------
     op.add_column('organizations', sa.Column('contact_phone', sa.String(length=24), nullable=True))
 
 

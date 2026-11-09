@@ -121,9 +121,7 @@ def card(slide, left, top, width, height, heading, lines, *, size=10.5):
     return box
 
 
-# ---------------------------------------------------------------------------
 # Slide 1 — 1 Problem, 2 Solution
-# ---------------------------------------------------------------------------
 s = add_slide()
 eyebrow(s, 'FreightPilot · EAII Second-Round Submission')
 title(s, 'Ethiopian logistics teams run on spreadsheets,\nphone calls and guesswork.')
@@ -147,9 +145,7 @@ card(s, 6.86, 2.02, 5.86, 4.4, '2 · The solution', [
 ])
 footer(s, 1, 'Problem & Solution')
 
-# ---------------------------------------------------------------------------
 # Slide 2 — 3 Market Opportunity
-# ---------------------------------------------------------------------------
 s = add_slide()
 eyebrow(s, '3 · Market Opportunity')
 title(s, 'A large, underserved operator base that is already digitising —\njust not with software built for it.')
@@ -167,9 +163,7 @@ card(s, 6.86, 2.1, 5.86, 4.3, 'Why now', [
 ])
 footer(s, 2, 'Market Opportunity')
 
-# ---------------------------------------------------------------------------
 # Slide 3 — 4 Traction, 5 Business Model
-# ---------------------------------------------------------------------------
 s = add_slide()
 eyebrow(s, '4 · Traction   ·   5 · Business Model')
 title(s, 'A production platform, verified end to end —\nand a business model wired into the product.')
@@ -218,9 +212,7 @@ card(s, 6.86, 3.52, 5.86, 2.9, 'Business model — B2B SaaS per workspace', [
 ])
 footer(s, 3, 'Traction & Business Model')
 
-# ---------------------------------------------------------------------------
 # Slide 4 — 6 Go-to-Market, 7 Competition
-# ---------------------------------------------------------------------------
 s = add_slide()
 eyebrow(s, '6 · Go-to-Market   ·   7 · Competition')
 title(s, 'Land with a free working workspace.\nExpand on the operator\'s own numbers.')
@@ -241,9 +233,7 @@ card(s, 6.86, 2.02, 5.86, 4.4, 'Competition', [
 ])
 footer(s, 4, 'Go-to-Market & Competition')
 
-# ---------------------------------------------------------------------------
 # Slide 5 — 8 Core Team and Advisor
-# ---------------------------------------------------------------------------
 s = add_slide()
 eyebrow(s, '8 · Core Team and Advisor')
 title(s, 'A small team with an engineered product —\nand named gaps we intend to fill with this program.')
@@ -264,9 +254,7 @@ card(s, 6.86, 2.1, 5.86, 4.3, 'Advisors — declared honestly', [
 ])
 footer(s, 5, 'Core Team and Advisor')
 
-# ---------------------------------------------------------------------------
 # Slide 6 — 9 Financial Projection
-# ---------------------------------------------------------------------------
 s = add_slide()
 eyebrow(s, '9 · Financial Projection')
 title(s, 'Plan built from cost we control and customers we can name —\nnot from a growth curve.')
@@ -289,9 +277,7 @@ card(s, 6.86, 2.1, 5.86, 4.3, 'Revenue projection logic (named-account capacity)
 ])
 footer(s, 6, 'Financial Projection')
 
-# ---------------------------------------------------------------------------
 # Slide 7 — 10 The Ask
-# ---------------------------------------------------------------------------
 s = add_slide()
 eyebrow(s, '10 · The Ask')
 title(s, 'We are asking for the support that turns a working platform\ninto a repeatable business.')

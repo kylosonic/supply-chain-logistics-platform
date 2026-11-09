@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [orgId, setOrgId] = useState<string | null>(getStoredOrgId());
   const [isLoading, setIsLoading] = useState(true);
 
-  // NB-59.3: soft session reset — the interceptor clears storage and fires
+  // soft session reset — the interceptor clears storage and fires
   // this signal; the provider only nulls state (single responsibility),
   // and ProtectedRoute performs the in-app redirect via <Navigate>.
   // Declared before the bootstrap effect so the listener exists before any
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [queryClient]);
 
-  // Stored-token-only (NB-59.1): the token is written by login/signup in
+  // Stored-token-only: the token is written by login/signup in
   // authApi; there is no /auth/token refresh path to consult.
   const getToken = useCallback(async (): Promise<string | null> => {
     if (!getStoredToken()) return null;
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (identifier: string, password: string) => {
-    // NB-59.2: the whole login POST → me → subscription sequence runs under
+    // the whole login POST → me → subscription sequence runs under
     // the establishment guard, so a refused follow-up request cannot wipe
     // the freshly issued token or soft-redirect mid-sign-in; errors surface
     // through the existing login catch instead.

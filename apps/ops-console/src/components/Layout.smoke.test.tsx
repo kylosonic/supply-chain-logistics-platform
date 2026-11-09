@@ -68,7 +68,7 @@ describe('Layout shell smoke (TECH-72 / NB-55)', () => {
       </QueryClientProvider>,
     );
 
-    // Sidebar brand block (NB-55.1).
+    // Sidebar brand block.
     expect(html).toContain('FreightPilot');
     expect(html).toContain('Operations workspace');
     // Both navigation groups + codes.
@@ -91,14 +91,14 @@ describe('Layout shell smoke (TECH-72 / NB-55)', () => {
     expect(html).toContain('VQ');
     expect(html).toContain('WS');
     expect(html).toContain('IN');
-    // Identity footer + logout (NB-55.1).
+    // Identity footer + logout.
     expect(html).toContain('Logout');
     expect(html).toContain('captain@testco.com');
     expect(html).toContain('operator');
-    // Top shell: context label + descriptor (NB-55.2).
+    // Top shell: context label + descriptor.
     expect(html).toContain('Control tower');
     expect(html).toContain('Routes, exceptions, planning, and workspace governance.');
-    // Persistent banner mounted inside the shell (NB-55.3).
+    // Persistent banner mounted inside the shell.
     expect(html).toContain('data-testid="cap-pitch-banner"');
     // The Outlet content slot exists for page switching.
     expect(html).toContain('<main');
@@ -126,7 +126,7 @@ describe('Layout shell smoke (TECH-72 / NB-55)', () => {
   });
 });
 
-// ── ADDITIVE: Phase 3 (TECH-74 / NB-57 + TECH-75 / NB-58) ──────────────────
+// ── ADDITIVE: Phase 3 ──────────────────
 
 describe('Layout page transition & first-load fallback (TECH-74 / TECH-75)', () => {
   it('renders the RouteFallback skeleton surface with sr-only copy on first chunk load (NB-58.3)', () => {
