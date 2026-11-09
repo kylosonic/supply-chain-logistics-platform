@@ -3,11 +3,13 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const childProcess = require('child_process');
-const extract = require('extract-zip');
 const { downloadArtifact } = require('@electron/get');
+const yauzl = require('yauzl');
+const { safeArchivePath } = require('./archive-path.cjs');
 
 const checkOnly = process.argv.includes('--check');
+const MAX_ARCHIVE_BYTES = 1024 * 1024 * 1024;
+const MAX_SYMLINK_BYTES = 4096;
 
 const electronRoot = path.resolve(__dirname, '..', 'node_modules', 'electron');
 const electronPackageJson = path.join(electronRoot, 'package.json');
@@ -62,6 +64,105 @@ function isBinaryReady(version, binaryPath) {
   }
 }
 
+function openZip(zipPath) {
+  return new Promise((resolve, reject) => {
+    yauzl.open(zipPath, { lazyEntries: true, autoClose: true }, (error, archive) => {
+      if (error) reject(error);
+      else resolve(archive);
+    });
+  });
+}
+
+function openEntryStream(archive, entry) {
+  return new Promise((resolve, reject) => {
+    archive.openReadStream(entry, (error, stream) => {
+      if (error) reject(error);
+      else resolve(stream);
+    });
+  });
+}
+
+async function readSmallEntry(archive, entry) {
+  if (entry.uncompressedSize > MAX_SYMLINK_BYTES) {
+    throw new Error(`[desktop] Symlink target is unexpectedly large: ${entry.fileName}`);
+  }
+  const stream = await openEntryStream(archive, entry);
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+async function extractArchive(zipPath, destination) {
+  const archive = await openZip(zipPath);
+  let extractedBytes = 0;
+
+  await new Promise((resolve, reject) => {
+    let settled = false;
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      archive.close();
+      reject(error);
+    };
+
+    archive.on('error', fail);
+    archive.on('end', () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    });
+    archive.on('entry', async (entry) => {
+      try {
+        const targetPath = safeArchivePath(destination, entry.fileName);
+        const mode = entry.externalFileAttributes >>> 16;
+        const isDirectory = entry.fileName.endsWith('/');
+        const isSymlink = (mode & 0o170000) === 0o120000;
+
+        if (isDirectory) {
+          fs.mkdirSync(targetPath, { recursive: true });
+        } else if (isSymlink) {
+          const linkTarget = (await readSmallEntry(archive, entry)).trim();
+          const resolvedTarget = path.resolve(path.dirname(targetPath), linkTarget);
+          const relativeTarget = path.relative(destination, resolvedTarget);
+          if (
+            path.isAbsolute(linkTarget) ||
+            relativeTarget.startsWith('..') ||
+            path.isAbsolute(relativeTarget)
+          ) {
+            throw new Error(`[desktop] Unsafe symlink in Electron archive: ${entry.fileName}`);
+          }
+          fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+          fs.rmSync(targetPath, { force: true });
+          fs.symlinkSync(linkTarget, targetPath);
+        } else {
+          fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+          const stream = await openEntryStream(archive, entry);
+          const output = fs.createWriteStream(targetPath);
+          await new Promise((streamResolve, streamReject) => {
+            stream.on('data', (chunk) => {
+              extractedBytes += chunk.length;
+              if (extractedBytes > MAX_ARCHIVE_BYTES) {
+                stream.destroy();
+                output.destroy();
+                streamReject(new Error('[desktop] Electron archive exceeds the extraction limit'));
+              }
+            });
+            stream.on('error', streamReject);
+            output.on('error', streamReject);
+            output.on('finish', streamResolve);
+            stream.pipe(output);
+          });
+          if (process.platform !== 'win32' && mode) fs.chmodSync(targetPath, mode & 0o777);
+        }
+        archive.readEntry();
+      } catch (error) {
+        fail(error);
+      }
+    });
+    archive.readEntry();
+  });
+}
+
 async function ensureElectronBinary() {
   if (process.env.ELECTRON_SKIP_BINARY_DOWNLOAD) {
     console.log('[desktop] ELECTRON_SKIP_BINARY_DOWNLOAD is set; skipping binary check.');
@@ -96,14 +197,7 @@ async function ensureElectronBinary() {
   });
 
   console.log(`[desktop] Downloaded Electron artifact: ${zipPath}`);
-
-  if (platform === 'win32') {
-    // Node 24 + extract-zip can intermittently exit before extraction completes on Windows.
-    // Prefer the native tar command for deterministic results.
-    childProcess.execFileSync('tar', ['-xf', zipPath, '-C', distDir], { stdio: 'inherit' });
-  } else {
-    await extract(zipPath, { dir: distDir });
-  }
+  await extractArchive(zipPath, distDir);
 
   const sourceTypeFile = path.join(distDir, 'electron.d.ts');
   const targetTypeFile = path.join(electronRoot, 'electron.d.ts');
