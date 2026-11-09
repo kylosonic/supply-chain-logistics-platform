@@ -76,6 +76,16 @@ class DispatchRun(UUIDTimestampMixin, Base):
         UUIDType, ForeignKey('users.id', ondelete='SET NULL'), nullable=True
     )
     cash_closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cash_closed_by_user_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey('users.id', ondelete='SET NULL'), nullable=True
+    )
+    cash_declared_etb: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    cash_handed_over_etb: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    cash_shortfall_etb: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    cash_overage_etb: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    cash_deposit_bank: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    cash_deposit_reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    cash_close_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
