@@ -44,6 +44,8 @@ class InvitationCreated(BaseModel):
     invitation: InvitationRead
     token: str
     invite_url: str
+    email_sent: bool = False
+    email_error: str | None = None
 
 
 class InvitationAccept(BaseModel):

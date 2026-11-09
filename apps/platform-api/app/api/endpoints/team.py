@@ -28,6 +28,7 @@ from app.schemas.team import (
     OrganizationMemberRead,
 )
 from app.services.audit import record_audit_event
+from app.services.email_delivery import send_invitation_email
 from app.services.security import (
     create_access_token_for_org,
     hash_password,
@@ -165,10 +166,37 @@ def create_invitation(
     db.commit()
     db.refresh(invitation)
     invite_url = f'{settings.console_url.rstrip("/")}/accept-invite#token={token}'
+    organization = db.get(Organization, membership.organization_id)
+    email_result = send_invitation_email(
+        to_email=invitation.email,
+        organization_name=organization.name if organization else 'your workspace',
+        role=invitation.role,
+        invite_url=invite_url,
+    )
+    record_audit_event(
+        db,
+        event_type='organization.invitation_email',
+        entity_type='organization_invitation',
+        entity_id=str(invitation.id),
+        actor=actor,
+        organization_id=str(membership.organization_id),
+        description=(
+            'Invitation email sent'
+            if email_result.sent
+            else 'Invitation email was not sent'
+        ),
+        payload={
+            'email_sent': email_result.sent,
+            'email_error': email_result.error,
+        },
+    )
+    db.commit()
     return InvitationCreated(
         invitation=InvitationRead.model_validate(invitation),
         token=token,
         invite_url=invite_url,
+        email_sent=email_result.sent,
+        email_error=email_result.error,
     )
 
 
@@ -278,6 +306,7 @@ def accept_invitation(
         role=UserRole(user.role),
         organization_id=str(organization.id),
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
+        token_version=user.token_version,
     )
     return InvitationAcceptResponse(
         access_token=token,

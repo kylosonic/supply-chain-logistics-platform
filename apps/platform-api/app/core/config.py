@@ -73,12 +73,22 @@ class Settings(BaseSettings):
     # NB-70 (audit M-4): CSV ingestion was unbounded — an authenticated
     # operator could stream an arbitrarily large body into memory.
     csv_max_size_bytes: int = 10 * 1024 * 1024
+    proof_org_quota_bytes: int = 250 * 1024 * 1024
     wallet_auto_forward_tolerance_etb: Decimal = Decimal('1000.00')
     reversal_undo_window_hours: int = 24
     sms_brand_name: str = 'FreightPilot'
     sms_gateway_url: str = ''
     sms_gateway_api_key: str = ''
     sms_sender_name: str = 'FreightPilot'
+    smtp_host: str = ''
+    smtp_port: int = 587
+    smtp_username: str = ''
+    smtp_password: str = ''
+    smtp_from_email: str = ''
+    smtp_from_name: str = 'FreightPilot'
+    smtp_use_tls: bool = True
+    smtp_use_ssl: bool = False
+    smtp_timeout_seconds: float = 10.0
     sample_data_dir: str = 'sample-data'
     console_url: str = 'https://ops-console-azure.vercel.app'
 

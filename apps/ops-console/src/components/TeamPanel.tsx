@@ -23,6 +23,10 @@ export function TeamPanel() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<InviteRole>('operator');
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteEmailStatus, setInviteEmailStatus] = useState<{
+    sent: boolean;
+    error: string | null;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,9 +61,11 @@ export function TeamPanel() {
     event.preventDefault();
     setError(null);
     setInviteLink(null);
+    setInviteEmailStatus(null);
     try {
       const created = await createInvitation(email, role);
       setInviteLink(created.invite_url);
+      setInviteEmailStatus({ sent: created.email_sent, error: created.email_error });
       setEmail('');
       await refresh();
     } catch (err) {
@@ -150,7 +156,9 @@ export function TeamPanel() {
         <div className="rounded-lg border border-emerald-500/25 bg-emerald-950/25 p-4">
           <p className="text-sm font-semibold text-emerald-100">Invitation created</p>
           <p className="mt-1 text-xs text-emerald-200/70">
-            No email is sent yet. Copy this one-time link and share it securely.
+            {inviteEmailStatus?.sent
+              ? 'The invitation email was sent. The one-time link is also available below.'
+              : `${inviteEmailStatus?.error || 'Email delivery is unavailable.'} Copy the one-time link and share it securely.`}
           </p>
           <code className="mt-3 block break-all rounded bg-slate-950/60 p-3 text-xs text-emerald-100">{inviteLink}</code>
         </div>
