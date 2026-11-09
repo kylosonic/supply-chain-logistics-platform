@@ -208,7 +208,7 @@ Validate the Compose file:
 docker compose config --quiet
 ```
 
-CI runs the backend suite, Python dependency audit, console checks, product-site checks, and deployed-dependency audits. It installs each npm application with `npm ci` from the matching lockfile.
+CI runs the backend suite, Python dependency audit, console checks, product-site checks, desktop tests, the Electron runtime check, and dependency audits. It installs each npm application with `npm ci` from the matching lockfile.
 
 ## Deployment
 

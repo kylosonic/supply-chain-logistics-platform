@@ -145,3 +145,29 @@ jobs:
 
       - name: Report dev-only advisories (non-blocking)
         run: npm --prefix apps/product-web audit || true
+
+  desktop:
+    name: desktop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install desktop dependencies
+        run: npm --prefix apps/desktop ci
+
+      - name: Test desktop archive handling
+        run: npm --prefix apps/desktop run test
+
+      - name: Verify Electron runtime
+        run: npm --prefix apps/desktop run doctor
+
+      - name: Audit desktop dependencies
+        run: npm --prefix apps/desktop audit --audit-level=high
