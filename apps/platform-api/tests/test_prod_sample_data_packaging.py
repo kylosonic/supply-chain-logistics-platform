@@ -22,11 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.audit_event import AuditEvent
-from app.models.fleet_asset import FleetAsset
-from app.models.inventory import Inventory
-from app.models.item import Item
 from app.models.organization import Organization
-from app.models.order import HistoricalOrder
 from app.models.user import User
 from app.models.warehouse import Warehouse
 from app.services.activation.seeding import seed_workspace

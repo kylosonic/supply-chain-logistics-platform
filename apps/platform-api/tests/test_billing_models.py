@@ -1,14 +1,11 @@
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 
 import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models.billing_counter import BillingCounter
 from app.models.collection_account import CollectionAccount
-from app.models.invoice_line_item import InvoiceLineItem
-from app.models.notification import Notification
 from app.models.organization import Organization
 from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.trial_record import TrialRecord

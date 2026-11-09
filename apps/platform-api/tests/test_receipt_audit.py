@@ -5,7 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.audit_event import AuditEvent
-from app.models.organization import Organization
 from app.models.sms_message import SmsMessage
 from app.models.wallet_credit import WalletCredit
 from tests.conftest import mock_extraction_payload, sample_receipt_bytes

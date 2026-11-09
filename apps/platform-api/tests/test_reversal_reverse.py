@@ -17,7 +17,6 @@ from sqlalchemy.orm import Session
 
 from app.models.audit_event import AuditEvent
 from app.models.notification import Notification
-from app.models.organization import Organization
 from app.models.payment_receipt import PaymentReceipt
 from app.models.sms_message import SmsMessage
 from app.models.wallet_credit import WalletCredit

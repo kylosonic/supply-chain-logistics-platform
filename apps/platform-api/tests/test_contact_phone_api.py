@@ -15,7 +15,6 @@ from sqlalchemy.orm import Session
 
 from app.models.audit_event import AuditEvent
 from app.models.membership import OrganizationMembership
-from app.models.organization import Organization
 from app.models.sms_message import SmsMessage
 from app.models.user import User
 from tests.conftest import mock_extraction_payload, sample_receipt_bytes

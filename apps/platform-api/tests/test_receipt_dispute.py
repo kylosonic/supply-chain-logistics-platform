@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from app.models.dispute_thread import DisputeThread
 from app.models.notification import Notification
-from app.models.organization import Organization
 from app.models.payment_receipt import PaymentReceipt
 from tests.conftest import mock_extraction_payload, sample_receipt_bytes
 

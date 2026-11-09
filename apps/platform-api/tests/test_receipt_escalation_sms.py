@@ -5,8 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
-from app.models.organization import Organization
-from app.models.payment_receipt import PaymentReceipt
 from app.models.sms_message import SmsMessage
 from tests.conftest import mock_extraction_payload, sample_receipt_bytes
 

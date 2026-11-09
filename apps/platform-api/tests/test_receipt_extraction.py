@@ -5,7 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.audit_event import AuditEvent
-from app.models.organization import Organization
 from app.models.provider_key import ProviderApiKey
 from app.models.receipt_extraction import ReceiptExtraction
 from app.services.billing.receipt_extraction import (

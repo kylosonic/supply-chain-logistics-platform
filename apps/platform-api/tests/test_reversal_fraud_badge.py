@@ -15,7 +15,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.audit_event import AuditEvent
-from app.models.organization import Organization
 from app.models.payment_receipt import PaymentReceipt
 from app.models.sender_fraud_flag import SenderFraudFlag
 from app.models.trusted_payer import TrustedPayer

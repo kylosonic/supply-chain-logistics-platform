@@ -17,9 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.models.audit_event import AuditEvent
 from app.models.notification import Notification
-from app.models.organization import Organization
 from app.models.payment_receipt import PaymentReceipt
-from app.models.subscription_invoice import SubscriptionInvoice
 from tests.conftest import sample_receipt_bytes
 
 

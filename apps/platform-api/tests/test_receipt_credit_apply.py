@@ -1,16 +1,13 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.invoice_line_item import InvoiceLineItem
 from app.models.notification import Notification
-from app.models.organization import Organization
 from app.models.payment_receipt import PaymentReceipt
-from app.models.subscription_invoice import SubscriptionInvoice
 from app.models.wallet_credit import WalletCredit
 from app.services.billing import invoices as invoices_service
 from tests.conftest import mock_extraction_payload, sample_receipt_bytes
@@ -247,7 +244,6 @@ def test_wallet_credit_applied_to_next_invoice_at_issuance(
 def test_wallet_credit_exceeding_next_total_rolls_remainder(
     client: TestClient, db_session: Session, make_paid_org_with_open_invoice
 ):
-    from app.models.payment_receipt import PaymentReceipt
 
     org, invoice, token = make_paid_org_with_open_invoice()
     # Backing receipt row (wallet_credits.receipt_id is NOT NULL).
