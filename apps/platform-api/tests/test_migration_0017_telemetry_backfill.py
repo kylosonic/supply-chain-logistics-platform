@@ -113,6 +113,9 @@ def test_0017_upgrade_is_idempotent_on_existing_columns():
         with Operations.context(ctx):
             module.upgrade()  # second run must not raise duplicate-column errors
 
+        columns = {col['name'] for col in sa.inspect(conn).get_columns('fleet_assets')}
+        assert {'latitude', 'longitude', 'last_telemetry_at'} <= columns
+
 
 def test_0017_downgrade_is_noop_and_preserves_columns():
     module = _load_0017_module()

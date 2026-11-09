@@ -5,7 +5,7 @@ Revises: 20260811_0019
 Create Date: 2026-08-12 00:00:00.000000
 
 Two operational gaps found by evaluating the product as a buyer would
-(see ``docs/behaviours/driver-and-cod-reconciliation.md``):
+(see ``docs/behaviors/driver-and-cod-reconciliation.md``):
 
 1. **No driver.** The API had no ``driver`` concept at all. Work was assigned to
    a warehouse and a route, never to a person, so "who is carrying this" lived in
