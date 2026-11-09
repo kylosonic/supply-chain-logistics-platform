@@ -26,11 +26,6 @@ class BaseRepository[T]:
             stmt = stmt.limit(limit)
         return list(self.db.execute(stmt).scalars().all())
 
-    def exists_by_id(self, id: str | UUID) -> bool:
-        return self.db.execute(
-            select(self.model.id).where(self.model.id == id)
-        ).first() is not None
-
     def add(self, instance: T) -> T:
         if not instance.id:
             instance.id = uuid4()

@@ -19,5 +19,3 @@ class WarehouseRepository(BaseRepository[Warehouse]):
             query = query.where(Warehouse.organization_id == organization_id)
         return self.db.execute(query).scalar_one_or_none()
 
-    def list_all_raw(self) -> list[Warehouse]:
-        return list(self.db.execute(select(Warehouse)).scalars().all())
