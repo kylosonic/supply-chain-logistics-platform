@@ -118,7 +118,7 @@ def organization_scoped_get(
 
     Cross-tenant access answers **404, never 403**, so the existence of another
     organization's record is never leaked
-    (``docs/behaviors/production-security-hardening.md`` §4).
+    Application-level tenant scoping.
     """
     if organization_id is None:
         raise HTTPException(

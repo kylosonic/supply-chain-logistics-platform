@@ -146,7 +146,7 @@ def test_production_accepts_novel_long_secret():
 
 
 def test_development_placeholder_values_allowed():
-    """Dev defaults stay permissive (production-security-hardening.md:30)."""
+    """Development defaults stay permissive."""
     s = Settings(
         _env_file=None,
         app_env='development',

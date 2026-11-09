@@ -9,9 +9,7 @@ import { describe, expect, it } from 'vitest';
  * and that no slate overlay classes have silently returned. Content-level
  * proof only — no DOM, no Tailwind compilation.
  *
- * Blueprint: `docs/plans/phase-console-login-color-fidelity-01-token-surfaces.md`
- * §2.1, §2.3, §5.2; `docs/plans/phase-console-login-color-fidelity-03-guard-verification.md`
- * §2.1, §3 (declaration-side token pin).
+ * Checks the token declarations used by shared surface classes.
  */
 
 /** `apps/ops-console/src` resolved from this test file, independent of cwd. */

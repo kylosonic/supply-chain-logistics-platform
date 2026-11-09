@@ -4,7 +4,7 @@
 rejected 401, signed-in users create rows, and the stored ``user_email`` is
 the caller's identity unless the payload carries its own email. The schema
 message cap stays enforced, and returning signed-in users are never blocked
-(production-security-hardening.md:52).
+Feedback must carry an authenticated identity.
 """
 from __future__ import annotations
 

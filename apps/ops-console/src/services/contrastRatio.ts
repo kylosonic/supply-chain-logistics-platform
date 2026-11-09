@@ -2,9 +2,7 @@
  * Pure WCAG 2.1 contrast utilities over hex color strings.
  *
  * No DOM, no framework, no dependencies — only Math over parsed channels.
- * Pinned against the design-system ratios recorded in
- * `docs/plans/phase-console-login-color-fidelity-01-token-surfaces.md` §2.3
- * by `contrastRatio.test.ts`; reused by the TECH-78 small-text audit.
+ * Pinned against the design-system ratios in `contrastRatio.test.ts`.
  */
 
 type Rgb = readonly [number, number, number];

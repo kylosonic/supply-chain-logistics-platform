@@ -12,8 +12,7 @@ import { describe, expect, it } from 'vitest';
  * preserved, and that rose stays confined to the error panels. Content-level
  * proof only — no DOM, no Tailwind compilation.
  *
- * Blueprint: `docs/plans/phase-console-login-color-fidelity-02-login-contrast.md`
- * §2.2, §2.3, §3, §5.2. Deliberately does not assert copy.
+ * Checks contrast thresholds without asserting copy.
  */
 
 /** `apps/ops-console/src` resolved from this test file, independent of cwd. */

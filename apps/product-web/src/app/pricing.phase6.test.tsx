@@ -28,7 +28,7 @@ describe('pricing page phase 6 (NB-23.5, NB-24, NB-44, NB-46)', () => {
   const html = decodeHtml(renderToString(<PricingPage />));
 
   it('renders the NB-23.5 read-only-limbo story verbatim (a)', () => {
-    // [EXACT] locked line from pending-behaviors.md NB-23 criterion 5.
+    // The limbo story must remain visible to customers.
     expect(html).toContain(paymentPaceStory);
   });
 

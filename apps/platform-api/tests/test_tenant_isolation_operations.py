@@ -1,6 +1,6 @@
 """NB-64 — two-organization isolation regression suite (audit H-1).
 
-Acceptance standard (`docs/behaviors/production-security-hardening.md` §4/§13):
+Acceptance standard:
 two organizations with overlapping identifiers must never see or mutate each
 other's operational data on any surface, and cross-tenant reads answer **404
 Not Found** (never 403) so record existence is not leaked.

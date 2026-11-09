@@ -20,7 +20,7 @@ DEFAULT_CORS_ORIGINS = [
 # every committed placeholder value that is long enough
 # to pass the length-only guards. Exact-match rejection only — a secret that
 # differs by a single character is a real secret decision
-# (production-security-hardening.md:30). Dev/test environments stay permissive.
+# Dev/test environments stay permissive.
 KNOWN_PLACEHOLDER_SECRETS = frozenset(
     {
         'change-me-in-production',  # 23 — docker-compose legacy JWT fallback
