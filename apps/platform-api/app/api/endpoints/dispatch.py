@@ -30,12 +30,16 @@ from app.models.dispatch import (
 from app.models.driver import Driver
 from app.models.item import Item
 from app.models.membership import OrganizationMembership
+from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.auth import UserRole
 from app.schemas.dispatch import (
+    CashCloseRequest,
     CashCloseSummary,
     CustomerCreate,
     CustomerRead,
+    CustomerTrackingLinkResponse,
+    CustomerTrackingRead,
     DeliveryOrderCreate,
     DeliveryOrderRead,
     DeliveryProofRead,
@@ -47,9 +51,11 @@ from app.schemas.dispatch import (
     DriverLinkResponse,
     DriverManifest,
     DriverStatusUpdate,
+    FleetDispatchPlanRequest,
+    FleetDispatchPlanResponse,
 )
 from app.services.audit import record_audit_event
-from app.services.dispatch import plan_time_window_route
+from app.services.dispatch import plan_fleet_time_window_routes, plan_time_window_route
 from app.services.security import decode_access_token
 
 router = APIRouter()
@@ -57,6 +63,7 @@ router = APIRouter()
 _PROOF_MAX_BYTES = 4 * 1024 * 1024
 _PROOF_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
 _TERMINAL_ORDER_STATUSES = {'delivered', 'failed', 'cancelled'}
+_CUSTOMER_TRACKING_HOURS = 72
 
 
 def _has_expected_image_signature(content: bytes, content_type: str) -> bool:
@@ -184,6 +191,13 @@ def _run_detail(db: Session, run: DispatchRun) -> DispatchRunDetail:
         stops=_stops_for_run(db, run),
         unassigned=run.unassigned_json or [],
     )
+
+
+def _fleet_route_name(base_name: str, driver_name: str, multiple_vehicles: bool) -> str:
+    if not multiple_vehicles:
+        return base_name
+    suffix = f' - {driver_name}'
+    return f'{base_name[: max(1, 128 - len(suffix))]}{suffix}'[:128]
 
 
 def _customer_in_org(db: Session, organization_id: UUID, customer_id: str) -> Customer:
@@ -344,6 +358,97 @@ def get_delivery_order(
     return _order_read(order, customer)
 
 
+@router.post(
+    '/orders/{order_id}/tracking-link',
+    response_model=CustomerTrackingLinkResponse,
+)
+def create_customer_tracking_link(
+    order_id: str,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
+):
+    organization_id = _org(actor, writable)
+    order = _order_in_org(db, organization_id, order_id)
+    expires_at = datetime.now(UTC) + timedelta(hours=_CUSTOMER_TRACKING_HOURS)
+    token = jwt.encode(
+        {
+            'sub': str(order.id),
+            'org_id': str(organization_id),
+            'scope': 'customer_tracking',
+            'iat': int(datetime.now(UTC).timestamp()),
+            'exp': int(expires_at.timestamp()),
+            'jti': uuid4().hex,
+        },
+        settings.effective_jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+    return CustomerTrackingLinkResponse(
+        token=token,
+        tracking_url=f'{settings.console_url.rstrip("/")}/track#token={token}',
+        expires_at=expires_at,
+    )
+
+
+@router.get('/tracking', response_model=CustomerTrackingRead)
+def get_customer_tracking(
+    x_tracking_token: str = Header(default='', alias='X-Tracking-Token'),
+    db: Session = Depends(get_db),
+):
+    if not x_tracking_token:
+        raise HTTPException(status_code=401, detail='Tracking token required')
+    try:
+        token_payload = decode_access_token(x_tracking_token)
+        if token_payload.get('scope') != 'customer_tracking':
+            raise ValueError('wrong scope')
+        organization_id = UUID(str(token_payload['org_id']))
+        order_id = UUID(str(token_payload['sub']))
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(status_code=401, detail='Invalid or expired tracking token') from None
+
+    organization = db.get(Organization, organization_id)
+    order = db.get(DeliveryOrder, order_id)
+    if (
+        organization is None
+        or not organization.is_active
+        or order is None
+        or order.organization_id != organization_id
+    ):
+        raise HTTPException(status_code=404, detail='Tracking link not found')
+    customer = db.get(Customer, order.customer_id)
+    if customer is None or customer.organization_id != organization_id:
+        raise HTTPException(status_code=404, detail='Tracking link not found')
+
+    run = db.get(DispatchRun, order.dispatch_run_id) if order.dispatch_run_id else None
+    driver = db.get(Driver, run.driver_id) if run and run.driver_id else None
+    planned_arrival = None
+    if run is not None:
+        for stop in run.stops_json or []:
+            if str(stop.get('order_id')) == str(order.id):
+                raw_arrival = stop.get('planned_arrival')
+                if raw_arrival:
+                    planned_arrival = datetime.fromisoformat(str(raw_arrival))
+                break
+    proof_count = db.execute(
+        select(func.count(DeliveryProof.id)).where(
+            DeliveryProof.organization_id == organization_id,
+            DeliveryProof.delivery_order_id == order.id,
+        )
+    ).scalar_one()
+    return CustomerTrackingRead(
+        order_no=order.order_no,
+        customer_name=customer.name,
+        status=order.status,
+        route_name=run.route_name if run else None,
+        driver_name=driver.full_name if driver else None,
+        planned_arrival=planned_arrival,
+        window_start=order.window_start,
+        window_end=order.window_end,
+        proof_available=proof_count > 0,
+        updated_at=order.updated_at,
+    )
+
+
 @router.post('/runs', response_model=DispatchRunDetail, status_code=201)
 def plan_dispatch_run(
     payload: DispatchPlanRequest,
@@ -360,6 +465,7 @@ def plan_dispatch_run(
                 DeliveryOrder.id.in_([UUID(str(order_id)) for order_id in order_ids]),
                 DeliveryOrder.status == 'planned',
             )
+            .with_for_update()
         )
         .scalars()
         .all()
@@ -470,6 +576,178 @@ def plan_dispatch_run(
     return _run_detail(db, run)
 
 
+@router.post('/plan-fleet', response_model=FleetDispatchPlanResponse, status_code=201)
+def plan_fleet_dispatch(
+    payload: FleetDispatchPlanRequest,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
+    writable: OrganizationMembership = Depends(require_writable_workspace),
+):
+    organization_id = _org(actor, writable)
+    order_ids = list(dict.fromkeys(payload.order_ids))
+    try:
+        order_uuids = [UUID(str(order_id)) for order_id in order_ids]
+    except ValueError:
+        raise HTTPException(status_code=422, detail='One or more order ids are invalid') from None
+    orders = (
+        db.execute(
+            select(DeliveryOrder)
+            .where(
+                DeliveryOrder.organization_id == organization_id,
+                DeliveryOrder.id.in_(order_uuids),
+                DeliveryOrder.status == 'planned',
+            )
+            .with_for_update()
+        )
+        .scalars()
+        .all()
+    )
+    by_id = {str(order.id): order for order in orders}
+    if len(by_id) != len(order_ids):
+        raise HTTPException(status_code=422, detail='One or more orders are not plannable')
+
+    driver_ids = list(dict.fromkeys(vehicle.driver_id for vehicle in payload.vehicles))
+    if len(driver_ids) != len(payload.vehicles):
+        raise HTTPException(status_code=422, detail='Each vehicle must use a different driver')
+    try:
+        driver_uuids = [UUID(str(driver_id)) for driver_id in driver_ids]
+    except ValueError:
+        raise HTTPException(status_code=422, detail='One or more driver ids are invalid') from None
+    drivers = (
+        db.execute(
+            select(Driver).where(
+                Driver.organization_id == organization_id,
+                Driver.id.in_(driver_uuids),
+                Driver.status == 'active',
+            )
+        )
+        .scalars()
+        .all()
+    )
+    driver_by_id = {str(driver.id): driver for driver in drivers}
+    if len(driver_by_id) != len(driver_ids):
+        raise HTTPException(
+            status_code=422,
+            detail='One or more drivers are missing or inactive in this workspace',
+        )
+
+    customer_ids = {order.customer_id for order in orders}
+    customers = (
+        db.execute(
+            select(Customer).where(
+                Customer.organization_id == organization_id,
+                Customer.id.in_(customer_ids),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    customer_by_id = {customer.id: customer for customer in customers}
+    if any(order.customer_id not in customer_by_id for order in orders):
+        raise HTTPException(status_code=422, detail='A delivery order has no customer')
+
+    start_time = payload.start_time or datetime.combine(
+        payload.plan_date, time(8, 0), tzinfo=UTC
+    )
+    planned = plan_fleet_time_window_routes(
+        start_label=payload.start_label,
+        start_latitude=payload.start_latitude,
+        start_longitude=payload.start_longitude,
+        start_time=start_time,
+        orders=[
+            {
+                'id': order.id,
+                'order_no': order.order_no,
+                'quantity_units': order.quantity_units,
+                'priority': order.priority,
+                'service_minutes': order.service_minutes,
+                'window_start': order.window_start,
+                'window_end': order.window_end,
+                'latitude': customer_by_id[order.customer_id].latitude,
+                'longitude': customer_by_id[order.customer_id].longitude,
+            }
+            for order in orders
+        ],
+        vehicles=[
+            {
+                'id': vehicle.driver_id,
+                'driver_id': vehicle.driver_id,
+                'vehicle_capacity_units': vehicle.vehicle_capacity_units,
+                'max_stops': vehicle.max_stops,
+                'average_speed_kmh': vehicle.average_speed_kmh,
+            }
+            for vehicle in payload.vehicles
+        ],
+    )
+    if not planned['vehicles']:
+        raise HTTPException(status_code=422, detail='No delivery orders fit this fleet')
+
+    created_runs: list[DispatchRun] = []
+    multiple_vehicles = len(planned['vehicles']) > 1
+    for vehicle_plan in planned['vehicles']:
+        driver_id = vehicle_plan['driver_id']
+        driver = driver_by_id[driver_id]
+        vehicle_plan_data = vehicle_plan['plan']
+        vehicle = next(
+            item for item in payload.vehicles if item.driver_id == driver_id
+        )
+        run = DispatchRun(
+            organization_id=organization_id,
+            route_name=_fleet_route_name(
+                payload.route_name.strip(), driver.full_name, multiple_vehicles
+            ),
+            plan_date=payload.plan_date,
+            start_label=payload.start_label,
+            start_latitude=payload.start_latitude,
+            start_longitude=payload.start_longitude,
+            vehicle_capacity_units=vehicle.vehicle_capacity_units,
+            max_stops=vehicle.max_stops,
+            total_distance_km=vehicle_plan_data['total_distance_km'],
+            estimated_duration_min=vehicle_plan_data['estimated_duration_min'],
+            expected_cash_etb=sum(
+                (by_id[stop['order_id']].cod_amount_etb for stop in vehicle_plan_data['stops']),
+                Decimal('0.00'),
+            ),
+            status='planned',
+            driver_id=driver.id,
+            created_by_user_id=actor.id,
+            stops_json=vehicle_plan_data['stops'],
+            unassigned_json=[],
+        )
+        db.add(run)
+        db.flush()
+        for stop in vehicle_plan_data['stops']:
+            order = by_id[stop['order_id']]
+            order.dispatch_run_id = run.id
+            order.driver_id = driver.id
+            order.stop_sequence = stop['sequence']
+            order.status = 'assigned'
+        created_runs.append(run)
+
+    record_audit_event(
+        db,
+        event_type='dispatch.fleet_planned',
+        entity_type='dispatch_run',
+        entity_id=str(created_runs[0].id),
+        actor=actor,
+        organization_id=str(organization_id),
+        description=f'Planned {len(created_runs)} vehicle runs',
+        payload={
+            'run_ids': [str(run.id) for run in created_runs],
+            'vehicle_count': len(created_runs),
+            'order_count': sum(len(run.stops_json or []) for run in created_runs),
+            'unassigned_count': len(planned['unassigned']),
+        },
+    )
+    db.commit()
+    for run in created_runs:
+        db.refresh(run)
+    return FleetDispatchPlanResponse(
+        runs=[_run_detail(db, run) for run in created_runs],
+        unassigned=planned['unassigned'],
+    )
+
+
 @router.get('/runs', response_model=list[DispatchRunRead])
 def list_dispatch_runs(
     db: Session = Depends(get_db),
@@ -560,6 +838,7 @@ def create_driver_link(
 @router.post('/runs/{run_id}/close-cash', response_model=CashCloseSummary)
 def close_dispatch_cash(
     run_id: str,
+    payload: CashCloseRequest | None = None,
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles(UserRole.ADMIN)),
     writable: OrganizationMembership = Depends(require_writable_workspace),
@@ -573,12 +852,15 @@ def close_dispatch_cash(
         not_found_detail='Dispatch run not found',
         include_legacy_null=False,
     )
+    if run.status == 'closed' or run.cash_closed_at is not None:
+        raise HTTPException(status_code=409, detail='Cash is already closed for this run')
     orders = (
         db.execute(
             select(DeliveryOrder).where(
                 DeliveryOrder.organization_id == organization_id,
                 DeliveryOrder.dispatch_run_id == run.id,
             )
+            .with_for_update()
         )
         .scalars()
         .all()
@@ -593,16 +875,39 @@ def close_dispatch_cash(
         (order.cod_amount_etb for order in orders if order.status == 'delivered'),
         Decimal('0.00'),
     )
-    collected = sum(
+    declared = sum(
         (order.collected_cash_etb or Decimal('0.00') for order in orders),
         Decimal('0.00'),
     )
-    shortfall = max(expected - collected, Decimal('0.00'))
+    handed_over = (
+        payload.handed_over_etb
+        if payload is not None and payload.handed_over_etb is not None
+        else declared
+    )
+    note = payload.note if payload is not None else None
+    if (handed_over != expected or handed_over != declared) and not (note or '').strip():
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                'A note is required when handed-over cash differs from '
+                'expected or declared cash'
+            ),
+        )
+    shortfall = max(expected - handed_over, Decimal('0.00'))
+    overage = max(handed_over - expected, Decimal('0.00'))
     now = datetime.now(UTC)
     for order in orders:
         order.cash_settled_at = now
     run.status = 'closed'
     run.cash_closed_at = now
+    run.cash_closed_by_user_id = actor.id
+    run.cash_declared_etb = declared
+    run.cash_handed_over_etb = handed_over
+    run.cash_shortfall_etb = shortfall
+    run.cash_overage_etb = overage
+    run.cash_deposit_bank = payload.deposit_bank if payload is not None else None
+    run.cash_deposit_reference = payload.deposit_reference if payload is not None else None
+    run.cash_close_note = note
     record_audit_event(
         db,
         event_type='dispatch.cash_closed',
@@ -610,19 +915,35 @@ def close_dispatch_cash(
         entity_id=str(run.id),
         actor=actor,
         organization_id=str(organization_id),
-        description=f'Closed cash with {shortfall} ETB shortfall',
+        description=(
+            f'Closed cash with {shortfall} ETB shortfall and {overage} ETB overage'
+        ),
         payload={
             'expected_etb': str(expected),
-            'collected_etb': str(collected),
+            'collected_etb': str(declared),
+            'declared_etb': str(declared),
+            'handed_over_etb': str(handed_over),
             'shortfall_etb': str(shortfall),
+            'overage_etb': str(overage),
+            'deposit_bank': payload.deposit_bank if payload is not None else None,
+            'deposit_reference': (
+                payload.deposit_reference if payload is not None else None
+            ),
+            'note': note,
         },
     )
     db.commit()
     return CashCloseSummary(
         run_id=str(run.id),
         expected_etb=expected,
-        collected_etb=collected,
+        collected_etb=declared,
+        declared_etb=declared,
+        handed_over_etb=handed_over,
         shortfall_etb=shortfall,
+        overage_etb=overage,
+        deposit_bank=payload.deposit_bank if payload is not None else None,
+        deposit_reference=payload.deposit_reference if payload is not None else None,
+        note=note,
         terminal_stops=len(orders),
         total_stops=len(orders),
         closed_at=now,
@@ -772,6 +1093,21 @@ def driver_upload_proof(
         raise HTTPException(status_code=413, detail='Proof image is too large')
     if not _has_expected_image_signature(content, file.content_type or ''):
         raise HTTPException(status_code=415, detail='Proof content does not match the declared image type')
+    db.execute(
+        select(Organization)
+        .where(Organization.id == run.organization_id)
+        .with_for_update()
+    ).scalar_one()
+    used_bytes = db.execute(
+        select(
+            func.coalesce(func.sum(func.length(DeliveryProof.file_data)), 0)
+        ).where(DeliveryProof.organization_id == run.organization_id)
+    ).scalar_one()
+    if used_bytes + len(content) > settings.proof_org_quota_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail='Workspace proof storage is full',
+        )
     existing_proofs = db.execute(
         select(func.count(DeliveryProof.id)).where(
             DeliveryProof.organization_id == run.organization_id,

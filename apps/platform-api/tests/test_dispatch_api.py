@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
+
 
 def _headers(token: str) -> dict[str, str]:
     return {'Authorization': f'Bearer {token}'}
@@ -178,15 +180,40 @@ def test_dispatch_run_driver_manifest_proof_and_cash_close(client: TestClient, s
         )
         assert response.status_code == 200, response.text
 
+    unexplained_handover = client.post(
+        f"/api/v1/dispatch/runs/{run['id']}/close-cash",
+        headers=_headers(token),
+        json={'handed_over_etb': '400.00'},
+    )
+    assert unexplained_handover.status_code == 422, unexplained_handover.text
+
     close = client.post(
         f"/api/v1/dispatch/runs/{run['id']}/close-cash",
         headers=_headers(token),
+        json={
+            'handed_over_etb': '400.00',
+            'deposit_bank': 'cbe',
+            'deposit_reference': 'CBE-DEP-1001',
+            'note': 'Office accepted the verified customer shortfall',
+        },
     )
     assert close.status_code == 200, close.text
     assert close.json()['expected_etb'] == '1250.00'
     assert close.json()['collected_etb'] == '400.00'
+    assert close.json()['declared_etb'] == '400.00'
+    assert close.json()['handed_over_etb'] == '400.00'
     assert close.json()['shortfall_etb'] == '850.00'
+    assert close.json()['overage_etb'] == '0.00'
+    assert close.json()['deposit_bank'] == 'cbe'
+    assert close.json()['deposit_reference'] == 'CBE-DEP-1001'
     assert close.json()['terminal_stops'] == 2
+
+    repeated = client.post(
+        f"/api/v1/dispatch/runs/{run['id']}/close-cash",
+        headers=_headers(token),
+        json={'handed_over_etb': '400.00', 'note': 'Already closed'},
+    )
+    assert repeated.status_code == 409
 
 
 def test_dispatch_is_tenant_scoped(client: TestClient, signup_workspace):
@@ -260,10 +287,159 @@ def test_failed_stop_does_not_create_a_cash_obligation(
     close = client.post(
         f"/api/v1/dispatch/runs/{run['id']}/close-cash",
         headers=_headers(token),
+        json={
+            'handed_over_etb': '0.00',
+            'note': 'No cash was collected on this run',
+        },
     )
     assert close.status_code == 200, close.text
     assert close.json()['expected_etb'] == '750.00'
     assert close.json()['shortfall_etb'] == '750.00'
+
+
+def test_cash_close_records_overage(client: TestClient, signup_workspace):
+    _org, token = signup_workspace('Cash Overage Workspace')
+    first, second, driver = _setup(client, token)
+    planned = client.post(
+        '/api/v1/dispatch/runs',
+        headers=_headers(token),
+        json={
+            'route_name': 'Overage run',
+            'plan_date': '2026-10-22',
+            'start_label': 'Main depot',
+            'start_latitude': 9.0,
+            'start_longitude': 38.75,
+            'order_ids': [first['id'], second['id']],
+            'driver_id': driver['id'],
+            'vehicle_capacity_units': 100,
+            'max_stops': 10,
+        },
+    )
+    assert planned.status_code == 201, planned.text
+    run = planned.json()
+    link = client.post(
+        f"/api/v1/dispatch/runs/{run['id']}/driver-link",
+        headers=_headers(token),
+    )
+    driver_headers = {'X-Driver-Token': link.json()['token']}
+    stops = client.get(
+        '/api/v1/dispatch/driver/manifest', headers=driver_headers
+    ).json()['stops']
+    for stop in stops:
+        delivered = client.post(
+            f"/api/v1/dispatch/driver/orders/{stop['order_id']}/status",
+            headers=driver_headers,
+            json={'status': 'delivered'},
+        )
+        assert delivered.status_code == 200, delivered.text
+        cash = client.post(
+            f"/api/v1/dispatch/driver/orders/{stop['order_id']}/cash",
+            headers=driver_headers,
+            json={'collected_etb': stop['cod_amount_etb']},
+        )
+        assert cash.status_code == 200, cash.text
+
+    close = client.post(
+        f"/api/v1/dispatch/runs/{run['id']}/close-cash",
+        headers=_headers(token),
+        json={
+            'handed_over_etb': '1300.00',
+            'note': 'Extra 50 ETB was the driver cash float',
+        },
+    )
+    assert close.status_code == 200, close.text
+    assert close.json()['expected_etb'] == '1250.00'
+    assert close.json()['declared_etb'] == '1250.00'
+    assert close.json()['handed_over_etb'] == '1300.00'
+    assert close.json()['shortfall_etb'] == '0.00'
+    assert close.json()['overage_etb'] == '50.00'
+
+
+def test_customer_tracking_link_exposes_only_the_selected_delivery(
+    client: TestClient,
+    signup_workspace,
+):
+    _org, token = signup_workspace('Customer Tracking Workspace')
+    first, second, driver = _setup(client, token)
+    planned = client.post(
+        '/api/v1/dispatch/runs',
+        headers=_headers(token),
+        json={
+            'route_name': 'Tracking run',
+            'plan_date': '2026-10-22',
+            'start_label': 'Main depot',
+            'start_latitude': 9.0,
+            'start_longitude': 38.75,
+            'order_ids': [first['id'], second['id']],
+            'driver_id': driver['id'],
+            'vehicle_capacity_units': 100,
+            'max_stops': 10,
+        },
+    )
+    assert planned.status_code == 201, planned.text
+
+    link = client.post(
+        f"/api/v1/dispatch/orders/{first['id']}/tracking-link",
+        headers=_headers(token),
+    )
+    assert link.status_code == 200, link.text
+    assert '/track#token=' in link.json()['tracking_url']
+
+    tracking = client.get(
+        '/api/v1/dispatch/tracking',
+        headers={'X-Tracking-Token': link.json()['token']},
+    )
+    assert tracking.status_code == 200, tracking.text
+    body = tracking.json()
+    assert body['order_no'] == first['order_no']
+    assert body['status'] == 'assigned'
+    assert body['route_name'] == 'Tracking run'
+    assert body['driver_name'] == driver['full_name']
+    assert body['proof_available'] is False
+    assert 'second_order' not in body
+
+    tampered = client.get(
+        '/api/v1/dispatch/tracking',
+        headers={'X-Tracking-Token': link.json()['token'] + 'x'},
+    )
+    assert tampered.status_code == 401
+
+
+def test_proof_upload_respects_workspace_storage_quota(
+    client: TestClient,
+    signup_workspace,
+    monkeypatch,
+):
+    _org, token = signup_workspace('Proof Quota Workspace')
+    first, _second, driver = _setup(client, token)
+    planned = client.post(
+        '/api/v1/dispatch/runs',
+        headers=_headers(token),
+        json={
+            'route_name': 'Proof quota run',
+            'plan_date': '2026-10-22',
+            'start_label': 'Main depot',
+            'start_latitude': 9.0,
+            'start_longitude': 38.75,
+            'order_ids': [first['id']],
+            'driver_id': driver['id'],
+            'vehicle_capacity_units': 100,
+            'max_stops': 10,
+        },
+    )
+    assert planned.status_code == 201, planned.text
+    link = client.post(
+        f"/api/v1/dispatch/runs/{planned.json()['id']}/driver-link",
+        headers=_headers(token),
+    )
+    monkeypatch.setattr(settings, 'proof_org_quota_bytes', 8)
+    rejected = client.post(
+        f"/api/v1/dispatch/driver/orders/{first['id']}/proof",
+        headers={'X-Driver-Token': link.json()['token']},
+        files={'file': ('proof.png', b'\x89PNG\r\n\x1a\nproof', 'image/png')},
+    )
+    assert rejected.status_code == 413
+    assert rejected.json()['detail'] == 'Workspace proof storage is full'
 
 
 def test_delivery_proof_file_is_tenant_scoped(client: TestClient, signup_workspace):

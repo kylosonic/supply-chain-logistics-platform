@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.common import ORMBase
 
@@ -81,6 +82,24 @@ class DispatchPlanRequest(BaseModel):
     cost_per_km: Decimal = Field(default=Decimal('0'), ge=0, max_digits=14, decimal_places=2)
 
 
+class FleetVehiclePlanRequest(BaseModel):
+    driver_id: str
+    vehicle_capacity_units: int = Field(gt=0, le=100000)
+    max_stops: int = Field(default=100, ge=1, le=100)
+    average_speed_kmh: float = Field(default=30, gt=0, le=120)
+
+
+class FleetDispatchPlanRequest(BaseModel):
+    route_name: str = Field(min_length=2, max_length=128)
+    plan_date: date
+    start_label: str = Field(min_length=2, max_length=160)
+    start_latitude: float = Field(ge=-90, le=90)
+    start_longitude: float = Field(ge=-180, le=180)
+    order_ids: list[str] = Field(min_length=1, max_length=300)
+    vehicles: list[FleetVehiclePlanRequest] = Field(min_length=1, max_length=25)
+    start_time: datetime | None = None
+
+
 class DispatchStopRead(BaseModel):
     order_id: str
     order_no: str
@@ -115,6 +134,14 @@ class DispatchRunRead(ORMBase):
     status: str
     driver_id: str | None
     cash_closed_at: datetime | None
+    cash_closed_by_user_id: str | None
+    cash_declared_etb: Decimal | None
+    cash_handed_over_etb: Decimal | None
+    cash_shortfall_etb: Decimal | None
+    cash_overage_etb: Decimal | None
+    cash_deposit_bank: str | None
+    cash_deposit_reference: str | None
+    cash_close_note: str | None
 
 
 class DispatchRunDetail(DispatchRunRead):
@@ -122,10 +149,34 @@ class DispatchRunDetail(DispatchRunRead):
     unassigned: list[dict] = Field(default_factory=list)
 
 
+class FleetDispatchPlanResponse(BaseModel):
+    runs: list[DispatchRunDetail] = Field(default_factory=list)
+    unassigned: list[dict] = Field(default_factory=list)
+
+
 class DriverLinkResponse(BaseModel):
     token: str
     driver_url: str
     expires_at: datetime
+
+
+class CustomerTrackingLinkResponse(BaseModel):
+    token: str
+    tracking_url: str
+    expires_at: datetime
+
+
+class CustomerTrackingRead(BaseModel):
+    order_no: str
+    customer_name: str
+    status: str
+    route_name: str | None
+    driver_name: str | None
+    planned_arrival: datetime | None
+    window_start: datetime | None
+    window_end: datetime | None
+    proof_available: bool
+    updated_at: datetime | None
 
 
 class DriverManifest(BaseModel):
@@ -148,11 +199,32 @@ class DriverCashDeclare(BaseModel):
     note: str | None = Field(default=None, max_length=500)
 
 
+class CashCloseRequest(BaseModel):
+    handed_over_etb: Decimal | None = Field(
+        default=None, ge=0, max_digits=14, decimal_places=2
+    )
+    deposit_bank: Literal['cbe', 'dashen'] | None = None
+    deposit_reference: str | None = Field(default=None, max_length=128)
+    note: str | None = Field(default=None, max_length=500)
+
+    @model_validator(mode='after')
+    def validate_deposit_evidence(self):
+        if self.deposit_reference and not self.deposit_bank:
+            raise ValueError('deposit_bank is required when deposit_reference is provided')
+        return self
+
+
 class CashCloseSummary(BaseModel):
     run_id: str
     expected_etb: Decimal
     collected_etb: Decimal
+    declared_etb: Decimal
+    handed_over_etb: Decimal
     shortfall_etb: Decimal
+    overage_etb: Decimal
+    deposit_bank: str | None
+    deposit_reference: str | None
+    note: str | None
     terminal_stops: int
     total_stops: int
     closed_at: datetime
