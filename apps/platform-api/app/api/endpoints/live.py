@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import date
+from datetime import date, datetime
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
@@ -12,6 +13,8 @@ from sqlalchemy.orm import Session
 from app.api.security import get_current_user_from_token, scoped_to_organization
 from app.core.observability import app_metrics
 from app.db.session import get_db
+from app.models.dispatch import DeliveryOrder, DispatchRun
+from app.models.driver import Driver
 from app.models.inventory import Inventory
 from app.models.item import Item
 from app.models.order import HistoricalOrder
@@ -25,6 +28,8 @@ from app.services.security import decode_access_token
 from app.services.weather import simulated_weather_features
 
 router = APIRouter()
+
+_TERMINAL_DISPATCH_STATUSES = frozenset({'delivered', 'failed', 'cancelled'})
 
 
 def _live_principal(token: str, db: Session):
@@ -167,11 +172,126 @@ def _gather_snapshot(db: Session, organization_id: UUID | None = None) -> dict:
             for p in fc.predictions[:20]
         ]
 
+    dispatch_overview = _dispatch_overview(db, organization_id)
     return build_live_snapshot(
         inventory_rows=inventory_rows,
         route_rows=route_rows,
         forecast_rows=forecast_rows,
+        dispatch_overview=dispatch_overview,
     )
+
+
+def _dispatch_overview(db: Session, organization_id: UUID | None) -> dict:
+    """Return a small, tenant-scoped execution view for live subscribers.
+
+    The console uses ``updated_at`` as a version marker. It only needs to
+    refetch its fuller dispatch runs when the underlying orders or runs change,
+    rather than on every five-second socket tick.
+    """
+    if organization_id is None:
+        return {'updated_at': None, 'runs': []}
+
+    run_rows = db.execute(
+        select(DispatchRun, Driver.full_name)
+        .outerjoin(
+            Driver,
+            (Driver.id == DispatchRun.driver_id)
+            & (Driver.organization_id == organization_id),
+        )
+        .where(DispatchRun.organization_id == organization_id)
+        .order_by(DispatchRun.updated_at.desc(), DispatchRun.id)
+        .limit(25)
+    ).all()
+    if not run_rows:
+        return {'updated_at': None, 'runs': []}
+
+    run_ids = [run.id for run, _driver_name in run_rows]
+    orders = (
+        db.execute(
+            select(DeliveryOrder).where(
+                DeliveryOrder.organization_id == organization_id,
+                DeliveryOrder.dispatch_run_id.in_(run_ids),
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    orders_by_run: dict[UUID, list[DeliveryOrder]] = {}
+    for order in orders:
+        if order.dispatch_run_id is not None:
+            orders_by_run.setdefault(order.dispatch_run_id, []).append(order)
+
+    latest_update: datetime | None = None
+    summaries: list[dict] = []
+    for run, driver_name in run_rows:
+        run_orders = orders_by_run.get(run.id, [])
+        terminal_count = sum(
+            order.status in _TERMINAL_DISPATCH_STATUSES for order in run_orders
+        )
+        collected_cash = sum(
+            (order.collected_cash_etb or Decimal('0.00') for order in run_orders),
+            Decimal('0.00'),
+        )
+        run_latest = max(
+            (order.updated_at for order in run_orders if order.updated_at is not None),
+            default=run.updated_at,
+        )
+        if run_latest is not None and (
+            latest_update is None or run_latest > latest_update
+        ):
+            latest_update = run_latest
+
+        summaries.append(
+            {
+                'id': str(run.id),
+                'route_name': run.route_name,
+                'plan_date': run.plan_date.isoformat(),
+                'status': run.status,
+                'driver_id': str(run.driver_id) if run.driver_id else None,
+                'driver_name': driver_name,
+                'total_stops': len(run_orders),
+                'terminal_stops': terminal_count,
+                'progress_percent': (
+                    round((terminal_count / len(run_orders)) * 100, 2)
+                    if run_orders
+                    else 0.0
+                ),
+                'expected_cash_etb': str(run.expected_cash_etb),
+                'collected_cash_etb': str(collected_cash),
+                'cash_declared_etb': (
+                    str(run.cash_declared_etb)
+                    if run.cash_declared_etb is not None
+                    else None
+                ),
+                'cash_handed_over_etb': (
+                    str(run.cash_handed_over_etb)
+                    if run.cash_handed_over_etb is not None
+                    else None
+                ),
+                'cash_shortfall_etb': (
+                    str(run.cash_shortfall_etb)
+                    if run.cash_shortfall_etb is not None
+                    else None
+                ),
+                'cash_overage_etb': (
+                    str(run.cash_overage_etb)
+                    if run.cash_overage_etb is not None
+                    else None
+                ),
+                'cash_deposit_bank': run.cash_deposit_bank,
+                'cash_deposit_reference': run.cash_deposit_reference,
+                'cash_closed_at': (
+                    run.cash_closed_at.isoformat() if run.cash_closed_at else None
+                ),
+                'updated_at': run_latest.isoformat() if run_latest else None,
+            }
+        )
+
+    return {
+        'updated_at': latest_update.isoformat() if latest_update is not None else None,
+        'runs': summaries,
+    }
 
 
 @router.websocket('/updates')

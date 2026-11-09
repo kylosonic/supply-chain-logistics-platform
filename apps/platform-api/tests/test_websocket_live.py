@@ -25,6 +25,7 @@ def test_websocket_live_accepts_token_and_streams_snapshot(client: TestClient, a
         assert 'inventory_overview' in payload
         assert 'route_summaries' in payload
         assert 'forecast_preview' in payload
+        assert 'dispatch_overview' in payload
 
 
 def test_websocket_live_rejects_unscoped_login_token(client: TestClient, admin_token: str):
