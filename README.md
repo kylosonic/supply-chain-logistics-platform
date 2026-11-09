@@ -1,334 +1,232 @@
-# Supply Chain Logistics Platform Monorepo
+# FreightPilot
 
-Full-stack logistics platform with an operations console, API backend, and a product marketing website.
+FreightPilot is a logistics workspace for small and mid-sized transport teams. It combines route planning, shipment and inventory data, dispatch execution, delivery proof, cash reconciliation, alerts, and billing in one system.
 
-## What is included
+The repository contains four applications:
 
-- Operations console for logistics workflows (inventory, planning, routing, alerts)
-- API backend for data, forecasting, and optimization endpoints
-- Product website for company signup, desktop download CTAs, and product positioning
-- Desktop shell for dispatch/operator teams (Electron)
-- Dockerized local stack for backend, operations UI, and product website
-- Company onboarding flow: business-email signup, subscription selection, data import, and preferred AI provider selection
+| Path | Purpose |
+| --- | --- |
+| `apps/platform-api` | FastAPI, SQLAlchemy, and Alembic service |
+| `apps/ops-console` | React operations console for planners, dispatchers, and administrators |
+| `apps/product-web` | Next.js product site and company signup |
+| `apps/desktop` | Electron wrapper for the operations console |
 
-## Monorepo layout
+The backend owns authentication, organization membership, tenant scoping, and operational data. The public site can create a company workspace, which starts with sample data so a new team can try route planning before importing its own CSVs.
 
-- `apps/platform-api` FastAPI + SQLAlchemy + Alembic backend
-- `apps/ops-console` React + Tailwind operations frontend (Vite + TypeScript)
-- `apps/product-web` Next.js + React + Tailwind product website
-- `apps/desktop` Electron shell for desktop distribution
-- `apps/platform-api/sample-data` CSV demo datasets for warehouses, items, fleet assets, inventory, and orders (baked into the API image at build time; seeding resolves via `SAMPLE_DATA_DIR`)
-- `scripts` backup and restore scripts for PostgreSQL
-- `docs` architecture and roadmap documentation
+## Local stack
 
-## Tech stack
+### Requirements
 
-- Backend: FastAPI, SQLAlchemy, Alembic, Pydantic, psycopg
-- Frontend (ops): React, Recharts, React Router, Tailwind
-- Product web: Next.js, React, Tailwind
-- Database: PostgreSQL
-- Forecasting: scikit-learn and pandas
+- Docker with Compose
+- Python 3.12 for backend work outside Docker
+- Node.js 22 or newer for the web applications
 
-## Production endpoints
+### Start with Docker
 
-- Product website (Vercel): https://product-web-chi.vercel.app
-- Operations console (Vercel): https://ops-console-azure.vercel.app
-- Backend API (Vercel): https://platform-api-smoky.vercel.app
-- EAII submission page (Vercel): https://freightpilot-eaii.vercel.app
+Copy the environment template and edit the copied file:
 
-**Database:** the production database is a Supabase-hosted Postgres, reached over the connection
-pooler. `DATABASE_URL` is supplied per environment (locally in `.env`, in production by the host's
-encrypted environment variables) and is never committed. See
-`docs/adr/0001-production-database-topology.md` for the recorded topology decision.
-
-> Supabase **Auth** is retired — the platform's own FastAPI service owns identity end to end. See
-> `supabase/RETIRED.md` for the record and the preconditions required to re-arm it.
-
-### Release gates
-
-CI (`.github/workflows/ci.yml`) runs the same gates a release depends on: backend tests + ruff,
-`pip-audit` against the hash-pinned `requirements.lock`, and console/site typecheck, lint, tests,
-production builds, bundle-weight budget and dependency audits. See `docs/release-gates.md` for how a
-red run blocks a deploy — and for the one configuration step (GitHub branch protection) that is
-still required to make that block authoritative.
-
-### Check the deployment's health
-
-`GET /health` reports whether the API process is up **and** whether its database is reachable:
-
-```bash
-curl -s https://platform-api-smoky.vercel.app/health
-# {"status":"ok","db":"ok"}          -> healthy
-# {"status":"degraded","db":"unavailable"} -> the API is up but cannot reach its database
+```powershell
+Copy-Item .env.example .env
 ```
 
-A `500` on `POST /api/v1/auth/company-signup` with `db: unavailable` means the database connection
-is misconfigured or unreachable — not an application defect. The connect timeout is bounded to 5s so
-this surface fails fast rather than hanging.
+Generate a separate value for each secret:
 
-
-## Vercel monorepo setup
-
-This repository is linked to Vercel as a monorepo with one project per deployable app:
-
-- `apps/product-web` -> `product-web` (Next.js preset, root directory `apps/product-web`)
-- `apps/ops-console` -> `ops-console` (Vite preset, root directory `apps/ops-console`, SPA rewrite in `apps/ops-console/vercel.json`)
-- `apps/platform-api` -> `platform-api` (Python serverless app, root directory `apps/platform-api`, request routing in `apps/platform-api/vercel.json`)
-
-From repo root, relink the repository to the same Vercel projects:
-
-```bash
-npm run vercel:link
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Pull production environment variables for all three Vercel projects:
+Set the generated values for `POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, and `PROVIDER_KEY_ENCRYPTION_SECRET`. For a local demo, also set:
 
-```bash
-npm run vercel:pull
+```dotenv
+APP_ENV=development
 ```
 
-Pull a single project only:
+Then build and start the services:
 
-```bash
-npm run vercel:pull:web
-npm run vercel:pull:ops
-npm run vercel:pull:api
+```powershell
+docker compose up --build
 ```
 
-Production deployments are Git-driven. Pushing to `master` triggers fresh production deployments for these three linked Vercel projects:
+The default addresses are:
 
-- `product-web`
-- `ops-console`
-- `platform-api`
+- Operations console: `http://localhost`
+- Product site: `http://localhost:8081`
+- API: `http://localhost:8000`
+- API documentation: `http://localhost:8000/docs`
+- PostgreSQL: `127.0.0.1:5432`
 
-Vercel CLI generates local environment files under `.vercel/.env.production.local` when you run `vercel pull`. Those files are machine-local deployment state and should stay uncommitted.
+Check the API and database:
 
-## Database schema workflow
-
-The application's own Alembic chain is the single source of truth for the operational schema:
-
-```bash
-cd apps/platform-api
-set DATABASE_URL=postgresql+psycopg://postgres.<project-ref>:<db-password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
-python -m alembic upgrade head
+```powershell
+Invoke-RestMethod http://localhost:8000/health
 ```
 
-Migration chain head: `20261107_0026` (server-side logout token revocation). The local hardening
-chain also includes `20261107_0025` cash handover and deposit evidence, `20260823_0024` customer
-stops, driver execution, and proof of delivery, `20260813_0021` route explanations,
-`20260821_0022` legacy NULL-organization quarantine, and `20260822_0023` workspace invitations.
-Chain integrity is pinned by `tests/test_migration_chain_integrity.py`.
+A healthy response has this shape:
 
-### Supabase CLI (database operations only — auth is retired)
-
-The CLI remains useful for database operations against the linked project:
-
-```bash
-npx supabase link --project-ref <project-ref> --password <db-password>
-npx supabase db push --linked --yes
+```json
+{"status":"ok","db":"ok"}
 ```
 
-The linked project ref is stored in `supabase/.temp/linked-project.json` (machine-local). The single
-SQL migration in `supabase/migrations/` provisions the legacy `public.company_profiles` table with
-`auth.uid()`-scoped RLS policies; it is applied history and is **not** used by the application. Do
-not extend it — schema changes belong in the Alembic chain.
+Stop the stack with:
 
-**Supabase Auth is retired.** See `supabase/RETIRED.md` for why, and for the six settings that would
-have to change before any signup flow could point at it again.
-
-> **Environment note:** `vercel env pull` writes redacted/empty placeholder values for
-> encrypted-and-sensitive variables. A pulled `.env.production.local` showing
-> `DATABASE_URL=""` does **not** mean the variable is unset in the deployment — check
-> `vercel env ls production` in the project directory to see what is actually configured.
-
-## Root workspace scripts
-
-From repo root:
-
-```bash
-npm run dev:ops
-npm run dev:web
-npm run dev:desktop
-npm run build:ops
-npm run build:web
-npm run build
-npm run test:ops
-npm run lint:ops
-npm run typecheck:ops
+```powershell
+docker compose down
 ```
 
-## Local development
+### Run applications separately
 
-### 1) Configure environment
+Install each npm application from its own lockfile:
 
-```bash
-copy .env.example .env
+```powershell
+npm --prefix apps/ops-console ci
+npm --prefix apps/product-web ci
+npm --prefix apps/desktop ci
 ```
 
-### 2) Start full Docker stack
+Start the operations console and product site in separate terminals:
 
-```bash
-docker compose up -d --build
+```powershell
+npm --prefix apps/ops-console run dev
+npm --prefix apps/product-web run dev
 ```
 
-Services:
-- Operations console: `http://localhost` (or `${FRONTEND_PORT}`)
-- Product website: `http://localhost:8081` (or `${PRODUCT_WEB_PORT}`)
-- API backend: `http://localhost:8000` (or `${BACKEND_PORT}`)
-- PostgreSQL: `${POSTGRES_PORT}`
+The Vite development server uses `http://localhost:5173`; the product site uses `http://localhost:5174`.
 
-### 3) Run backend locally without Docker (optional)
+For backend development:
 
-```bash
-cd apps/platform-api
-copy .env.example .env
+```powershell
+Set-Location apps/platform-api
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
-alembic upgrade head
+Copy-Item .env.example .env
+python -m alembic upgrade head
 python scripts/seed_data.py
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --port 8000
 ```
 
-### 4) Run operations console locally without Docker (optional)
+Set `DATABASE_URL` in `apps/platform-api/.env` before running migrations. The database must be PostgreSQL when the backend runs outside tests.
 
-```bash
-cd apps/ops-console
-copy .env.example .env
-npm install
-npm run dev -- --host 0.0.0.0 --port 5173
-```
+Run the desktop shell and check its Electron runtime:
 
-### 5) Run product website locally without Docker (optional)
-
-```bash
-cd apps/product-web
-copy .env.example .env
-npm install
-npm run dev
-```
-
-### 6) Run desktop shell locally (optional)
-
-```bash
-cd apps/desktop
-npm install
-npm run start
-```
-
-The desktop package now validates and repairs Electron runtime artifacts during install and before startup.
-
-You can run a standalone runtime health check with:
-
-```bash
+```powershell
+npm --prefix apps/desktop run start
 npm --prefix apps/desktop run doctor
 ```
 
-If your machine still reports an Electron install failure, run a clean reinstall:
+## Example: create a workspace and read its activation state
+
+With the API running locally, create a company workspace:
 
 ```bash
-npm --prefix apps/desktop remove electron
-npm --prefix apps/desktop install electron@31.0.2
+curl -sS -c cookies.txt \
+  -X POST http://localhost:8000/api/v1/auth/company-signup \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "company_name": "Acme Logistics",
+    "company_email": "ops@acme-logistics.example",
+    "password": "change-this-password",
+    "full_name": "Operations Lead",
+    "subscription_tier": "starter"
+  }'
 ```
 
-## Product website environment variables
-
-`apps/product-web/.env.example` contains:
-
-- `NEXT_PUBLIC_DESKTOP_DOWNLOAD_URL`: desktop installer/download center URL
-- `NEXT_PUBLIC_DOCS_URL`: docs portal URL
-- `NEXT_PUBLIC_APP_CONSOLE_URL`: operations console URL
-- `NEXT_PUBLIC_PLATFORM_API_URL`: backend API base URL used by inline company signup form
-- `NEXT_PUBLIC_SUPABASE_URL`: optional Supabase project URL for auth-backed signup
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: optional Supabase publishable key
-
-## Company onboarding flow
-
-1. Open product site and use the company signup form with a business email domain.
-2. Download and launch desktop app (or open ops console directly).
-3. Sign in with company credentials.
-4. Go to Account page to choose subscription tier.
-5. Add provider API keys and set the preferred provider for dashboard AI workflows.
-6. Go to CSV Upload and import, in order: warehouses, items, fleet assets (cars + drivers), inventory, orders.
-
-## API capabilities (current)
-
-Base API prefix: `/api/v1`
-
-- Auth: register/login/me/users
-- Company onboarding: `POST /auth/company-signup` (company email + workspace bootstrap)
-- Warehouses, items, inventory CRUD and overview
-- Orders ingestion and CSV uploads
-- Forecasting endpoints
-- Routing optimization and schedule views
-- Multi-vehicle fleet planning with per-driver capacity and stop limits
-- Signed, expiring customer tracking links with delivery status and arrival windows
-- Live feed with inventory, route, forecast, and dispatch-progress snapshots
-- Shipment lifecycle, alerts, replenishment planning
-- Driver proof storage with per-order and per-workspace quotas
-- Offline driver proof capture queued in IndexedDB until connectivity returns
-- Auditable dispatch cash close with handover amount, shortfall, overage, deposit bank/reference, and note
-- Team invitations with optional SMTP email delivery and a secure copyable fallback link
-- Operations readiness and metrics endpoints
-- Subscription management: plans listing, select tier, tenant subscription state
-- Usage metering: monthly task counters with threshold events at 80%, 100%, and overage, automatically recorded from route optimization delivery tasks and available via `POST /subscriptions/usage/record` and `GET /subscriptions/usage/me`
-- Provider key management: BYOK create/list/test/revoke with encrypted storage
-- Provider preference: set/get organization preferred AI provider key used by dashboard workflows
-- Expanded onboarding ingestion endpoints: warehouses, items, fleet assets, inventory, and orders CSV imports
-
-## Testing
-
-### Backend
+The response contains the new user and organization. The authentication cookie is stored in `cookies.txt`. Read the seeded workspace's activation state with:
 
 ```bash
-cd apps/platform-api
+curl -sS -b cookies.txt http://localhost:8000/api/v1/activation
+```
+
+The state reports which sample data categories exist and which onboarding milestones are complete. Upload real CSVs from the operations console when the team is ready to replace the sample rows.
+
+## Configuration
+
+The main backend settings are documented in `apps/platform-api/.env.example`.
+
+- `DATABASE_URL` selects the database.
+- `JWT_SECRET_KEY` signs login tokens.
+- `PROVIDER_KEY_ENCRYPTION_SECRET` encrypts stored provider API keys.
+- `PROOF_ORG_QUOTA_BYTES` limits delivery-proof storage per workspace.
+- `RECEIPT_EXTRACTION_MODE` selects the receipt extraction adapter.
+- `SMTP_*` enables invitation email delivery. When SMTP is not configured, the console still returns a copyable invitation link.
+- `SMS_GATEWAY_*` configures the generic SMS gateway used for escalation messages.
+
+Production startup rejects missing secrets, known placeholder values, and incomplete collection-account settings.
+
+The product site reads `NEXT_PUBLIC_PLATFORM_API_URL`, `NEXT_PUBLIC_APP_CONSOLE_URL`, `NEXT_PUBLIC_DOCS_URL`, `NEXT_PUBLIC_DESKTOP_DOWNLOAD_URL`, and `NEXT_PUBLIC_SITE_URL` from `apps/product-web/.env.example`.
+
+## Database migrations
+
+Alembic migrations are the source of truth for the operational schema:
+
+```powershell
+Set-Location apps/platform-api
+$env:DATABASE_URL = "postgresql+psycopg://user:password@host:5432/database"
+python -m alembic upgrade head
+```
+
+The current migration head is `20261107_0026`. Migration ordering is checked by `tests/test_migration_chain_integrity.py`.
+
+The SQL under `supabase/` is retained as retired history. Supabase Auth is not part of the running application.
+
+## Tests and checks
+
+Backend:
+
+```powershell
+Set-Location apps/platform-api
 pytest -q
 ```
 
-### Operations console
+Operations console:
 
-```bash
-cd apps/ops-console
-npm run test
+```powershell
+npm --prefix apps/ops-console run typecheck
+npm --prefix apps/ops-console run lint
+npm --prefix apps/ops-console run test
+npm --prefix apps/ops-console run build
 ```
 
-## Operations scripts
+Product site:
 
-- PowerShell backup: `./scripts/db_backup.ps1 -OutputFile backup.sql`
-- PowerShell restore: `./scripts/db_restore.ps1 -InputFile backup.sql`
-- Bash backup: `./scripts/db_backup.sh backup.sql`
-- Bash restore: `./scripts/db_restore.sh backup.sql`
-
-## Seed and demo data
-
-CSV examples live in `apps/platform-api/sample-data`.
-
-```bash
-cd apps/platform-api
-python scripts/seed_data.py
+```powershell
+npm --prefix apps/product-web run test
+npm --prefix apps/product-web run build
+npm --prefix apps/product-web run check:bundle
 ```
 
-Default seeded users:
-- `admin/admin12345`
-- `operator/operator12345`
-- `viewer/viewer12345`
+Desktop:
 
-Default seeded user emails:
-- `admin@testco.com`
-- `operator@testco.com`
-- `viewer@testco.com`
+```powershell
+npm --prefix apps/desktop run test
+npm --prefix apps/desktop run doctor
+```
 
-Extra onboarding sample:
-- `apps/platform-api/sample-data/fleet_assets.csv`
+Validate the Compose file:
 
-## Roadmap for desktop B2B SaaS
+```powershell
+docker compose config --quiet
+```
 
-See `docs/desktop-b2b-roadmap.md` for recommended next additions:
+CI runs the backend suite, Python dependency audit, console checks, product-site checks, and deployed-dependency audits. It installs each npm application with `npm ci` from the matching lockfile.
 
-- Multi-tenant organization model
-- BYOK API key vault and provider adapter layer
-- Desktop shell packaging and secure updates
-- Audit trails, metering, and enterprise governance
+## Deployment
 
-## Research artifacts
+Each application is deployed separately. From the repository root, the Vercel helpers are:
 
-- `docs/competitive-landscape-2026.md`: evidence-based benchmark of comparable logistics platforms and the rationale behind the latest product-web and desktop onboarding overhaul.
-- `docs/market-dominator-overhaul-implementation.md`: implemented business-model, website, ops-console, and desktop changes derived from the market-dominator benchmark.
+```powershell
+npm run vercel:link
+npm run vercel:pull
+```
+
+Production health checks can be run manually with the "Production smoke" workflow in `.github/workflows/production-smoke.yml`.
+
+## Known limitations
+
+- Route optimization is a deterministic distance, window, capacity, and stop heuristic. It does not claim a globally optimal route.
+- Delivery proof images are stored in PostgreSQL rather than object storage. Upload size and workspace storage limits are enforced.
+- The default route emission calculation uses one heavy-duty vehicle weight class and U.S. EPA ton-mile factors.
+- Receipt extraction depends on a configured provider key. The zero-confidence mode records the upload but does not infer fields.
+- SMS and email delivery require external gateway configuration.
+- The desktop project currently runs the web operations console in Electron. It does not define a signed installer build.
+- The production database host and credentials are deployment-specific and intentionally are not recorded in this repository.
