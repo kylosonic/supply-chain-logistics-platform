@@ -167,7 +167,7 @@ python -m alembic upgrade head
 
 The current migration head is `20261107_0026`. Migration ordering is checked by `tests/test_migration_chain_integrity.py`.
 
-The SQL under `supabase/` is retained as retired history. Supabase Auth is not part of the running application.
+The Alembic chain is the repository's only schema path. A separate hosted authentication or data API is not part of the running application.
 
 ## Tests and checks
 
@@ -218,6 +218,8 @@ Each application is deployed separately. From the repository root, the Vercel he
 npm run vercel:link
 npm run vercel:pull
 ```
+
+Production PostgreSQL runs on Neon. The platform API reads its pooled connection string from `DATABASE_URL` in the Vercel environment.
 
 Production health checks can be run manually with the "Production smoke" workflow in `.github/workflows/production-smoke.yml`.
 

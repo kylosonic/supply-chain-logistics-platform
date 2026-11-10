@@ -20,7 +20,7 @@
 
 .PARAMETER DatabaseUrl
     The full SQLAlchemy/psycopg URL, e.g.
-    postgresql+psycopg://postgres.<ref>:<password>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require
+    postgresql+psycopg://user:password@ep-example-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require
 
 .PARAMETER DryRun
     Verify connectivity and print the exact plan without changing anything.

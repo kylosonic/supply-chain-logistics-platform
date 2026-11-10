@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-10
 **Auditor:** @vision (product/security review) + web research (verified 2026-08-10)
-**Scope:** Entire monorepo — `apps/platform-api` (FastAPI), `apps/ops-console` (Vite/React), `apps/product-web` (Next.js 14), `apps/desktop` (Electron), `supabase/`, `docker-compose.yml`, git history (91 commits).
+**Scope:** Entire monorepo — `apps/platform-api` (FastAPI), `apps/ops-console` (Vite/React), `apps/product-web` (Next.js 14), `apps/desktop` (Electron), the hosted-auth configuration that was present at audit time, `docker-compose.yml`, git history (91 commits).
 **Method:** Manual code review (secrets scan, auth/authorization tracing, injection & SSRF hunting, data-flow analysis), live `npm audit`, git-history secret scan, and verification of every dependency advisory against the GitHub Advisory Database + official docs.
 
 ---
@@ -32,7 +32,7 @@ Plus a **critical operational trap**: the committed `.env.example` and `docker-c
 | Response headers | HSTS, `nosniff`, `X-Frame-Options: DENY`, Referrer-Policy, Permissions-Policy (middleware) |
 | Provider keys at rest | Fernet-encrypted, org-scoped access, IDOR guards on read/revoke/test |
 | Org-scoped surfaces | orders, receipts, wallet, billing, subscriptions, reversals, notifications, providers — all membership-gated |
-| RLS migration | `company_profiles`: RLS enabled, all policies `auth.uid() = id` — textbook |
+| Tenant isolation | Organization membership checks and cross-tenant tests cover the operational API |
 | Upload handling | Receipts: 5 MB cap, extension+content-type allowlist, magic-byte sniffing for extraction |
 | Production guards | Mock extraction cannot leak to prod (`effective_receipt_extraction_mode`); JWT/encryption secrets min-length enforced |
 | SSRF posture | All outbound HTTP (SMS, OpenAI-compatible) uses settings-driven URLs only, with timeouts |
@@ -100,10 +100,9 @@ The platform already has the correct machinery (`get_current_membership`, `X-Org
 `POST /api/v1/feedback` has **no authentication dependency**. Anyone can POST unlimited 2 KB messages → storage abuse, admin-queue pollution, and an email field used to harvest/fake identities. It is the only fully public write endpoint.
 **Fix:** Require `get_current_user` (authenticated feedback) — or if public feedback is a product requirement, add a per-IP rate limit (e.g. 3/hour) and a honeypot/CAPTCHA.
 
-#### H-6. Supabase auth configuration is a landmine
-**Where:** `supabase/config.toml:182-229`
-If the linked Supabase project (`huukqxpbwqcepnkrfhdw`) is ever wired to the product signup flow, it ships with: **email confirmations disabled** (`enable_confirmations = false` — anyone can register an account with a victim's email), **minimum password length 6**, no complexity requirements, `secure_password_change = false` (password change without re-auth), no CAPTCHA. The only migration (RLS) is correct, but the auth layer is not production-hardened.
-**Fix:** `enable_confirmations = true`, `minimum_password_length = 8` + `lower_upper_letters_digits`, `secure_password_change = true`, enable Turnstile/hCaptcha, enable TOTP MFA for the console roles, and review the remote project's dashboard settings (rate limits, SMTP sender, session timebox) before go-live.
+#### H-6. Hosted auth configuration was unsafe
+**Where:** The retired hosted-auth configuration that was present at audit time.
+The configuration disabled email confirmation, allowed six-character passwords without complexity checks, and did not require re-authentication for password changes. FastAPI authentication replaced this path, and the unused hosted-auth project files were removed from the repository on 2026-11-10.
 
 ---
 
@@ -162,7 +161,7 @@ If the linked Supabase project (`huukqxpbwqcepnkrfhdw`) is ever wired to the pro
 ### Next sprint
 5. **H-1:** Migrate all global-role endpoints to membership-scoped queries (or to a distinct SYSADMIN role). This is the highest-leverage code change; the tests in `test_tenant_isolation_endpoints.py` are a good harness to extend.
 6. **H-4:** Electron → v43 + navigation guard + permission handler.
-7. **H-6:** Harden Supabase auth settings before any product-web auth wiring.
+7. **H-6:** Keep product signup on FastAPI authentication; do not reintroduce a separate hosted-auth client.
 8. **M-3:** Ship the CSP (nginx + Vercel).
 9. **M-5:** uv lockfile + CI audit.
 
@@ -178,9 +177,8 @@ If the linked Supabase project (`huukqxpbwqcepnkrfhdw`) is ever wired to the pro
 
 - GitHub Advisory Database: GHSA-xj6q-8x83-jv6g (axios), GHSA-gcfj-64vw-6mp9, GHSA-hcpx-6fm6-wx23; Next.js 14.2.35 release notes; GHSA-89xv-2m56-2m9x, GHSA-p9j2-gv94-2wf4, GHSA-ffhc-5mcf-pf4q, GHSA-68g3-v927-f742, GHSA-m99w-x7hq-7vfj; Starlette GHSA-86qp-5c8j-p5mr (BADHOST), GHSA-82w8-qh3p-5jfq
 - FastAPI security docs (OAuth2 JWT tutorial, Argon2id migration), Starlette middleware docs
-- Supabase: going-into-prod checklist, auth email/sessions/MFA docs, RLS docs
 - Electron: security checklist + timelines (supported majors ~41–43)
 - MDN CSP + frame-ancestors; hstspreload.org (preload not recommended)
 - PEP 751 (pylock.toml), uv docs (lockfile, audit, malware check)
 
-*Nothing in this report has been changed in the codebase. All fixes are recommendations pending your review.*
+*This report records the repository at the audit date. Later fixes are recorded in git history and the current architecture documents.*

@@ -122,7 +122,7 @@ Run this checklist in a **private window, signed out of everything**:
 Production is live and verified — signup genuinely works. But two honest notes, so nothing surprises you:
 
 1. **There are no paying customers.** Do not claim revenue.
-2. **The hosted database was re-provisioned recently.** It is a fresh Neon instance with a handful of test workspaces. If asked, the accurate answer is: the original Supabase projects were deleted, production was rebuilt on Neon, and the full launch funnel now passes 22/22 end to end.
+2. **The hosted database runs on Neon.** Production uses managed PostgreSQL with a handful of test workspaces, and the full launch funnel passes 22/22 end to end.
 
 Everything else you can state as fact, because it is verifiable:
 

@@ -185,34 +185,17 @@ if the form asks for traction:
 
 **Working and verified**
 - Live product website, operations console, and API; Electron desktop shell in the repository.
-- 81 API endpoints; 19 database migrations.
-- 399 backend tests, 143 console tests, 62 website tests — all passing.
+- 114 API endpoints; 26 database migrations.
+- 493 backend tests, 178 console tests, 72 website tests — all passing.
 - Launch funnel verified end to end: 22 of 22 steps, including signup → seeded workspace → first
   route optimisation producing a real plan (21.07 km, 31.61 ETB) → billing state → cross-tenant
   isolation returning 404.
+- Production PostgreSQL runs on Neon, and `GET /health` returns `{"status":"ok","db":"ok"}`.
 - Zero known critical or high dependency advisories in deployed surfaces; dependencies are locked
   with hash verification and CI gates run on every push.
 
 **Not yet true — do not claim it**
 - **Pre-revenue.** There are no paying customers yet. Do not write "customers" or "ARR".
-- **The hosted production database needs its credentials reissued** before the public site can
-  complete signups again. The code and schema are verified; this is an access/credential task.
-  If a reviewer clicks through to the live site and signup fails, that is why — mention it if asked
-  rather than letting it be discovered.
-
-  One command closes it once you have the database password:
-
-  ```powershell
-  # Supabase Dashboard -> Settings -> Database -> Reset database password, then:
-  ./scripts/rotate_and_deploy.ps1 -DryRun -DatabaseUrl 'postgresql+psycopg://postgres.huukqxpbwqcepnkrfhdw:<PASSWORD>@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require'
-  # inspect the printed plan, then re-run without -DryRun to apply
-  ```
-
-  The script verifies the URL actually connects, rotates `JWT_SECRET_KEY` and
-  `PROVIDER_KEY_ENCRYPTION_SECRET`, removes the dead `PASSWORD_SALT`, deploys all three Vercel
-  projects, and then verifies `GET /health` reports `db:ok`. Use `-SkipConnectivityCheck` only if
-  this machine is on a restricted network that cannot reach the database host.
-
 - **No signed desktop installer yet.** The Electron shell runs from source; a signed, auto-updating
   installer is planned work.
 - **The CBE/Dashen fee-schedule verification is still open.** It gates paid launch, not the product.
